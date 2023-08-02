@@ -153,9 +153,45 @@ def clustering (np_vaf, **kwargs):
     return (kwargs, simpleK)
 
 
+def visualization (simpleK, np_vaf, **kwargs):
+    import visualizationsingle
+    import numpy as np
+
+    if kwargs ["NUM_BLOCK"] == 1:
+        visualizationsingle.drawfigure_1d ( membership = simpleK.membership_record [simpleK.elbow_K],
+                                                                output_suptitle = "simpleKmeans_Elbow",
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.elbow_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                makeone_index = [],
+                                                                **kwargs)
+    elif kwargs ["NUM_BLOCK"] == 2:
+        visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.elbow_K],
+                                                                output_suptitle = "simpleKmeans_Elbow",
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.elbow_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                dimensionreduction = "None"
+                                                                **kwargs)
+    elif kwargs ["NUM_BLOCK"] >= 3:
+        visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.elbow_K],
+                                                                output_suptitle = "simpleKmeans_Elbow",
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.elbow_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                dimensionreduction = "SVD"
+                                                                **kwargs)
+
+
+
 def scoring (membership_answer, membership_answer_numerical, simpleK, **kwargs):
     import scoring
-
 
     simpleK.elbow_K_score, sample_dict_PtoA, sample_dict_AtoP  = scoring.Scoring ( membership_answer, membership_answer_numerical,
                                                                                                                                             simpleK.membership_record [simpleK.elbow_K], -1 , [] ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []

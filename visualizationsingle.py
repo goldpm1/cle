@@ -29,8 +29,8 @@ def drawfigure_1d(membership, output_suptitle, output_filename, np_vaf, samplena
     
     fig, ax = matplotlib.pyplot.subplots (figsize = (6, 6))
     matplotlib.pyplot.suptitle(output_suptitle, fontsize = 20)
-
-
+    fig.suptitle(output_suptitle, fontsize = 20)
+    
     max_y = 0
 
     x = np.linspace(0, 2, 200)
