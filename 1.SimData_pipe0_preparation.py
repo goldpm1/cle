@@ -6,7 +6,6 @@ import copy
 import collections
 from random import *
 
-########3 하...
 
 # python3  1.SimData_pipe0_preparation.py --NUM_CLONE 4 --NUM_BLOCK 2 --NUM_MUTATION 500 --FP_RATIO 0.1
 def TN_prior_cal(x):
@@ -123,7 +122,10 @@ def dirichlet_sampling ( **kwargs ):
 
         #4.  Depth/Alt 정해주기
         for k in range (int (NUM_MUTATION * ( 1 - kwargs["FP_RATIO"] ))):
-            df[k][i]["depth"] = int(np.random.normal( kwargs["DEPTH_MEAN"], kwargs["DEPTH_SD"], size = 1))
+            while True:
+                df[k][i]["depth"] = int(np.random.normal( kwargs["DEPTH_MEAN"], kwargs["DEPTH_SD"], size = 1))
+                if df[k][i]["depth"] > kwargs["DEPTH_CUTOFF"]:
+                    break
             df[k][i]["alt"] =  round( df[k][i]["depth"] * np_vaf [k][i] )
             df[k][i]["ref"] = df[k][i]["depth"]  -  df[k][i]["alt"] 
             df[k][i]["membership_answer"] = membership[k]
@@ -139,7 +141,10 @@ def dirichlet_sampling ( **kwargs ):
             membership[k] = "FP"
             
             for i in range (NUM_BLOCK):
-                df[k][i]["depth"] = int(np.random.normal( kwargs["DEPTH_MEAN"], kwargs["DEPTH_SD"], size = 1))
+                while True:
+                    df[k][i]["depth"] = int(np.random.normal( kwargs["DEPTH_MEAN"], kwargs["DEPTH_SD"], size = 1))
+                    if df[k][i]["depth"] > kwargs["DEPTH_CUTOFF"]:
+                        break
                 df[k][i]["alt"] =  round( df[k][i]["depth"] * np_vaf [k][i] )
                 df[k][i]["ref"] = df[k][i]["depth"]  -  df[k][i]["alt"] 
                 df[k][i]["membership_answer"] = "FP"
