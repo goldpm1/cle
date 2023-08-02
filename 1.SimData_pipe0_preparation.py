@@ -6,6 +6,7 @@ import copy
 import collections
 from random import *
 
+########3 하...
 
 # python3  1.SimData_pipe0_preparation.py --NUM_CLONE 4 --NUM_BLOCK 2 --NUM_MUTATION 500 --FP_RATIO 0.1
 def TN_prior_cal(x):
