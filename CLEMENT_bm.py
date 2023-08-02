@@ -6,7 +6,7 @@ print ( "Package directory : {}\n".format (  os.path.dirname(__file__) ) )
 if os.path.dirname(__file__) not in sys.path:
     sys.path.append  ( os.path.dirname(__file__) )
     
-import EMhard, EMsoft, Estep, Mstep, Bunch, miscellaneous, datapreparation, phylogeny, visualizationsingle, visualizationpair, visualizationsinglesoft, filetype, result, scoring, pyclonevisim, sciclonesim, quantumclonesim
+import EMhard, EMsoft, Estep, Mstep, Bunch, miscellaneous, datapreparation, phylogeny, visualizationsingle, visualizationpair, visualizationsinglesoft, filetype, result, scoring, simplekmeans, pyclonevisim, sciclonesim, quantumclonesim
 
 pd.options.mode.chained_assignment = None
 
@@ -94,6 +94,7 @@ elif args.SCORING in ["True", "true"]:
 kwargs["method"] = "gap+normal"
 kwargs["adjustment"] = "half"
 kwargs["STEP_NO"] = 30
+kwargs["DECISION_STANDARD"]= 0.8 + (0.03 * kwargs ["NUM_BLOCK"])
 
 
 
@@ -105,7 +106,7 @@ print("NUMBER OF INPUT SAMPLES = {}\n\n\n".format(NUM_BLOCK))
 
 print("============================== STEP #1.   DATA EXTRACTION FROM THE ANSWER SET  ==============================")
 
-for DIR in [kwargs["NPVAF_DIR"], kwargs["SIMPLE_KMEANS_DIR"], kwargs["CLEMENT_DIR"], kwargs["SCICLONE_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["QUANTUMCLONE_DIR"], kwargs["COMBINED_OUTPUT_DIR"], kwargs["CLEMENT_DIR"] + "/trial",  kwargs["CLEMENT_DIR"] + "/Kmeans",   kwargs["CLEMENT_DIR"] + "/candidate"]:
+for DIR in [kwargs["NPVAF_DIR"], kwargs["SIMPLE_KMEANS_DIR"], kwargs["SIMPLE_KMEANS_DIR"] + "/elbow", kwargs["SIMPLE_KMEANS_DIR"] + "/gap", kwargs["CLEMENT_DIR"], kwargs["SCICLONE_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["QUANTUMCLONE_DIR"], kwargs["COMBINED_OUTPUT_DIR"], kwargs["CLEMENT_DIR"] + "/trial",  kwargs["CLEMENT_DIR"] + "/Kmeans",   kwargs["CLEMENT_DIR"] + "/candidate",   kwargs["CLEMENT_DIR"]  + "/result", kwargs["COMBINED_OUTPUT_DIR"] + "/result"]:
     if os.path.exists(DIR) == True:
         os.system("rm -rf  " + DIR)
     if os.path.exists(DIR) == False:
@@ -162,9 +163,8 @@ if type(inputdf) != type(False):
         visualizationsingle.drawfigure_2d(membership_answer, "ANSWER_SET (n={})".format(kwargs["NUM_MUTATION"]), kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"], np_vaf, kwargs["samplename_dict_CharacterToNum"], False, "None", **kwargs)
     elif kwargs["NUM_BLOCK"] >= 3:
         visualizationsingle.drawfigure_2d(membership_answer, "ANSWER_SET (n={})".format(kwargs["NUM_MUTATION"]), kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"], np_vaf, kwargs["samplename_dict_CharacterToNum"], False, "SVD", **kwargs)
-    subprocess.run(["cp " + kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata.jpg  " +  kwargs["CLEMENT_DIR"] + "/candidate/0.inputdata." + kwargs["IMAGE_FORMAT"]], shell=True)
-    subprocess.run(["cp " + kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata.jpg  " +  kwargs["CLEMENT_DIR"] + "/trial/0.inputdata." + kwargs["IMAGE_FORMAT"]], shell=True)
-
+    subprocess.run(["cp " + kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"] + " "  +  kwargs["CLEMENT_DIR"] + "/candidate/0.inputdata." + kwargs["IMAGE_FORMAT"]], shell=True)
+    subprocess.run(["cp " + kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"] + " "  +  kwargs["CLEMENT_DIR"] + "/trial/0.inputdata." + kwargs["IMAGE_FORMAT"]], shell=True)
 
 
 
@@ -180,7 +180,19 @@ cluster_hard = Bunch.Bunch2(**kwargs)
 cluster_soft = Bunch.Bunch2(**kwargs)
 
 
-################### Step 4. Hard clustering ##################
+######################################################### Step 2. Hard clustering ########################################################
+print ("\n\n\n\n=============================================== STEP #2. SIMPLE_KMEANS  =======================================")
+
+kwargs, simpleK = simplekmeans.clustering ( np_vaf, **kwargs )
+simpleK = simplekmeans.scoring ( membership_answer, membership_answer_numerical, simpleK, **kwargs )
+
+print ( "\t▸ Elbow method : k = {}, score = {}".format (simpleK.elbow_K, simpleK.elbow_K_score))
+print ( "\t▸ Silhouette method : k = {}, score = {}".format (simpleK.silhouette_K, simpleK.silhouette_K_score ))
+print ( "\t▸ Gap* method : k = {}, score = {}".format (simpleK.gap_K, simpleK.gap_K_score ))
+
+
+
+######################################################### Step 4. Hard clustering ########################################################
 print ("\n\n\n======================================== STEP #4.   EM HARD  ========================================")
 
 cluster_hard = EMhard.main (df, np_vaf, np_BQ, mixture_kmeans, **kwargs)
@@ -188,7 +200,10 @@ subprocess.run (["cp -r " + kwargs["CLEMENT_DIR"] + "/candidate  " + kwargs["COM
 subprocess.run (["cp -r " + kwargs["CLEMENT_DIR"] + "/trial  " + kwargs["COMBINED_OUTPUT_DIR"]  ], shell = True)
 
 
-################### Step 5. Hard -> Soft clustering ##################
+
+
+
+######################################################### Step 5. Hard -> Soft clustering ########################################################
 if kwargs["MODE"] in ["Soft", "Both"]:
     print ("\n\n\n======================================== STEP #5.   EM SOFT  ========================================")
 
@@ -307,7 +322,8 @@ max_score_CLEMENT = 0
 if kwargs["MODE"] in ["Hard", "Both"]:
     if kwargs["SCORING"] == True:
         print ("\n\nOrder : {}".format(NUM_CLONE_hard))
-        for i, priority in enumerate(["1st", "2nd"]):
+
+        for i, priority in enumerate(["1st"]):   # "2nd"
             if ( i >= len (NUM_CLONE_hard) ):
                 break
             if ( cluster_hard.mixture_record [NUM_CLONE_hard[i]] == []):
@@ -379,20 +395,20 @@ if kwargs["MODE"] in ["Hard", "Both"]:
             NUM_CLONE_CLEMENT = cluster_hard.mixture_record [NUM_CLONE_hard[i]].shape[1] - int (cluster_hard.includefp_record [ NUM_CLONE_hard[i] ])
             NUM_CHILD_CLEMENT = len (cluster_hard.makeone_index_record [NUM_CLONE_hard[i]])
 
-            with open (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".results.txt", "w", encoding = "utf8") as output_myEM:
-                print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nARI\t{}\nansweronly\t{}\nintersection\t{}\nthistoolonly\t{}\nsensitivity\t{}\nPPV\t{}\nF1\t{}\nrunningtime\t{}\nFPexistence\t{}\nFPindex\t{}\nmakeone_index\t{}".
-                    format(NUM_CLONE_CLEMENT, NUM_CHILD_CLEMENT, max_score, kwargs["NUM_MUTATION"], ARI_CLEMENT, answeronly, intersection, myonly, sensitivity, PPV, F1,  round((datetime.datetime.now() - START_TIME).total_seconds()),  cluster_hard.includefp_record [NUM_CLONE_hard[i]], cluster_hard.fp_index_record [NUM_CLONE_hard[i]],  cluster_hard.makeone_index_record [NUM_CLONE_hard[i]] ), file = output_myEM)
+            with open (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".results.txt", "w", encoding = "utf8") as output_myEM:
+                print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nARI\t{}\nrunningtime\t{}\nFPexistence\t{}\nmakeone_index\t{}".
+                    format(NUM_CLONE_CLEMENT, NUM_CHILD_CLEMENT, max_score, kwargs["NUM_MUTATION"], ARI_CLEMENT,  round((datetime.datetime.now() - START_TIME).total_seconds()),  cluster_hard.includefp_record [NUM_CLONE_hard[i]], cluster_hard.makeone_index_record [NUM_CLONE_hard[i]] ), file = output_myEM)
                 
-            subprocess.run (["cp " + kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_hard_" + priority + ".results.txt"], shell = True)
+            subprocess.run (["cp " + kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_hard_" + priority + ".results.txt"], shell = True)
 
 
-            pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame(score_df).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".scoredf.txt", index = False, header= True,  sep = "\t")
+            pd.DataFrame(score_df).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".scoredf.txt", index = False, header= True,  sep = "\t")
             pd.DataFrame(score_df).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".scoredf.txt", index = False, header= True,  sep = "\t")
 
             #visualizationpair
@@ -400,11 +416,11 @@ if kwargs["MODE"] in ["Hard", "Both"]:
                 visualizationpair.drawfigure_2d (membership_answer, mixture_answer, cluster_hard.membership_record [NUM_CLONE_hard[i]], np.round(cluster_hard.mixture_record [NUM_CLONE_hard[i]], 2),
                             score_df, kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"] ,  "ANSWER\n", "CLEMENT\n{}/{}, ARI={}".format(score, kwargs["NUM_MUTATION"], round (ARI_CLEMENT, 2) ), np_vaf, cluster_hard.includefp_record [NUM_CLONE_hard[i]],  cluster_hard.makeone_index_record [NUM_CLONE_hard[i]], dimensionreduction="None")
             else:  # 어차피 pair로 안 그릴거면 그냥 복사해오자
-                subprocess.run (["cp " +  kwargs["CLEMENT_DIR"]+ "/candidate/clone" + str( NUM_CLONE_hard[i] ) + ".\(hard\).jpg  " + kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)    
+                subprocess.run (["cp " +  kwargs["CLEMENT_DIR"]+ "/candidate/clone" + str( NUM_CLONE_hard[i] ) + ".\(hard\)." + kwargs["IMAGE_FORMAT"] + " "  + kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)    
                 # samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( cluster_hard.membership_record [NUM_CLONE_hard[i]] )+ 1)}
                 # visualizationsingle.drawfigure_1d(cluster_hard.membership_record [NUM_CLONE_hard[i]], "CLEMENT", kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf,
                 #                                                         samplename_dict, cluster_hard.includefp_record [NUM_CLONE_hard[i]], cluster_hard.fp_index_record [NUM_CLONE_hard[i]],  cluster_hard.makeone_index_record [NUM_CLONE_hard[i]])
-            subprocess.run (["cp " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + ".jpg  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
+            subprocess.run (["cp " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"] + " "  + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
 
             if len (cluster_hard.makeone_index_record [NUM_CLONE_hard[i]]) + int ( cluster_hard.includefp_record [NUM_CLONE_hard[i]])  < NUM_CLONE_hard[i]:    # FP
                 print ("\n\n\t▶▶▶  PHYLOGENY RECONSTRUCTION IN HARD CLUSTERING ◀◀◀")
@@ -462,16 +478,16 @@ if kwargs["MODE"] in ["Hard", "Both"]:
                         print ("\nsoft 선택 기준 :  < {}\nDECISION\t{}".format(kwargs["DECISION_STANDARD"], DECISION) , file = output_hard_vs_fuzzy )
 
 
-            with open (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".results.txt", "w", encoding = "utf8") as output_myEM:
+            with open (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".results.txt", "w", encoding = "utf8") as output_myEM:
                 print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nrunningtime\t{}\nFPexistence\t{}\nFPindex\t{}\nmakeone_index\t{}".
                         format(cluster_hard.mixture_record [NUM_CLONE_hard[i]].shape[1] - int (cluster_hard.includefp_record [ NUM_CLONE_hard[i] ]) , len (cluster_hard.makeone_index_record [NUM_CLONE_hard[i]]),   round((datetime.datetime.now() - START_TIME).total_seconds()), cluster_hard.includefp_record [NUM_CLONE_hard[i]], cluster_hard.fp_index_record [NUM_CLONE_hard[i]] , cluster_hard.makeone_index_record [NUM_CLONE_hard[i]]  ), file = output_myEM)
-            subprocess.run (["cp " + kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_hard_" + priority + ".results.txt"], shell = True)
+            subprocess.run (["cp " + kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_hard_" + priority + ".results.txt"], shell = True)
 
-            pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
 
             samplename_dict = {k:k for k in range(0, np.max(cluster_hard.membership_record [NUM_CLONE_hard[i]])+ 1)}
@@ -484,8 +500,8 @@ if kwargs["MODE"] in ["Hard", "Both"]:
                 visualizationsingle.drawfigure_2d (cluster_hard.membership_record [NUM_CLONE_hard[i]], "CLEMENT_hard : {}".format( round ( cluster_hard.likelihood_record [NUM_CLONE_hard[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_hard.includefp_record [NUM_CLONE_hard[i]] , cluster_hard.fp_index_record[NUM_CLONE_hard[i]], "SVD" )
 
 
-            subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/candidate/clone" + str(NUM_CLONE_hard[i]) +".\(hard\).jpg " + kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
-            subprocess.run (["cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + ".jpg  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
+            subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/candidate/clone" + str(NUM_CLONE_hard[i]) +".\(hard\)." + kwargs["IMAGE_FORMAT"] + " " + kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
+            subprocess.run (["cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"] + "  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
             print ("\tHard {} results printed".format(priority))
         
 
@@ -538,7 +554,7 @@ if kwargs["MODE"] in ["Soft", "Both"]:
                 visualizationsinglesoft.drawfigure_1d (cluster_soft.membership_record [NUM_CLONE_soft[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]], cluster_soft.membership_p_normalize_record [NUM_CLONE_soft[i]],
                                                                         "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]], cluster_soft.fp_index_record[NUM_CLONE_soft[i]], cluster_soft.makeone_index_record[NUM_CLONE_soft[i]] )
             
-            subprocess.run (["cp " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + ".jpg  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
+            subprocess.run (["cp " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
 
 
             print ("\n[■ {} BEST RESULTS]\n\nCLEMENT\t{}/{}\nNUM_CLONE\t{}\n\nARI\t{}\nmakeone_index\t{}\n{}\n".format(priority, max_score,  kwargs["NUM_MUTATION"], cluster_soft.mixture_record [NUM_CLONE_soft[i]].shape[1], ARI_CLEMENT, cluster_soft.makeone_index_record [NUM_CLONE_soft[i]], list(cluster_soft.mixture_record [NUM_CLONE_soft[i]], )))
@@ -561,19 +577,19 @@ if kwargs["MODE"] in ["Soft", "Both"]:
             NUM_CLONE_CLEMENT = cluster_soft.mixture_record [NUM_CLONE_soft[i]].shape[1] - int (cluster_soft.includefp_record [ NUM_CLONE_soft[i] ]) 
             NUM_CHILD_CLEMENT =  len (cluster_soft.makeone_index_record [NUM_CLONE_soft[i]])
 
-            with open (kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".results.txt", "w", encoding = "utf8") as output_myEM:
-                print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\n}\nARI\t{}\nansweronly\t{}\nintersection\t{}\nthistoolonly\t{}\nsensitivity\t{}\nPPV\t{}\nF1\t{}\nrunningtime\t{}\nFPexistence\t{}\nFPindex\t{}\nmakeone_index\t{}\n".
-                    format(NUM_CLONE_CLEMENT, NUM_CHILD_CLEMENT, max_score, kwargs["NUM_MUTATION"],  ARI_CLEMENT, answeronly, intersection, myonly, sensitivity, PPV, F1, round((datetime.datetime.now() - START_TIME).total_seconds()), cluster_soft.includefp_record [NUM_CLONE_soft[i]], cluster_soft.fp_index_record [NUM_CLONE_soft[i]] , cluster_soft.makeone_index_record [NUM_CLONE_soft[i]]  ), file = output_myEM)
-            subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + ".results.txt"], shell = True)
+            with open (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".results.txt", "w", encoding = "utf8") as output_myEM:
+                print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nARI\t{}\nrunningtime\t{}\nFPexistence\t{}\nmakeone_index\t{}\n".
+                    format(NUM_CLONE_CLEMENT, NUM_CHILD_CLEMENT, max_score, kwargs["NUM_MUTATION"],  ARI_CLEMENT, round((datetime.datetime.now() - START_TIME).total_seconds()), cluster_soft.includefp_record [NUM_CLONE_soft[i]], cluster_soft.makeone_index_record [NUM_CLONE_soft[i]]  ), file = output_myEM)
+            subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + ".results.txt"], shell = True)
 
 
-            pd.DataFrame(cluster_soft.membership_record [NUM_CLONE_soft[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_soft.membership_record [NUM_CLONE_soft[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_soft.membership_record [NUM_CLONE_soft[i]]).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_soft_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame(cluster_soft.mixture_record [NUM_CLONE_soft[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_soft.mixture_record [NUM_CLONE_soft[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_soft.mixture_record [NUM_CLONE_soft[i]],).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_soft_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame( np.unique( cluster_soft.membership_record [NUM_CLONE_soft[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame( np.unique( cluster_soft.membership_record [NUM_CLONE_soft[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame( np.unique( cluster_soft.membership_record [NUM_CLONE_soft[i]], return_counts = True ) ).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_soft_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame(score_df).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".scoredf.txt", index = False, header= True,  sep = "\t")
+            pd.DataFrame(score_df).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".scoredf.txt", index = False, header= True,  sep = "\t")
             pd.DataFrame(score_df).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_soft_" + priority + ".scoredf.txt", index = False, header= True,  sep = "\t")
 
             if len (cluster_soft.makeone_index_record [NUM_CLONE_soft[i]]) + int ( cluster_soft.includefp_record [NUM_CLONE_soft[i]])  < NUM_CLONE_soft[i]:    # FP
@@ -613,7 +629,7 @@ if kwargs["MODE"] in ["Soft", "Both"]:
                         format(cluster_soft.mixture_record [NUM_CLONE_soft[i]].shape[1] - int (cluster_soft.includefp_record [ NUM_CLONE_soft[i] ]) , len (cluster_soft.makeone_index_record [NUM_CLONE_soft[i]]),   round((datetime.datetime.now() - START_TIME).total_seconds()),  cluster_soft.includefp_record [NUM_CLONE_soft[i]], cluster_soft.fp_index_record [NUM_CLONE_soft[i]]  ), file = output_myEM)
                 except:
                     print ("NUM_CLONE\t-1\nNUM_CHILD\t{}\nrunningtime\t{}\nFPexistence\t{}\nFPindex\t{}", file = output_myEM)
-            subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + ".results.txt"], shell = True)
+            subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + ".results.txt"], shell = True)
 
 
             pd.DataFrame(cluster_soft.membership_record [NUM_CLONE_soft[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
@@ -635,8 +651,8 @@ if kwargs["MODE"] in ["Soft", "Both"]:
                 visualizationsinglesoft.drawfigure_2d (cluster_soft.membership_record [NUM_CLONE_soft[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]], cluster_soft.membership_p_normalize_record [NUM_CLONE_soft[i]],
                                                                         "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]]) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , cluster_soft.makeone_index_record[NUM_CLONE_soft[i]], "SVD" )
 
-            subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/candidate/clone" + str(NUM_CLONE_soft[i]) +".\(soft\).jpg " + kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
-            subprocess.run (["cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + ".jpg  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
+            subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/candidate/clone" + str(NUM_CLONE_soft[i]) +".\(soft\)." + kwargs["IMAGE_FORMAT"]  +" " + kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
+            subprocess.run (["cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"] + "  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
         
             print ("\tSoft {} results printed".format(priority))
 
@@ -661,7 +677,7 @@ if kwargs["MODE"] in ["Soft", "Both"]:
         NUM_CHILD_CLEMENT = len (cluster_soft.makeone_index_record [NUM_CLONE_soft[0]])
         
 
-    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_" + DECISION + ".pdf  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.pdf" ], shell = True)
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision." + kwargs["IMAGE_FORMAT"] ], shell = True)
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_" + DECISION + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.results.txt" ], shell = True)
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_" + DECISION + ".membership.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.membership.txt" ], shell = True)
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_" + DECISION + ".membership_count.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.membership_count.txt" ], shell = True)
@@ -673,7 +689,7 @@ if kwargs["MODE"] in ["Soft", "Both"]:
         
 
 
-print ("\n\n\n\n============================== STEP #8.   PYCLONEVI RUNNING ==================================")
+print ("\n\n\n\n============================== STEP #11.   PYCLONEVI RUNNING ==================================")
 
 PYCLONEVI_START_TIME = datetime.datetime.now()
 
@@ -696,9 +712,9 @@ if kwargs["SCORING"] == True:
     print ( "FP 빼고 {} - {}개만 다룬다".format ( kwargs["NUM_MUTATION"], len ( membership_answer_numerical_nofp_index ) ))
     ARI_pyclonevi = result.ARI ( np.array ( [ membership_answer_numerical [i] for i in membership_answer_numerical_nofp_index  ] ) , 
                                                     np.array ( [ membership_pyclonevi [i] for i in membership_answer_numerical_nofp_index] ) )
-    print ("\n[ ■  PYCLONEVI RESULTS]\n\npyclone_vi\t{}/{}\nNUM_CLONE\t{}\nY-index\t{}\nARI\t{}\n{}\n".format(max_score_pyclonevi, kwargs["NUM_MUTATION"], mixture_pyclonevi.shape[1],  Y_index_pyclonevi, round (ARI_pyclonevi, 2) , list(mixture_pyclonevi)))
+    print ("\n[ ■  PYCLONEVI RESULTS]\n\npyclone_vi\t{}/{}\nNUM_CLONE\t{}\nARI\t{}\n".format(max_score_pyclonevi, kwargs["NUM_MUTATION"], mixture_pyclonevi.shape[1],  round (ARI_pyclonevi, 2)  ))
     
-    print ("\n(Greedy 방식) score : {}점 / {}점".format(score_pyclonevi, kwargs["NUM_MUTATION"]))
+    #print ("\n(Greedy 방식) score : {}점 / {}점".format(score_pyclonevi, kwargs["NUM_MUTATION"]))
     print ("(모두 다 돌려본 결과) score : {}점 / {}점,  변환표 (A to P)= {}\n".format ( max_score_pyclonevi, kwargs["NUM_MUTATION"], sample_dict_AtoP_pyclonevi))
     print (score_df_pyclonevi)
     
@@ -713,8 +729,8 @@ if kwargs["SCORING"] == True:
 
     NUM_CLONE_pyclonevi, NUM_CHILD_pyclonevi = mixture_pyclonevi.shape[1], mixture_pyclonevi.shape[1]
     with open (kwargs["PYCLONEVI_DIR"]  + "/results.txt", "w", encoding = "utf8") as output_pyclonevi:
-        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nY-index\t{}\nARI\t{}\nansweronly\t{}\nintersection\t{}\nthistoolonly\t{}\nsensitivity\t{}\nPPV\t{}\nF1\t{}\nrunningtime\t{}".
-                format(NUM_CLONE_pyclonevi, NUM_CLONE_pyclonevi, max_score_pyclonevi, kwargs["NUM_MUTATION"], Y_index_pyclonevi, round (ARI_pyclonevi, 2) , answeronly_pyclonevi, intersection_pyclonevi, pyclonevi_only, sensitivity_pyclonevi, PPV_pyclonevi, F1_pyclonevi, round((datetime.datetime.now() - PYCLONEVI_START_TIME).total_seconds()) ), file = output_pyclonevi)
+        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nARI\t{}\nrunningtime\t{}".
+                format(NUM_CLONE_pyclonevi, NUM_CLONE_pyclonevi, max_score_pyclonevi, kwargs["NUM_MUTATION"], round (ARI_pyclonevi, 2) ,  round((datetime.datetime.now() - PYCLONEVI_START_TIME).total_seconds()) ), file = output_pyclonevi)
     subprocess.run (["cp -rf " + kwargs["PYCLONEVI_DIR"] + "/results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/pyclonevi.results.txt"], shell = True)
 
 
@@ -727,11 +743,11 @@ if kwargs["SCORING"] == True:
 
     samplename_dict = {k:k for k in range(0, np.max(membership_pyclonevi)+ 1)}
     if kwargs["NUM_BLOCK"] == 1:
-        visualizationsingle.drawfigure_1d (membership_pyclonevi, "pyclone_vi", kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, list( set (membership_pyclonevi)))
+        visualizationsingle.drawfigure_1d (membership_pyclonevi, "pyclone_vi", kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, list( set (membership_pyclonevi)), **kwargs )
     elif kwargs["NUM_BLOCK"] == 2:
-        visualizationpair.drawfigure_2d (membership_answer, mixture_answer, membership_pyclonevi, mixture_pyclonevi, score_df_pyclonevi, OUTPUT_FILENAME,  "ANSWER\n", "pyclone_vi\n{}/{}, ARI={}".format(score_pyclonevi, kwargs["NUM_MUTATION"], round (ARI_pyclonevi, 2)), np_vaf, "No",  [], dimensionreduction="None")
+        visualizationpair.drawfigure_2d (membership_answer, mixture_answer, membership_pyclonevi, mixture_pyclonevi, score_df_pyclonevi, OUTPUT_FILENAME,  "ANSWER\n", "pyclone_vi\n{}/{}, ARI={}".format(score_pyclonevi, kwargs["NUM_MUTATION"], round (ARI_pyclonevi, 2)), np_vaf, "No",  [], dimensionreduction="None", **kwargs)
     else:
-        visualizationsingle.drawfigure_2d (membership_pyclonevi, "pyclone_vi", kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "SVD" )
+        visualizationsingle.drawfigure_2d (membership_pyclonevi, "pyclone_vi", kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "SVD", **kwargs  )
 
     subprocess.run (["cp -rf " + OUTPUT_FILENAME + "  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/pyclonevi." + kwargs["IMAGE_FORMAT"]], shell = True)
 
@@ -751,19 +767,27 @@ else:
     samplename_dict = {k:k for k in range(0, np.max(membership_pyclonevi)+ 1)}
     if kwargs["NUM_BLOCK"] == 1:
         samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max(membership_pyclonevi)+ 1)}
-        visualizationsingle.drawfigure_1d (membership_pyclonevi, "pyclone_vi", kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1 , list( set (membership_pyclonevi)) )
+        visualizationsingle.drawfigure_1d (membership_pyclonevi, "pyclone_vi", kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1 , list( set (membership_pyclonevi)), **kwargs  )
     elif kwargs["NUM_BLOCK"] == 2:
-        visualizationsingle.drawfigure_2d (membership_pyclonevi, "pyclone_vi", kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1 )
+        visualizationsingle.drawfigure_2d (membership_pyclonevi, "pyclone_vi", kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "None", **kwargs  )
     else:
-        visualizationsingle.drawfigure_2d (membership_pyclonevi, "pyclone_vi", kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "SVD" )
+        visualizationsingle.drawfigure_2d (membership_pyclonevi, "pyclone_vi", kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "SVD", **kwargs  )
 
-    subprocess.run (["cp -rf " +  kwargs["PYCLONEVI_DIR"]+ "/pyclonevi.jpg  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/pyclonevi." + kwargs["IMAGE_FORMAT"]], shell = True)
+    subprocess.run (["cp -rf " +  kwargs["PYCLONEVI_DIR"]+ "/pyclonevi." + kwargs["IMAGE_FORMAT"] + " "  + kwargs["COMBINED_OUTPUT_DIR"]  + "/pyclonevi." + kwargs["IMAGE_FORMAT"]], shell = True)
 
 print ("\n현재 시각 : {}h:{}m:{}s     (걸린 시간 : {})".format(time.localtime().tm_hour, time.localtime().tm_min, round(time.localtime().tm_sec), datetime.datetime.now() - PYCLONEVI_START_TIME ))
 
 
 
-print("\n\n\n\n================================ STEP #9.   SCICLONE RUNNING ==================================")
+
+
+
+
+
+
+
+
+print("\n\n\n\n================================ STEP #12.   SCICLONE RUNNING ==================================")
 
 SCICLONE_START_TIME = datetime.datetime.now()
 print("\nNOW SCICLONE IS STARTED  :  {}h:{}m:{}s\n\n".format( time.localtime().tm_hour, time.localtime().tm_min, round(time.localtime().tm_sec)))
@@ -793,10 +817,10 @@ if kwargs["SCORING"] == True:
     ARI_sciclone = result.ARI(np.array([membership_answer_numerical[i] for i in membership_answer_numerical_nofp_index]),
                               np.array([membership_sciclone[i] for i in membership_answer_numerical_nofp_index]))
 
-    print("\n[■  SCICLONE RESULTS]\n\nSciClone\t{}/{}\nNUM_CLONE\t{}\nY-index\t{}\nARI\t{}\n{}\n".format(max_score_sciclone,
-          kwargs["NUM_MUTATION"], mixture_sciclone.shape[1],  Y_index_sciclone, round (ARI_sciclone, 2), list(mixture_sciclone)))
+    print("\n[■  SCICLONE RESULTS]\n\nSciClone\t{}/{}\nNUM_CLONE\t{}\nARI\t{}\n".format(max_score_sciclone,
+          kwargs["NUM_MUTATION"], mixture_sciclone.shape[1],  round (ARI_sciclone, 2)  ))
 
-    print("\n(Greedy 방식) score : {}점 / {}점".format(score_sciclone,kwargs["NUM_MUTATION"]))
+    #print("\n(Greedy 방식) score : {}점 / {}점".format(score_sciclone,kwargs["NUM_MUTATION"]))
     print("(모두 다 돌려본 결과) score : {}점 / {}점,  변환표 (A to P)= {}\n".format(max_score_sciclone, kwargs["NUM_MUTATION"], sample_dict_AtoP_sciclone))
     print(score_df_sciclone)
 
@@ -811,8 +835,8 @@ if kwargs["SCORING"] == True:
 
     NUM_CLONE_sciclone, NUM_CHILD_sciclone = mixture_sciclone.shape[1], mixture_sciclone.shape[1]
     with open(kwargs["SCICLONE_DIR"] + "/results.txt", "w", encoding="utf8") as output_sciclone:
-        print("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nY-index\t{}\nARI\t{}\nansweronly\t{}\nintersection\t{}\nthistoolonly\t{}\nsensitivity\t{}\nPPV\t{}\nF1\t{}\nrunningtime\t{}".
-              format(NUM_CLONE_sciclone, NUM_CHILD_sciclone, max_score_sciclone, kwargs["NUM_MUTATION"], Y_index_sciclone, ARI_sciclone, answeronly_sciclone, intersection_sciclone, sciclone_only, sensitivity_sciclone, PPV_sciclone, F1_sciclone,  round((datetime.datetime.now() - SCICLONE_START_TIME).total_seconds())), file=output_sciclone)
+        print("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nARI\t{}\nrunningtime\t{}".
+              format(NUM_CLONE_sciclone, NUM_CHILD_sciclone, max_score_sciclone, kwargs["NUM_MUTATION"],  ARI_sciclone,  round((datetime.datetime.now() - SCICLONE_START_TIME).total_seconds())), file=output_sciclone)
     subprocess.run(["cp -rf " + kwargs["SCICLONE_DIR"] + "/results.txt  " +
                    kwargs["COMBINED_OUTPUT_DIR"] + "/sciclone.results.txt"], shell=True)
 
@@ -825,16 +849,13 @@ if kwargs["SCORING"] == True:
 
     samplename_dict = {k: k for k in range(0, np.max(membership_sciclone) + 1)}
     if kwargs["NUM_BLOCK"] == 1:
-        try:
-            visualizationsingle.drawfigure_1d(membership_sciclone, "SciClone", kwargs["SCICLONE_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1 , list (set (membership_sciclone))  )
-        except:
-            print("SciClone : visualization에서 뭔가 오류가 남")
+        visualizationsingle.drawfigure_1d(membership_sciclone, "SciClone", kwargs["SCICLONE_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1 , list (set (membership_sciclone)), **kwargs   )
     elif kwargs["NUM_BLOCK"] == 2:
-        try:
-            visualizationpair.drawfigure_2d(membership_answer, mixture_answer, membership_sciclone, mixture_sciclone, score_df_sciclone, OUTPUT_FILENAME,  "ANSWER\n",
-                                            "SciClone\n{}/{}, ARI={}".format(max_score_sciclone, kwargs["NUM_MUTATION"], round(ARI_sciclone, 2)), np_vaf, "No",  [],  dimensionreduction="None")
-        except:
-            print("SciClone : visualization에서 뭔가 오류가 남")
+        visualizationpair.drawfigure_2d(membership_answer, mixture_answer, membership_sciclone, mixture_sciclone, score_df_sciclone, OUTPUT_FILENAME,  "ANSWER\n",
+                                            "SciClone\n{}/{}, ARI={}".format(max_score_sciclone, kwargs["NUM_MUTATION"], round(ARI_sciclone, 2)), np_vaf, "No",  [],  dimensionreduction="None", **kwargs )
+    elif kwargs["NUM_BLOCK"] == 2:
+        visualizationpair.drawfigure_2d(membership_answer, mixture_answer, membership_sciclone, mixture_sciclone, score_df_sciclone, OUTPUT_FILENAME,  "ANSWER\n",
+                                            "SciClone\n{}/{}, ARI={}".format(max_score_sciclone, kwargs["NUM_MUTATION"], round(ARI_sciclone, 2)), np_vaf, "No",  [],  dimensionreduction="SVD", **kwargs )
 
     subprocess.run(["cp -rf " + OUTPUT_FILENAME + "  " +  kwargs["COMBINED_OUTPUT_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"]], shell=True)
 
@@ -853,13 +874,13 @@ else:
     samplename_dict = {k: k for k in range(0, np.max(membership_sciclone) + 1)}
     if kwargs["NUM_BLOCK"] == 1:
         samplename_dict = {k: "clone {}".format(k) for k in range(0, np.max(membership_sciclone) + 1)}
-        visualizationsingle.drawfigure_1d( membership_sciclone, "SciClone", kwargs["SCICLONE_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, list (set (membership_sciclone)) )
+        visualizationsingle.drawfigure_1d( membership_sciclone, "SciClone", kwargs["SCICLONE_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, list (set (membership_sciclone)), **kwargs  )
     elif kwargs["NUM_BLOCK"] == 2:
-        visualizationsingle.drawfigure_2d( membership_sciclone, "SciClone", kwargs["SCICLONE_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1)
+        visualizationsingle.drawfigure_2d( membership_sciclone, "SciClone", kwargs["SCICLONE_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "None", **kwargs )
     else:
-        visualizationsingle.drawfigure_2d( membership_sciclone, "SciClone", kwargs["SCICLONE_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "SVD")
+        visualizationsingle.drawfigure_2d( membership_sciclone, "SciClone", kwargs["SCICLONE_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "SVD", **kwargs )
 
-    subprocess.run(["cp -rf " + kwargs["SCICLONE_DIR"] + "/sciclone.jpg  " +  kwargs["COMBINED_OUTPUT_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"]], shell=True)
+    subprocess.run(["cp -rf " + kwargs["SCICLONE_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"] + " "  +  kwargs["COMBINED_OUTPUT_DIR"] + "/sciclone." + kwargs["IMAGE_FORMAT"]], shell=True)
 
 
 print("\n현재 시각 : {}h:{}m:{}s     (걸린 시간 : {})".format(time.localtime().tm_hour, time.localtime().tm_min, round(time.localtime().tm_sec), datetime.datetime.now() - SCICLONE_START_TIME))
@@ -867,7 +888,13 @@ print("\n현재 시각 : {}h:{}m:{}s     (걸린 시간 : {})".format(time.local
 
 
 
-print("\n\n\n\n================================ STEP #10.   QUANTUMCLONE RUNNING ==================================")
+
+
+
+
+
+
+print("\n\n\n\n================================ STEP #13.   QUANTUMCLONE RUNNING ==================================")
 
 QUANTUMCLONE_START_TIME = datetime.datetime.now()
 print("\nNOW QUANTUMCLONE IS STARTED  :  {}h:{}m:{}s\n\n".format(time.localtime().tm_hour, time.localtime().tm_min, round(time.localtime().tm_sec)))
@@ -895,10 +922,10 @@ if kwargs["SCORING"] == True:
     ARI_quantumclone = result.ARI(np.array([membership_answer_numerical[i] for i in membership_answer_numerical_nofp_index]),
                                   np.array([membership_quantumclone[i] for i in membership_answer_numerical_nofp_index]))
 
-    print("\n[ ■ QUANTUMCLONE RESULTS]\n\nQuantumClone\t{}/{}\nNUM_CLONE\t{}\nY-index\t{}\nARI\t{}\n{}\n"
-          .format(score_quantumclone, kwargs["NUM_MUTATION"], mixture_quantumclone.shape[1],  Y_index_quantumclone, ARI_quantumclone, list(mixture_quantumclone)))
+    print("\n[ ■ QUANTUMCLONE RESULTS]\n\nQuantumClone\t{}/{}\nNUM_CLONE\t{}\nARI\t{}\n{}\n"
+          .format(score_quantumclone, kwargs["NUM_MUTATION"], mixture_quantumclone.shape[1],  ARI_quantumclone, list(mixture_quantumclone)))
 
-    print("\n(Greedy 방식) score : {}점 / {}점".format(score_quantumclone, kwargs["NUM_MUTATION"]))
+    #print("\n(Greedy 방식) score : {}점 / {}점".format(score_quantumclone, kwargs["NUM_MUTATION"]))
     print("(모두 다 돌려본 결과) score : {}점 / {}점,  변환표 (A to P)= {}\n".format(max_score_quantumclone, kwargs["NUM_MUTATION"], sample_dict_AtoP_quantumclone))
     print(score_df_quantumclone)
 
@@ -913,8 +940,8 @@ if kwargs["SCORING"] == True:
 
     NUM_CLONE_quantumclone, NUM_CHILD_quantumclone = mixture_quantumclone.shape[1], mixture_quantumclone.shape[1]
     with open(kwargs["QUANTUMCLONE_DIR"] + "/results.txt", "w", encoding="utf8") as output_quantumclone:
-        print("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nY-index\t{}\nARI\t{}\nansweronly\t{}\nintersection\t{}\nthistoolonly\t{}\nsensitivity\t{}\nPPV\t{}\nF1\t{}\nrunningtime\t{}".
-              format(NUM_CLONE_quantumclone, NUM_CHILD_quantumclone, score_quantumclone, kwargs["NUM_MUTATION"], Y_index_quantumclone, ARI_quantumclone, answeronly_quantumclone, intersection_quantumclone, quantumclone_only, sensitivity_quantumclone, PPV_quantumclone, F1_quantumclone,  round((datetime.datetime.now() - QUANTUMCLONE_START_TIME).total_seconds())), file=output_quantumclone)
+        print("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nARI\t{}\nrunningtime\t{}".
+              format(NUM_CLONE_quantumclone, NUM_CHILD_quantumclone, score_quantumclone, kwargs["NUM_MUTATION"], ARI_quantumclone,   round((datetime.datetime.now() - QUANTUMCLONE_START_TIME).total_seconds())), file=output_quantumclone)
 
     subprocess.run(["cp -rf " + kwargs["QUANTUMCLONE_DIR"] + "/results.txt  " + kwargs["COMBINED_OUTPUT_DIR"] + "/quantumclone.results.txt"], shell=True)
 
@@ -927,10 +954,13 @@ if kwargs["SCORING"] == True:
 
     samplename_dict = {k: k for k in range( 0, np.max(membership_quantumclone) + 1)}
     if kwargs["NUM_BLOCK"] == 1:
-        visualizationsingle.drawfigure_1d(membership_quantumclone, "QuantumClone", kwargs["QUANTUMCLONE_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, list ( set (membership_quantumclone))) 
-    elif kwargs["NUM_BLOCK"] >= 2:
+        visualizationsingle.drawfigure_1d(membership_quantumclone, "QuantumClone", kwargs["QUANTUMCLONE_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, list ( set (membership_quantumclone)), **kwargs ) 
+    elif kwargs["NUM_BLOCK"] == 2:
         visualizationpair.drawfigure_2d(membership_answer, mixture_answer, membership_quantumclone, mixture_quantumclone, score_df_quantumclone, OUTPUT_FILENAME,  "ANSWER\n",
-                                        "QuantumClone\n{}/{}, ARI={}".format(score_quantumclone, kwargs["NUM_MUTATION"], round(ARI_quantumclone, 2)), np_vaf, "No",  [],  dimensionreduction="None")
+                                        "QuantumClone\n{}/{}, ARI={}".format(score_quantumclone, kwargs["NUM_MUTATION"], round(ARI_quantumclone, 2)), np_vaf, "No",  [],  dimensionreduction="None", **kwargs )
+    elif kwargs["NUM_BLOCK"] >= 3:
+        visualizationpair.drawfigure_2d(membership_answer, mixture_answer, membership_quantumclone, mixture_quantumclone, score_df_quantumclone, OUTPUT_FILENAME,  "ANSWER\n",
+                                        "QuantumClone\n{}/{}, ARI={}".format(score_quantumclone, kwargs["NUM_MUTATION"], round(ARI_quantumclone, 2)), np_vaf, "No",  [],  dimensionreduction="SVD", **kwargs )
 
     subprocess.run(["cp -rf " + OUTPUT_FILENAME + "  " + kwargs["COMBINED_OUTPUT_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"]], shell=True)
 
@@ -949,20 +979,23 @@ else:
     samplename_dict = {k: k for k in range( 0, np.max(membership_quantumclone) + 1)}
     if kwargs["NUM_BLOCK"] == 1:
         samplename_dict = {k: "clone {}".format(k) for k in range( 0, np.max(membership_quantumclone) + 1)}
-        visualizationsingle.drawfigure_1d(membership_quantumclone, "QuantumClone", kwargs["QUANTUMCLONE_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, list ( set (membership_quantumclone)))
+        visualizationsingle.drawfigure_1d(membership_quantumclone, "QuantumClone", kwargs["QUANTUMCLONE_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, list ( set (membership_quantumclone)), **kwargs )
     elif kwargs["NUM_BLOCK"] == 2:
-        visualizationsingle.drawfigure_2d(membership_quantumclone, "QuantumClone", kwargs["QUANTUMCLONE_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1)
+        visualizationsingle.drawfigure_2d(membership_quantumclone, "QuantumClone", kwargs["QUANTUMCLONE_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "None", **kwargs )
     else:
-        visualizationsingle.drawfigure_2d(membership_quantumclone, "QuantumClone", kwargs["QUANTUMCLONE_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "SVD")
+        visualizationsingle.drawfigure_2d(membership_quantumclone, "QuantumClone", kwargs["QUANTUMCLONE_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, False, -1, "SVD", **kwargs )
 
-    subprocess.run(["cp -rf " + kwargs["QUANTUMCLONE_DIR"] + "/quantumclone.jpg  " + kwargs["COMBINED_OUTPUT_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"]], shell=True)
+    subprocess.run(["cp -rf " + kwargs["QUANTUMCLONE_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"] + " "  + kwargs["COMBINED_OUTPUT_DIR"] + "/quantumclone." + kwargs["IMAGE_FORMAT"]], shell=True)
 
 
 
 if kwargs["SCORING"] == True:    
     with open (kwargs["COMBINED_OUTPUT_DIR"] + "/★results_score.txt", "w", encoding = "utf8") as results_score:
         print ( "ANSWER_NUM_CLONE = {}  (FP : {})\n".format ( len (kwargs["samplename_dict_NumToCharacter"].keys()), bool("FP" in kwargs["samplename_dict_NumToCharacter"].values()) ) , file = results_score)
-        print ("EM{}: {}/{}\tNUM_CLONE = {}\tNUM_CHILD = {}".format(DECISION,max_score_CLEMENT, kwargs["NUM_MUTATION"], NUM_CLONE_CLEMENT, NUM_CHILD_CLEMENT), file = results_score)
+        print ("CLEMENT: {}/{}\tNUM_CLONE = {}\tNUM_CHILD = {}".format( max_score_CLEMENT, kwargs["NUM_MUTATION"], NUM_CLONE_CLEMENT, NUM_CHILD_CLEMENT), file = results_score)
+        print ("simpleKmeans_elbow: {}/{}\tNUM_CLONE = {}".format(max_score_CLEMENT, kwargs["NUM_MUTATION"], NUM_CLONE), file = results_score)
+        print ("simpleKmeans_silhouette: {}/{}\tNUM_CLONE = {}".format(max_score_CLEMENT, kwargs["NUM_MUTATION"], NUM_CLONE), file = results_score)
+        print ("simpleKmeans_gap*: {}/{}\tNUM_CLONE = {}".format(max_score_CLEMENT, kwargs["NUM_MUTATION"], NUM_CLONE), file = results_score)
         print ("pyclone_vi : {}/{}\tNUM_CLONE = {}".format(max_score_pyclonevi, kwargs["NUM_MUTATION"], NUM_CLONE_pyclonevi ), file = results_score)
         print ("sciclone: {}/{}\tNUM_CLONE = {}".format(max_score_sciclone, kwargs["NUM_MUTATION"], NUM_CLONE_sciclone ), file = results_score)
         print ("quantumclone : {}/{}\tNUM_CLONE = {}".format(max_score_quantumclone, kwargs["NUM_MUTATION"], NUM_CLONE_quantumclone ), file = results_score)

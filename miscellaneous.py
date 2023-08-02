@@ -502,7 +502,7 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
         print ("Gap statistics method (max Gap): {}th optimal NUM_CLONE = {}".format(i  + 1, Gap_list_df.index[i]  ))
         Gap_list_index.append ( Gap_list_df.index[i]  )
 
-    return Gap_list_index, Gap_list       
+    return Gap_list_index    
 
 
     # Original Gap Number 

@@ -69,7 +69,7 @@ def drawfigure_1d(membership1, sample_dict_rev, membership2, mixture2, output_fi
 
 
 
-def drawfigure_2d(membership_left, mixture_left, membership_right, mixture_right, score_df, output_filename, fig1title, fig2title, np_vaf, includeoutlier,  makeone_index, dimensionreduction="None"):
+def drawfigure_2d(membership_left, mixture_left, membership_right, mixture_right, score_df, output_filename, fig1title, fig2title, np_vaf, includeoutlier,  makeone_index, dimensionreduction="None", **kwargs):
     vivid_10 = palettable.cartocolors.qualitative.Vivid_10.mpl_colors
     bdo = palettable.lightbartlein.diverging.BlueDarkOrange18_18.mpl_colors
     tabl = palettable.tableau.Tableau_20.mpl_colors
@@ -84,7 +84,7 @@ def drawfigure_2d(membership_left, mixture_left, membership_right, mixture_right
     #print (matplotlib.font_manager.FontProperties(fname = font).get_name())
 
     matplotlib.pyplot.style.use("seaborn-white")
-    matplotlib.rcParams["font.family"] = 'arial'
+    matplotlib.rcParams["font.family"] = kwargs["FONT_FAMILY"]
 
     if (includeoutlier == True ) &  ("FP" in list(score_df["answer"])):
         colorlist[ np.where(score_df["answer"] == "FP")[0][0] ] = Gr_10[16]        # Draw FP in black

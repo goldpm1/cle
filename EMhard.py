@@ -66,7 +66,7 @@ def main ( df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                 step = Bunch.Bunch1(NUM_MUTATION , NUM_BLOCK, NUM_CLONE, kwargs["STEP_NO"])
 
                 step.mixture = miscellaneous.set_initial_parameter(np_vaf, mixture_kmeans, 
-                                                                kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_NOMINAL"]) + "." + str(kwargs["TRIAL"]) + "-0.initial_kmeans(hard).pdf"  , **kwargs)
+                                                                kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_NOMINAL"]) + "." + str(kwargs["TRIAL"]) + "-0.initial_kmeans(hard)." + kwargs["IMAGE_FORMAT"]  , **kwargs)
                 
                 if np.any(step.mixture < 0) == True: 
                     #print ("\t\tset_initial_parameter : more than one negative values", end = "\t")
@@ -151,8 +151,8 @@ def main ( df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
             print ("\n\n\tIn NUM_CLONE = {}, we chose {}th trial, {}th step\n\t(trial.likelihood_record : {})\n\tFP_index : {}\n\tlen(fp_member_index) : {}".format(NUM_CLONE, i, trial.max_step_index_record[i], np.round ( trial.likelihood_record ), trial.fp_index_record[i],  len (trial.fp_member_index_record[i] ) ) )
 
             if trial.max_step_index_record [i]  != -1:   # If unavailable in this trial
-                os.system ("cp " + kwargs["CLEMENT_DIR"] + "/trial/clone" + str (kwargs["NUM_CLONE"]) + "." + str( i ) + "-"  + str(  trial.max_step_index_record [i]  ) + "\(hard\).pdf" + " " + 
-                    kwargs["CLEMENT_DIR"] + "/candidate/clone" + str (kwargs["NUM_CLONE"]) + ".\(hard\).pdf"  ) 
+                os.system ("cp " + kwargs["CLEMENT_DIR"] + "/trial/clone" + str (kwargs["NUM_CLONE"]) + "." + str( i ) + "-"  + str(  trial.max_step_index_record [i]  ) + "\(hard\)." + kwargs["IMAGE_FORMAT"] + " " + 
+                    kwargs["CLEMENT_DIR"] + "/candidate/clone" + str (kwargs["NUM_CLONE"]) + ".\(hard\)." + kwargs["IMAGE_FORMAT"]  ) 
             
             cluster.acc ( trial.mixture_record [i], trial.membership_record [i], trial.likelihood_record [i], trial.membership_p_record [i], trial.membership_p_normalize_record [i], trial.stepindex_record [i], i, trial.max_step_index_record [i], trial.makeone_index_record[i], trial.fp_index_record[i], trial.includefp_record[i], trial.fp_involuntary_record[i], trial.fp_member_index_record [i], **kwargs )  
 
