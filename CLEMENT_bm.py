@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 print ( "Package directory : {}\n".format (  os.path.dirname(__file__) ) )
+SCRIPT_DIR = os.path.dirname(__file__)
 if os.path.dirname(__file__) not in sys.path:
     sys.path.append  ( os.path.dirname(__file__) )
     
@@ -184,6 +185,7 @@ cluster_soft = Bunch.Bunch2(**kwargs)
 print ("\n\n\n\n=============================================== STEP #2. SIMPLE_KMEANS  =======================================")
 
 kwargs, simpleK = simplekmeans.clustering ( np_vaf, **kwargs )
+simplekmeans.visualization ( simpleK, np_vaf, **kwargs )
 simpleK = simplekmeans.scoring ( membership_answer, membership_answer_numerical, simpleK, **kwargs )
 
 print ( "\t▸ Elbow method : k = {}, score = {}".format (simpleK.elbow_K, simpleK.elbow_K_score))
@@ -697,7 +699,7 @@ INPUT_TSV=kwargs["PYCLONEVI_DIR"] + "/input.tsv"
 OUTPUT_H5=kwargs["PYCLONEVI_DIR"]  + "/output.h5"
 OUTPUT_TSV=kwargs["PYCLONEVI_DIR"]  + "/output.tsv"
 
-subprocess.run (["bash pyclonevi_pipe.sh " + INPUT_TSV + " " + OUTPUT_H5 + " " + OUTPUT_TSV], shell = True)
+subprocess.run (["bash " + SCRIPT_DIR + "/pyclonevi_pipe.sh " + INPUT_TSV + " " + OUTPUT_H5 + " " + OUTPUT_TSV], shell = True)
 
 INPUT_PYCLONEVI_RESULT = OUTPUT_TSV
 INPUT_NPVAF = kwargs["NPVAF_DIR"] + "/npvaf.txt"
@@ -797,11 +799,11 @@ INPUT_Second = kwargs["SCICLONE_DIR"] + "/block1.dat"
 INPUT_Third = kwargs["SCICLONE_DIR"] + "/block2.dat"
 
 if NUM_BLOCK == 3:
-    subprocess.run(["bash sciclone_pipe_3D.sh " + INPUT_First + " " + INPUT_Second + " " + INPUT_Third + " " + kwargs["SCICLONE_DIR"]], shell=True)
+    subprocess.run(["bash " + SCRIPT_DIR + "/sciclone_pipe_3D.sh " + SCRIPT_DIR + " " + INPUT_First + " " + INPUT_Second + " " + INPUT_Third + " " + kwargs["SCICLONE_DIR"]], shell=True)
 elif NUM_BLOCK == 2:
-    subprocess.run(["bash sciclone_pipe_2D.sh " + INPUT_First + " " + INPUT_Second + " " + kwargs["SCICLONE_DIR"]], shell=True)
+    subprocess.run(["bash " + SCRIPT_DIR + "/sciclone_pipe_2D.sh " + SCRIPT_DIR + " " + INPUT_First + " " + INPUT_Second + " " + kwargs["SCICLONE_DIR"]], shell=True)
 elif NUM_BLOCK == 1:
-    subprocess.run(["bash sciclone_pipe_1D.sh " + INPUT_First + " " + kwargs["SCICLONE_DIR"]], shell=True)
+    subprocess.run(["bash " + SCRIPT_DIR + "/sciclone_pipe_1D.sh " + SCRIPT_DIR + " " + INPUT_First + " " + kwargs["SCICLONE_DIR"]], shell=True)
 
 
 INPUT_SCICLONE_RESULT = kwargs["SCICLONE_DIR"] + "/results.tsv"
@@ -904,11 +906,11 @@ INPUT_Second = kwargs["QUANTUMCLONE_DIR"] + "/block1.dat"
 INPUT_Third = kwargs["QUANTUMCLONE_DIR"] + "/block2.dat"
 
 if NUM_BLOCK == 3:
-    subprocess.run(["bash qc_pipe_3D.sh " + INPUT_First + " " + INPUT_Second + " " + INPUT_Third + " " + kwargs["QUANTUMCLONE_DIR"]], shell=True)
+    subprocess.run(["bash " + SCRIPT_DIR + "/qc_pipe_3D.sh " + SCRIPT_DIR + " " + INPUT_First + " " + INPUT_Second + " " + INPUT_Third + " " + kwargs["QUANTUMCLONE_DIR"]], shell=True)
 elif NUM_BLOCK == 2:
-    subprocess.run(["bash qc_pipe_2D.sh " + INPUT_First + " " + INPUT_Second + " " + kwargs["QUANTUMCLONE_DIR"]], shell=True)
+    subprocess.run(["bash " + SCRIPT_DIR + "/qc_pipe_2D.sh " + SCRIPT_DIR + " " + INPUT_First + " " + INPUT_Second + " " + kwargs["QUANTUMCLONE_DIR"]], shell=True)
 elif NUM_BLOCK == 1:
-    subprocess.run(["bash qc_pipe_1D.sh " + INPUT_First + " " + kwargs["QUANTUMCLONE_DIR"]], shell=True)
+    subprocess.run(["bash " + SCRIPT_DIR + "/qc_pipe_1D.sh " + SCRIPT_DIR + " "+ INPUT_First + " " + kwargs["QUANTUMCLONE_DIR"]], shell=True)
 
 INPUT_QUANTUMCLONE_RESULT = kwargs["QUANTUMCLONE_DIR"]
 INPUT_NPVAF = kwargs["NPVAF_DIR"] + "/npvaf.txt"

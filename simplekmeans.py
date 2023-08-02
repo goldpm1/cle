@@ -98,7 +98,7 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
             kmeans = KMeans(n_clusters=NUM_CLONE, init = cluster.mixture_record [NUM_CLONE].transpose() , max_iter = 10, random_state = 0)  
             kmeans.fit(reference_np)  # nparray
             Wkb_list.append ( round (math.log10(kmeans.inertia_), 3) )
-            miscellaneous.drawfigure (reference_np, kmeans.labels_,  kwargs["SIMPLE_KMEANS_DIR"] + "/gap/Kmeans.clone"  +   str (NUM_CLONE) + "." + str(b) + "." + kwargs["IMAGE_FORMAT"], **kwargs)
+            #miscellaneous.drawfigure (reference_np, kmeans.labels_,  kwargs["SIMPLE_KMEANS_DIR"] + "/gap/Kmeans.clone"  +   str (NUM_CLONE) + "." + str(b) + "." + kwargs["IMAGE_FORMAT"], **kwargs)
 
         Gap_list [NUM_CLONE] = round ( np.mean(Wkb_list) - Wk, 3)
         Std_list [NUM_CLONE] = round ( np.std (Wkb_list), 3)
@@ -165,7 +165,25 @@ def visualization (simpleK, np_vaf, **kwargs):
                                                                 samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.elbow_K] ) + 1)},
                                                                 includefp = False,
                                                                 fp_index = -1,
-                                                                makeone_index = [],
+                                                                makeone_index = sorted( np.unique ( simpleK.membership_record [simpleK.elbow_K] ))  ,
+                                                                **kwargs)
+        visualizationsingle.drawfigure_1d ( membership = simpleK.membership_record [simpleK.silhouette_K],
+                                                                output_suptitle = "simpleKmeans_Silhouette",
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/silhouette/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.silhouette_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                makeone_index = sorted( np.unique ( simpleK.membership_record [simpleK.silhouette_K] ))  ,
+                                                                **kwargs)
+        visualizationsingle.drawfigure_1d ( membership = simpleK.membership_record [simpleK.gap_K],
+                                                                output_suptitle = "simpleKmeans_Gap*",
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/gap/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.gap_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                makeone_index = sorted( np.unique ( simpleK.membership_record [simpleK.gap_K] ))  ,
                                                                 **kwargs)
     elif kwargs ["NUM_BLOCK"] == 2:
         visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.elbow_K],
