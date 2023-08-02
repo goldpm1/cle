@@ -72,7 +72,7 @@ def drawfigure_1d(membership, output_suptitle, output_filename, np_vaf, samplena
 
 
 
-def drawfigure_2d(membership, output_suptitle, output_filename, np_vaf, samplename_dict, includefp, fp_index, dimensionreduction="None",  **kwargs):
+def drawfigure_2d(membership, output_suptitle, output_filename, np_vaf, samplename_dict, includefp, fp_index, dimensionreduction,  **kwargs):
     vivid_10 = palettable.cartocolors.qualitative.Vivid_10.mpl_colors
     bdo = palettable.lightbartlein.diverging.BlueDarkOrange18_18.mpl_colors
     tabl = palettable.tableau.Tableau_20.mpl_colors

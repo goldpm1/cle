@@ -170,6 +170,8 @@ def makedf ( **kwargs ):
     except:
         print ("FP가 없음")
         kwargs["FP_RATIO"] = 0
+
+    return kwargs
     
 
 
@@ -233,7 +235,7 @@ def RANDOM_PICK_fun(**kwargs):
         CHILD_AXIS_randomsample = random.sample(CHILD_AXIS_index, int(kwargs["RANDOM_PICK"] * (kwargs["AXIS_RATIO"])))
     except:
         print (kwargs["INPUT_TSV"] + " - Can't extract Child_axis data as requested")
-        return False
+        return False, kwargs
 
 
     print ( "RANDOM_PICK = {}\tFP_randomsample = {}\tPARENT_randomsample = {}\tCHILD_AXIS_randomsample = {}".format ( kwargs["RANDOM_PICK"], len(FP_randomsample), len(PARENT_randomsample), len (CHILD_AXIS_randomsample) ) )
@@ -242,7 +244,7 @@ def RANDOM_PICK_fun(**kwargs):
         CHILD_SPACE_randomsample = random.sample(CHILD_SPACE_index, kwargs["RANDOM_PICK"] - (len(FP_randomsample) + len(PARENT_randomsample) + len(CHILD_AXIS_randomsample)))  
     except:
         print (kwargs["INPUT_TSV"] + " - Can't extract Child_space data as requested")
-        return False
+        return False, kwargs
     
 
     print ("조정 후\n\tFP 개수 : {}\tPARENT 개수 : {}\tCHILD_SPACE 개수 : {}\tCHILD_AXIS 개수 : {}".format(len(FP_randomsample), len (PARENT_randomsample), len (CHILD_SPACE_randomsample), len (CHILD_AXIS_randomsample)))
@@ -280,7 +282,7 @@ def RANDOM_PICK_fun(**kwargs):
             mixture_answer[i][j] = round(np.mean(np_vaf[[x  for x in range(len(membership_answer)) if membership_answer[x] == list(kwargs["samplename_dict_CharacterToNum"].keys())[j]   ]] [: , i] * 2), 3)
 
 
-    return True
+    return True, kwargs
 
 
 def pyclone_dataset( DIR, **kwargs ):
@@ -342,4 +344,4 @@ def main (**kwargs):
             quantumclone_dataset( kwargs["QUANTUMCLONE_DIR"], **kwargs )
 
             
-    return (inputdf, df, np_vaf, np_BQ, membership_answer, mutation_id, kwargs["samplename_dict_CharacterToNum"], kwargs)
+    return (inputdf, df, np_vaf, np_BQ, membership_answer, mixture_answer, mutation_id, kwargs)

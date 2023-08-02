@@ -47,7 +47,7 @@ def main(df, np_vaf, np_BQ, step, option, **kwargs):
             if step.makeone_index != []:
                 step.makeone_prenormalization, sum_mixture =  EMhard.checkall (step, **kwargs) 
                 print ("\t\t\tstep.makeone_prenormalization = {} (Mstep.py)".format(step.makeone_prenormalization), end = "\t") 
-                print(" ".join(str(row) for row in sum_mixture ))
+                print(" ".join(str( np.round(row, 2) ) for row in sum_mixture ))
 
         
                 for i in range(NUM_BLOCK):
@@ -55,7 +55,7 @@ def main(df, np_vaf, np_BQ, step, option, **kwargs):
                     for j in range(NUM_CLONE):
                         if j in step.makeone_index:   
                             sum = sum + step.mixture[i][j]
-                    step.mixture[i] = np.round( step.mixture[i] / sum, 4) if sum != 0 else 0   # If sum = 0, let mixture = 0
+                    step.mixture[i] = np.round( step.mixture[i] / sum, 3) if sum != 0 else 0   # If sum = 0, let mixture = 0
                 
         
     if (kwargs["NUM_BLOCK"] == 1):
@@ -96,7 +96,7 @@ def main(df, np_vaf, np_BQ, step, option, **kwargs):
                             weight[k] = math.pow(10, step.membership_p[k][j])
                         #print ("{} : (clone {})   weight = {},  vaf = {}".format(k, step.membership[k], weight[k], vaf[k]))
 
-                    step.mixture[i][j] = round(np.average(vaf[makeone_index_i], weights=weight[makeone_index_i]), 4) * 2
+                    step.mixture[i][j] = round(np.average(vaf[makeone_index_i], weights=weight[makeone_index_i]), 3) * 2
 
         
         # Normalize to make 1
@@ -104,7 +104,7 @@ def main(df, np_vaf, np_BQ, step, option, **kwargs):
             for i in range(NUM_BLOCK):
                 sum = np.sum(step.mixture[i])
                 
-                step.mixture[i] = np.round(step.mixture[i] / sum, 4) if sum != 0 else 0
+                step.mixture[i] = np.round(step.mixture[i] / sum, 3) if sum != 0 else 0
 
         elif kwargs["adjustment"] in ["Half", "half"]:
             # step.makeone_index, p_list, step.fp_index = isparent.makeone (step, **kwargs)
@@ -135,7 +135,7 @@ def main(df, np_vaf, np_BQ, step, option, **kwargs):
 
                     for j in range(NUM_CLONE):
                         if j in step.makeone_index:      
-                            step.mixture[i][j] = np.round(step.mixture[i][j] / sum, 4) if sum != 0 else 0
+                            step.mixture[i][j] = np.round(step.mixture[i][j] / sum, 3) if sum != 0 else 0
 
         #print ("\t\tc. Mixture (after normalization) : {}". format(list(step.mixture)))
 

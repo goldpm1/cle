@@ -58,7 +58,7 @@ def drawfigure_1d_hard(bunch, np_vaf, output_filename, **kwargs):
             continue
 
     matplotlib.pyplot.suptitle("clone{}.{}-{},  Total prob = {}".format(kwargs["NUM_CLONE"], kwargs["TRIAL"], kwargs["STEP"], round(bunch.likelihood)), fontsize=20)
-    matplotlib.pyplot.title("Sum_child = {}".format(list(np.round(np.sum(bunch.mixture[:, bunch.makeone_index], axis=1), 3))), fontsize=12)
+    matplotlib.pyplot.title("Sum_child = {}".format(list(np.round(np.sum(bunch.mixture[:, bunch.makeone_index], axis=1), 2))), fontsize=12)
 
     matplotlib.pyplot.axis([0,  np.max(np_vaf[:, :]) * 2.1,  0,  max_y * 1.3])
     matplotlib.pyplot.legend()
@@ -105,7 +105,7 @@ def drawfigure_1d_soft(bunch, np_vaf, output_filename, **kwargs):
     matplotlib.pyplot.ylabel("count (weighted)")
 
     matplotlib.pyplot.suptitle("clone{}.{}-{},  Total prob = {}".format(kwargs["NUM_CLONE"], kwargs["TRIAL"], kwargs["STEP_TOTAL"], round(bunch.likelihood)), fontsize=20)
-    matplotlib.pyplot.title("Sum_child = {}".format(list(np.round(np.sum(bunch.mixture[:, bunch.makeone_index], axis=1), 3))), fontsize=12)
+    matplotlib.pyplot.title("Sum_child = {}".format(list(np.round(np.sum(bunch.mixture[:, bunch.makeone_index], axis=1), 2))), fontsize=12)
 
     for k in sorted(list(set(bunch.membership))):
         if k in bunch.makeone_index:

@@ -167,6 +167,7 @@ if __name__ == "__main__":
     parser.add_argument('--LOWVAF_RATIO', type = float, default = 0)
     parser.add_argument('--DEPTH_MEAN', type = int, default = 100)
     parser.add_argument('--DEPTH_SD', type = int, default = 8)
+    parser.add_argument('--DEPTH_CUTOFF', type = int, default = 30)
     parser.add_argument('--INPUT_TSV', default = None)
     parser.add_argument('--NPVAF_DIR', default = None)
     parser.add_argument('--BENCHMARK_I', default = 0)
@@ -182,6 +183,7 @@ if __name__ == "__main__":
     kwargs ["LOWVAF_RATIO"] = float (args.LOWVAF_RATIO)
     kwargs["DEPTH_MEAN"] = int(args.DEPTH_MEAN)
     kwargs["DEPTH_SD"] = float(args.DEPTH_SD)
+    kwargs["DEPTH_CUTOFF"] = float(args.DEPTH_CUTOFF)
     kwargs["NPVAF_DIR"] = args.NPVAF_DIR
     kwargs["BENCHMARK_I"] = int(args.BENCHMARK_I)
     ii = kwargs["BENCHMARK_I"]

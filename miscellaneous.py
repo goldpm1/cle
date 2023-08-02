@@ -61,17 +61,23 @@ def initial_kmeans (np_vaf, KMEANS_CLUSTERNO, OUTPUT_FILENAME):
             
     if NUM_BLOCK == 1:
         sns.kdeplot ( np_vaf [:, 0] * 2, shade = True)
+        kde_np_vaf = kde.gaussian_kde(np_vaf[:, 0] * 2)
         plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
         plt.ylabel("Density", fontdict={"fontsize": 14})
+        plt.xlim(0, 1)
         for j in range(KMEANS_CLUSTERNO):
             plt.axvline ( x = mixture_kmeans[0][j], color = colorlist [j  % 20] ) 
+            plt.text  ( mixture_kmeans[0][j], kde_np_vaf(mixture_kmeans[0][j]) * 1.08, "{}".format( np.round (kde_np_vaf(mixture_kmeans[0][j]) * 1.08 , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
     elif NUM_BLOCK == 2:
-        plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 20, alpha = 0.8)
+        plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 30, alpha = 0.8)
         plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
         plt.ylabel("VAF x 2 of the Sample 1", fontdict={"fontsize": 14})
-        #plt.xlim(0, 1)
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
         for j in range(KMEANS_CLUSTERNO):
-            plt.scatter (mixture_kmeans[0][j], mixture_kmeans[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 200, label = "clone " + str(j))  
+            plt.scatter ( mixture_kmeans[0][j], mixture_kmeans[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 200, label = "clone " + str(j))  
+            plt.text  ( mixture_kmeans[0][j], mixture_kmeans[1][j], "[{},{}]".format( np.round (mixture_kmeans[0][j] , 2), np.round (mixture_kmeans[1][j] , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
+            
         
     plt.savefig ( OUTPUT_FILENAME )
         
@@ -83,6 +89,7 @@ def set_initial_parameter(np_vaf, mixture_kmeans, OUTPUT_FILENAME, **kwargs):
     import numpy as np
     import matplotlib.pyplot as plt
     import seaborn as sns
+    from scipy.stats import kde
     
     random.seed ( kwargs["TRIAL"])
     initial_mixture = np.zeros((kwargs["NUM_BLOCK"], kwargs["NUM_CLONE"]), dtype="float")
@@ -106,18 +113,23 @@ def set_initial_parameter(np_vaf, mixture_kmeans, OUTPUT_FILENAME, **kwargs):
                
     if kwargs["NUM_BLOCK"] == 1:
         sns.kdeplot ( np_vaf [:, 0] * 2, shade = True)
+        kde_np_vaf = kde.gaussian_kde(np_vaf[:, 0] * 2)
         plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
         plt.ylabel("Density", fontdict={"fontsize": 14})
         plt.xlim(0, 1)
         for j in range( initial_mixture.shape[1] ):
             plt.axvline ( x = initial_mixture[0][j], color = colorlist [j  % 20] ) 
+            plt.text  ( initial_mixture[0][j], kde_np_vaf(initial_mixture[0][j]) * 1.08, "{}".format( np.round (kde_np_vaf(initial_mixture[0][j]) * 1.08 , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
     elif kwargs["NUM_BLOCK"] == 2:
-        plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 20, alpha = 0.8)
+        plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 30, alpha = 0.8)
         plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
         plt.ylabel("VAF x 2 of the Sample 1", fontdict={"fontsize": 14})
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
     
         for j in range( initial_mixture.shape[1] ):
             plt.scatter (initial_mixture[0][j], initial_mixture[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 300, label = "clone " + str(j)) 
+            plt.text  ( initial_mixture[0][j], initial_mixture[1][j], "[{},{}]".format( np.round (initial_mixture[0][j] , 2), np.round (initial_mixture[1][j] , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
         plt.legend()
         
     plt.savefig ( OUTPUT_FILENAME )

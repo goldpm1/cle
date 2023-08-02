@@ -20,7 +20,6 @@ def greaterall(a, b, boole):
 
 
 def checkall(sum_mixture, **kwargs):      # 여는 좀  느슨하게 잡는다
-    NUM_BLOCK = len(sum_mixture) 
 
     if kwargs["MAKEONE_STRICT"] == 1:
         makeone_standard = np.array ( [ [0.84, 1.15], [0.84, 1.15] ],dtype = float)
@@ -153,7 +152,6 @@ def makeone(df, np_vaf,  np_BQ, step, **kwargs):
     for j2 in range(len(subset_mixture_acc)):
         subset_list, subset_mixture, sum_mixture = subset_list_acc[ j2 ], subset_mixture_acc[ j2 ], sum_mixture_acc[ j2 ]
         PhyAcc = PhylogenyObjectAcc()
-
 
         if checkall(sum_mixture, **kwargs) == False:         # 한 block이라도 1에 걸맞지 않은 게 있으면 False를 return함
             #print ("\t\t\t\t→ boundary clone의 sum of mixture의 이상으로 기각 ({})".format(sum_mixture))
