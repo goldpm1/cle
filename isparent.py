@@ -23,11 +23,9 @@ def checkall(sum_mixture, **kwargs):      # 여는 좀  느슨하게 잡는다
     NUM_BLOCK = len(sum_mixture) 
 
     if kwargs["MAKEONE_STRICT"] == 1:
-        makeone_standard = np.array ( [ [0.85, 1.15], [0.85, 1.15] ],dtype = float)
+        makeone_standard = np.array ( [ [0.84, 1.15], [0.84, 1.15] ],dtype = float)
     elif kwargs["MAKEONE_STRICT"] == 2:
-        makeone_standard = np.array ( [ [0.75, 1.15], [0.8, 1.22] ],dtype = float)
-    else:
-        makeone_standard = np.array ( [ [0.7, 1.3], [0.7, 1.35] ],dtype = float)
+        makeone_standard = np.array ( [ [0.77, 1.25], [0.77, 1.25] ],dtype = float)
     
     if kwargs["NUM_BLOCK"] == 1:      # 1D
         if (sum_mixture[0] < makeone_standard[0][0]) | (sum_mixture[0] > makeone_standard[0][1]):
@@ -126,7 +124,7 @@ def Appropriate_Phylogeny_Verification (PhyAcc, subset_list, j2, j3, step, **kwa
 
 
 
-def makeone(df, np_vaf, step, **kwargs):
+def makeone(df, np_vaf,  np_BQ, step, **kwargs):
     membership = step.membership
     mixture = step.mixture
     NUM_BLOCK = step.mixture.shape[0]
@@ -219,7 +217,7 @@ def makeone(df, np_vaf, step, **kwargs):
                 continue
             
             # 1D일 경우에는 parent clone의 존재를 인정하지 말자
-            if ((kwargs["NUM_BLOCK"] == 1) & (len( PhyAcc.j3_record )  > 0 ) & (kwargs["NUM_PARENT"]  ==  0 )):
+            if ((kwargs["NUM_BLOCK"] == 1) & (len( PhyAcc.j3_record )  > 0 )  ):
                 #print ("1D + parent clone mode OFF 인데 parent clone을 잡았으므로 pass    ->  parent : {}\t child : {}".format (j3, subset_list ))
                 continue
 
@@ -314,7 +312,7 @@ def makeone(df, np_vaf, step, **kwargs):
     if kwargs["VERBOSE"] >= 2:
         for i in range (0, p_list.shape[1]):
             j2 = int(p_list[1, i])
-            print ("\t\t\t∇ {}위 : subset_list_acc [j2] = {}\tsum_mixture_acc [j2] = {}\t{}번상황\tp = {}".format ( i + 1 , subset_list_acc [ j2  ], sum_mixture_acc [ j2  ], int (p_list[2, i]) , round( p_list[0, i], 2)  ))
+            print ("\t\t\t∇ {}nd place : subset_list_acc [j2] = {}\tsum_mixture_acc [j2] = {}\t{}th cirumstance\tp = {}".format ( i + 1 , subset_list_acc [ j2  ], sum_mixture_acc [ j2  ], int (p_list[2, i]) , round( p_list[0, i], 2)  ))
 
     best_j2 = int(p_list[1, 0])    # 1 : subset_list의 index  0 : 제일 잘한것 (0등)
     optimal, optimal_j2 = 0, best_j2
@@ -327,20 +325,20 @@ def makeone(df, np_vaf, step, **kwargs):
                 #     print ("\t\t\t∇ {}위 : j2 = {}, subset_list_acc [j2] = {}\tsum_mixture_acc [j2] = {}\t{}번상황\tp = {}".format ( i + 1 , j2, subset_list_acc [ j2  ], sum_mixture_acc [ j2  ], int (p_list[2, i]) , round( p_list[0, i], 2)  ))
                 step.makeone_index = subset_list_acc[ best_j2 ]
                 step.fp_index = second_circumstance_fp_index [best_j2]                        
-                step_best = Estep.main (df, np_vaf, step, **kwargs )
-                print ("\t\t\t∇ first j2 = {}\tstep.makeone_index = {}\tstep.fp_index = {}\tstep_best.likelihood = {}".format ( best_j2, step.makeone_index, step.fp_index, round(step_best.likelihood )  ))
+                step_best = Estep.main (df, np_vaf, np_BQ, step, **kwargs )
+                print ("\t\t\t\t∇ first j2 = {}\tstep.makeone_index = {}\tstep.fp_index = {}\tstep_best.likelihood = {}".format ( best_j2, step.makeone_index, step.fp_index, round(step_best.likelihood )  ))
                 step_best_likelihood = step_best.likelihood
                 
                 secondbest_j2 = int(p_list[1, 1])
                 step.makeone_index = subset_list_acc[ secondbest_j2 ]
                 step.fp_index = -1                  
-                step_secondbest = Estep.main (df, np_vaf, step, **kwargs )
+                step_secondbest = Estep.main (df, np_vaf, np_BQ, step, **kwargs )
                 step_secondbest_likelihood = step_secondbest.likelihood
-                print ("\t\t\t∇ secondbest j2 = {}\tstep.makeone_index = {}\tstep.fp_index = {}\tstep_secondbest.likelihood = {}".format ( secondbest_j2, step.makeone_index, step.fp_index, round (step_secondbest.likelihood) ))
+                print ("\t\t\t\t∇ secondbest j2 = {}\tstep.makeone_index = {}\tstep.fp_index = {}\tstep_secondbest.likelihood = {}".format ( secondbest_j2, step.makeone_index, step.fp_index, round (step_secondbest.likelihood) ))
             
     
                 if step_secondbest_likelihood > step_best_likelihood: # 2위더라도 1위보다 더 좋은 
-                    print ("\t\t→ 2위를 선택한다")
+                    print ("\t\t\t\t→ secondbest를 선택한다")
                     optimal = 1      # 2위를 배정
                     optimal_j2 = secondbest_j2
             

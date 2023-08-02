@@ -70,7 +70,7 @@ for DONOR in DONOR_LIST:               # PD42566
             os.system ("mkdir -p " + logPath)
 
             command = " ".join ( [ "qsub -pe smp 1", "-e", logPath, "-o", logPath, "-N", TISSUE + "_" + DONOR + "_" + SAMPLE, 
-                                                "2.CellData_pipe1_EMhybrid.sh",  
+                                                "2.CellData_pipe1_CLEMENT_bm.sh",  
                                                 str(INPUT_TSV),  str(kwargs["MODE"]),  str(kwargs["NUM_CLONE_TRIAL_START"]),  str(kwargs["NUM_CLONE_TRIAL_END"]),  str(kwargs["NUM_CLONE_TRIAL_FORCE"]),
                                                 str(kwargs["RANDOM_PICK"]), str(kwargs["AXIS_RATIO"]),  str(kwargs["PARENT_RATIO"]),  str(kwargs["NUM_PARENT"]),  str(kwargs["FP_RATIO"]),  str(kwargs["FP_USEALL"]),
                                                 str(kwargs["TRIAL_NO"]), str(kwargs["DEPTH_CUTOFF"]),  str(kwargs["MIN_CLUSTER_SIZE"]),  str(kwargs["VERBOSE"]),

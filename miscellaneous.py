@@ -33,9 +33,9 @@ def initial_kmeans (np_vaf, KMEANS_CLUSTERNO, OUTPUT_FILENAME):
     tabl = palettable.tableau.Tableau_20.mpl_colors
     colorlist = [i for i in tabl]
 
-    kmeans = KMeans(n_clusters=KMEANS_CLUSTERNO, init='k-means++', max_iter=100,random_state=0)  # model 생성
-    kmeans.fit(np_vaf)  # model에 집어넣어줄 dataframe 지정
-    membership_kmeans = kmeans.labels_     # K means가 predict 한것
+    kmeans = KMeans(n_clusters=KMEANS_CLUSTERNO, init='k-means++', max_iter=100,random_state=0)  # model generation
+    kmeans.fit(np_vaf)  
+    membership_kmeans = kmeans.labels_     
 
     plt.figure(figsize=(6, 6))
     plt.suptitle ("NP_VAF + INITIAL_KMEANS", fontsize = 20)
@@ -45,14 +45,24 @@ def initial_kmeans (np_vaf, KMEANS_CLUSTERNO, OUTPUT_FILENAME):
     for j in range(KMEANS_CLUSTERNO):
         for i in range (NUM_BLOCK):
             mixture_kmeans[i][j] = round(np.mean(np_vaf[membership_kmeans == (j)][:, i] * 2), 3)
-        
+
+    ####### Delete centroid which value is ove r1
+    mask = []
+    for j in range ( mixture_kmeans.shape[1] ):
+        if ( np.any ( mixture_kmeans [ : , j] > 1)  == False):
+            mask.append (j)
+    mixture_kmeans =  mixture_kmeans [ :, mask ]
+    KMEANS_CLUSTERNO = len (mask)
+    ###################################################
+
+    print ("Iniitial kmeans : ", end = "\t")
+    print(" ".join(str(row) for row in mixture_kmeans ))
+
             
-    # 그림 그리기
     if NUM_BLOCK == 1:
         sns.kdeplot ( np_vaf [:, 0] * 2, shade = True)
         plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
         plt.ylabel("Density", fontdict={"fontsize": 14})
-        plt.xlim(0, 1)
         for j in range(KMEANS_CLUSTERNO):
             plt.axvline ( x = mixture_kmeans[0][j], color = colorlist [j  % 20] ) 
     elif NUM_BLOCK == 2:
@@ -61,11 +71,59 @@ def initial_kmeans (np_vaf, KMEANS_CLUSTERNO, OUTPUT_FILENAME):
         plt.ylabel("VAF x 2 of the Sample 1", fontdict={"fontsize": 14})
         #plt.xlim(0, 1)
         for j in range(KMEANS_CLUSTERNO):
-            plt.scatter (mixture_kmeans[0][j], mixture_kmeans[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 200, label = "clone " + str(j))   # color가 20개까지가 최대...
+            plt.scatter (mixture_kmeans[0][j], mixture_kmeans[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 200, label = "clone " + str(j))  
         
     plt.savefig ( OUTPUT_FILENAME )
         
-    return mixture_kmeans
+    return mixture_kmeans, KMEANS_CLUSTERNO
+
+
+def set_initial_parameter(np_vaf, mixture_kmeans, OUTPUT_FILENAME, **kwargs):  
+    import random
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
+    random.seed ( kwargs["TRIAL"])
+    initial_mixture = np.zeros((kwargs["NUM_BLOCK"], kwargs["NUM_CLONE"]), dtype="float")
+
+    
+    if kwargs["TRIAL"] % 2 == 0:  # Half of the cases :  pick kwargs["NUM_CLONE"] - 1
+        if kwargs["NUM_CLONE"]  >= 2:
+            initial_mixture = mixture_kmeans [:, random.sample (range( kwargs["KMEANS_CLUSTERNO"]), kwargs["NUM_CLONE"] - 1)]
+            initial_mixture = np.concatenate((initial_mixture, np.array (1 - np.sum(initial_mixture, axis=1)).reshape(-1, 1) ), axis=1) 
+        elif kwargs["NUM_CLONE"]  == 1:
+            initial_mixture = mixture_kmeans [:, random.sample (range( kwargs["KMEANS_CLUSTERNO"]), 1 )]
+    else:  # ,  The other half of the cases : pick kwargs["NUM_CLONE"] 
+        initial_mixture = mixture_kmeans [:, random.sample (range( kwargs["KMEANS_CLUSTERNO"]), kwargs["NUM_CLONE"]  )]
+    
+    
+    import palettable
+    tabl = palettable.tableau.Tableau_20.mpl_colors
+    colorlist = [i for i in tabl]
+    plt.figure(figsize=(6, 6))
+    plt.suptitle ("Step 0. Initial Selection", fontsize = 20)
+               
+    if kwargs["NUM_BLOCK"] == 1:
+        sns.kdeplot ( np_vaf [:, 0] * 2, shade = True)
+        plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
+        plt.ylabel("Density", fontdict={"fontsize": 14})
+        plt.xlim(0, 1)
+        for j in range( initial_mixture.shape[1] ):
+            plt.axvline ( x = initial_mixture[0][j], color = colorlist [j  % 20] ) 
+    elif kwargs["NUM_BLOCK"] == 2:
+        plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 20, alpha = 0.8)
+        plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
+        plt.ylabel("VAF x 2 of the Sample 1", fontdict={"fontsize": 14})
+    
+        for j in range( initial_mixture.shape[1] ):
+            plt.scatter (initial_mixture[0][j], initial_mixture[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 300, label = "clone " + str(j)) 
+        plt.legend()
+        
+    plt.savefig ( OUTPUT_FILENAME )
+
+    return initial_mixture
+
 
 
 def kmeans_best (np_vaf, **kwargs ):
@@ -86,10 +144,10 @@ def kmeans_best (np_vaf, **kwargs ):
     Gap_list, Std_list, S_list = np.zeros ( KMEANS_CLUSTERNO + 1, dtype ="float"), np.zeros (KMEANS_CLUSTERNO + 1, dtype ="float"), np.zeros (KMEANS_CLUSTERNO + 1, dtype ="float")
 
     for n_clusters in range (1, KMEANS_CLUSTERNO + 1):
-        kmeans = KMeans(n_clusters=n_clusters, init='k-means++', max_iter=100,random_state=0)  # model 생성
-        kmeans.fit(np_vaf)  # model에 집어넣어줄 dataframe 지정
+        kmeans = KMeans(n_clusters=n_clusters, init='k-means++', max_iter=100,random_state=0)  # model generation
+        kmeans.fit(np_vaf) 
         
-        membership = kmeans.labels_     # K means가 predict 한것
+        membership = kmeans.labels_    
         mixture = np.zeros (( NUM_BLOCK, n_clusters ), dtype = "float")
         for j in range( n_clusters ):
             for i in range (NUM_BLOCK):
@@ -111,10 +169,7 @@ def kmeans_best (np_vaf, **kwargs ):
         Wkb_list = []
         for b in range (Input_B):
             np.random.seed (b)
-            reference_uniform = np.random.random_sample ( size = (NUM_MUTATION, NUM_BLOCK ) )    # Outlier라면 계산에서 뺴주자
-            # reference_f = f_distribution ( NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE]) , NUM_BLOCK   )
-            # reference_multiply = multiply_npvaf ( NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE]) , NUM_BLOCK , np_vaf, 
-            #                                                                         sorted (set( range(0, NUM_MUTATION) ) - set(cluster.fp_member_index_record [NUM_CLONE])) )
+            reference_uniform = np.random.random_sample ( size = (NUM_MUTATION, NUM_BLOCK ) )    
             reference_np = reference_uniform
 
             #kmeans = KMeans(n_clusters=NUM_CLONE - int (cluster.includefp_record [NUM_CLONE]), init='k-means++', max_iter=10, random_state=0)  # model 생성,  outlier (fp) 가 있다면 n_cluster를 하나 줄이는게 맞다
@@ -159,61 +214,26 @@ def kmeans_best (np_vaf, **kwargs ):
 
     
 
-def set_initial_parameter(np_vaf, mixture_kmeans, OUTPUT_FILENAME, **kwargs):       # Random으로 NUM_CLONE개 추출해줌
-    import random
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    
-    random.seed ( kwargs["TRIAL"])
-    initial_mixture = np.zeros((kwargs["NUM_BLOCK"], kwargs["NUM_CLONE"]), dtype="float")
-    initial_mixture = mixture_kmeans [:, random.sample (range( kwargs["KMEANS_CLUSTERNO"]), kwargs["NUM_CLONE"])]
 
 
-    # 그림 그리기
-    import palettable
-    tabl = palettable.tableau.Tableau_20.mpl_colors
-    colorlist = [i for i in tabl]
-    plt.figure(figsize=(6, 6))
-    plt.suptitle ("Step 0. Initial Selection", fontsize = 20)
-               
-    if kwargs["NUM_BLOCK"] == 1:
-        sns.kdeplot ( np_vaf [:, 0] * 2, shade = True)
-        plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
-        plt.ylabel("Density", fontdict={"fontsize": 14})
-        plt.xlim(0, 1)
-        for j in range( initial_mixture.shape[1] ):
-            plt.axvline ( x = initial_mixture[0][j], color = colorlist [j  % 20] ) 
-    elif kwargs["NUM_BLOCK"] == 2:
-        plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 20, alpha = 0.8)
-        plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
-        plt.ylabel("VAF x 2 of the Sample 1", fontdict={"fontsize": 14})
-        #plt.xlim(0, 1)
-        for j in range( initial_mixture.shape[1] ):
-            plt.scatter (initial_mixture[0][j], initial_mixture[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 300, label = "clone " + str(j))   # color가 20개까지가 최대...
-        plt.legend()
-        
-    plt.savefig ( OUTPUT_FILENAME )
-
-    return initial_mixture
-
-
-def movedcolumn (mixture_hard, mixture_soft):
+def movedcolumn ( cluster_hard, cluster_soft, i ):
     import scipy.spatial
     import math
-       
-    if mixture_hard.shape[1] != mixture_soft.shape[1]:
+
+    if cluster_hard.mixture_record[i].shape[1] != cluster_soft.mixture_record[i].shape[1]:
         return []
     
-    NUM_CLONE = mixture_hard.shape[1]
-    NUM_BLOCK = mixture_hard.shape[0]
+    NUM_CLONE = cluster_hard.mixture_record[i].shape[1]
+    NUM_BLOCK = cluster_hard.mixture_record[i].shape[0]
     threshold_dist =  (math.sqrt ( NUM_BLOCK ) * 0.03)
 
     col_list = []
-    for i in range ( NUM_CLONE ):
-        #print ( "{} ; {}".format (i,  float(scipy.spatial.distance.euclidean( mixture_hard[ : , i ] , mixture_soft [ : , i ]  )) ) )
-        if float(scipy.spatial.distance.euclidean( mixture_hard[ : , i ] , mixture_soft [ : , i ]  )) > threshold_dist:
-            col_list.append(i)
+    for j in range ( NUM_CLONE ):
+        #print ( "{} ; {}".format (j,  float(scipy.spatial.distance.euclidean( mixture_hard[ : , j ] , mixture_soft [ : , j ]  )) ) )
+        if float(scipy.spatial.distance.euclidean( cluster_hard.mixture_record[i] [ : , j ] , cluster_soft.mixture_record[i] [ : , j ]  )) > threshold_dist:
+            if (cluster_hard.fp_index_record [i] == j) :       
+                continue
+            col_list.append(j)
 
     return col_list
 
@@ -223,60 +243,34 @@ def GoStop(step, **kwargs):
     import numpy as np
     previous_No = 5
 
-    # 첫 5번 정도는 판단 유예
     if kwargs["STEP"] > previous_No:
-        for p in range( kwargs["STEP_TOTAL"] - previous_No,  kwargs["STEP_TOTAL"] ):       # 지난 5개의 step 기록을 보고 비교해본다
-            if np.sum(np.equal(step.membership, step.membership_record[p])) >= int(kwargs["NUM_MUTATION"] * 0.995):           # membership이 99% 이상 겹치면 stop 해주자
-                print ( "\t\t지난 {0} 번째와 membership 변화가 없어서 stop".format(p) )
+        for p in range( kwargs["STEP_TOTAL"] - previous_No,  kwargs["STEP_TOTAL"] ):       # Past 5 records
+            if np.sum(np.equal(step.membership, step.membership_record[p])) >= int(kwargs["NUM_MUTATION"] * 0.995):
+                print ( "\t\t\t▶ Stop because the membership is nearly the same with #{0} th".format(p) )
                 return "Stop"
 
-            # mixture가 완전히 똑같으면 stop 해주자
             if (np.round(step.mixture, 2) == np.round( step.mixture_record[p] , 2)).all() == True:
-                print ("\t\t지난 {0} 번째와 mixture 변화가 없어서 stop".format(p))
+                print ("\t\t\t▶ Stop because the mixture is nearly the same with #{0}".format(p))
                 return "Stop"
 
-        # likelihood가 더 나아질 기미가 없으면 stop 해주자
+        # Stopping condition
         i =  step.find_max_likelihood(0, kwargs["STEP"]) 
         if (step.likelihood) < 0.99 * step.likelihood_record [ i ]:
             if step.likelihood < -9999990:
                 if kwargs["VERBOSE"] >= 3:
-                    print ("\t\t\t→makeone을 못 만들어서 stop")    
+                    print ("\t\t\t→Stop due to unavailable to make 1")    
             else:
                 if kwargs["VERBOSE"] >= 3:
-                    print ("\t\t\t→Likelihood 기준으로 stop")
+                    print ("\t\t\t→ Stop due to failing to increase the likelihood")
             return "Stop"
     if step.likelihood < -9999990:
         if kwargs["VERBOSE"] >= 3:
-            print ("\t\t\t→makeone을 못 만들어서 stop")    
+            print ("\t\t\t→ Stop due to unavailable to make 1")    
         return "Stop"
 
     return "Go"
 
 
-def decision_elbow (cluster, **kwargs):
-    import numpy as np
-    from kneed import KneeLocator
-    import matplotlib.pyplot as plt
-
-    if kwargs["NUM_CLONE_TRIAL_START"] == kwargs["NUM_CLONE_TRIAL_END"]:       # 1개밖에 없으면  kneedle이 오류난다
-        threshold_x = kwargs["NUM_CLONE_TRIAL_END"]
-    else:            
-        x = np.arange(start = kwargs["NUM_CLONE_TRIAL_START"], stop = kwargs["NUM_CLONE_TRIAL_END"] + 1)
-        y = np.array( cluster.likelihood_record  [ kwargs["NUM_CLONE_TRIAL_START"] :  kwargs["NUM_CLONE_TRIAL_END"] + 1 ]  )
-
-        for S in list(np.arange(0.1, 3.0, 0.5)):
-            kneedle = KneeLocator(x, y, S=S, curve="concave", direction="increasing")
-            if (kneedle.knee != None) & (kwargs["VERBOSE"] >= 0):
-                kneedle.plot_knee()
-                plt.show()
-                break
-        if kneedle.knee != None:             # 가장 정상적인 경우
-            threshold_x = round(kneedle.knee)
-        else:                                             # elbow 법에서 제대로 못 찾았을 경우  단순히 가장 높은 값으로 한다
-            threshold_x = cluster.find_max_likelihood( kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] )
-            print ("최적의 clone 값을 elbow법으로 찾지 못함 : {}".format(threshold_x))
-
-    return [threshold_x]   # maxmaxmax_NUM_CLONE
 
 
 def VAFdensitogram (np_vaf, output_suptitle, output_filename,  **kwargs):
@@ -329,11 +323,13 @@ def VAFdensitogram (np_vaf, output_suptitle, output_filename,  **kwargs):
 
 
 
-def drawfigure (np_vaf, membership, output_filename):
+def drawfigure (np_vaf, membership, output_filename, **kwargs):
     import palettable
     import matplotlib
     import numpy as np
     import seaborn as sns
+
+    matplotlib.rcParams["font.family"] =  kwargs["FONT_FAMILY"]
 
     tabl = palettable.tableau.Tableau_20.mpl_colors
     colorlist = [i for i in tabl]
@@ -393,14 +389,14 @@ def multiply_npvaf ( NUM_MUTATION_local, NUM_BLOCK_local, np_vaf, nonfp_member_i
         for i in range (NUM_BLOCK_local):
             for r_index in range (rr):
                 while True:
-                    r =  random.randint( int(rrr[r_index] * 0.9), int (rrr[r_index] * 1.1) ) / 100  # e.g.  0.72~0.88, 0.90~1.10, 1.08~1.32 배 시켜준다
+                    r =  random.randint( int(rrr[r_index] * 0.9), int (rrr[r_index] * 1.1) ) / 100 
                     model_np_vaf [NUM_MUTATION_local * r_index +  k][i] = np_vaf[ nonfp_member_index[k] ][i] * r * 2
-                    if np_vaf[ nonfp_member_index[k] ][i] * r * 2 <= 3:          #  (논란) 곱하고 나누고 늘려줘도 1 이하인 것들만 통과시켜준다
+                    if np_vaf[ nonfp_member_index[k] ][i] * r * 2 <= 3:       
                         break
             # if np_vaf[k][0] < 0.04:
             #     print (model_np_vaf [NUM_MUTATION_local * 1 +  k], model_np_vaf [NUM_MUTATION_local * 2 +  k])
 
-    model_sel_np_vaf = model_np_vaf [ random.sample( range(len(model_np_vaf)), NUM_MUTATION_local ) , : ]   # NUM_MUTATION 개만 골라서 return 해준다
+    model_sel_np_vaf = model_np_vaf [ random.sample( range(len(model_np_vaf)), NUM_MUTATION_local ) , : ] 
 
 
     #print (np_vaf[0:20], "\n\n", model_sel_np_vaf [0:20])
@@ -424,12 +420,9 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
     for NUM_CLONE in range (kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] + 1):
         if  (kwargs["VERBOSE"] >= 1):
             print ("NUM_CLONE == {}".format(NUM_CLONE))
-            if kwargs["NUM_BLOCK"] >= 2:
-                print ("\tincludefp = {} (fp_index = {})\t\t-> {}".format( cluster.includefp_record [NUM_CLONE], cluster.fp_index_record [NUM_CLONE],  NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE])   ))
-            else:
-                print ("\tincludefp = {} (fp_index = {})\t\t-> {}, but 1D라서 500개 다 돌린다".format( cluster.includefp_record [NUM_CLONE], cluster.fp_index_record [NUM_CLONE],  NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE])   ))
+            print ("\tincludefp = {} (fp_index = {})\t\t-> {}".format( cluster.includefp_record [NUM_CLONE], cluster.fp_index_record [NUM_CLONE],  NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE])   ))
 
-        if (cluster.stepindex_record[NUM_CLONE] == 0) | (cluster.likelihood_record[NUM_CLONE] < -9999990):  # 그 어떤 답도 찾을 수 없어서 stepindex = 0인 경우
+        if (cluster.stepindex_record[NUM_CLONE] == 0) | (cluster.likelihood_record[NUM_CLONE] < -9999990): 
             Gap_list [NUM_CLONE] = float("-inf")
 
         else:
@@ -443,9 +436,9 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
             Wk = 0
             for k in range(NUM_MUTATION):
                 j = membership [k]
-                if (cluster.includefp_record [NUM_CLONE] == True)  &  (k in cluster.fp_member_index_record [NUM_CLONE] ):   # FP라면 계산에서 뺴주자
+                if (cluster.includefp_record [NUM_CLONE] == True)  &  (k in cluster.fp_member_index_record [NUM_CLONE] ):   #  Exclude FP from the calculation
                     continue
-                Wk = Wk + math.pow (  scipy.spatial.distance.euclidean(np_vaf[k] * 2, mixture[:, j]),  2)   # Sum of square  (본인의 centroid까지의 거리)
+                Wk = Wk + math.pow (  scipy.spatial.distance.euclidean(np_vaf[k] * 2, mixture[:, j]),  2)   # Sum of square 
             Wk = round(math.log10(Wk), 3)
             if  (kwargs["VERBOSE"] >= 1):
                 print ("\tMy Clustering\tWk  : {}" .format(Wk))
@@ -454,8 +447,6 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
             #2. Random generation & ICC (Wkb)
             Wkb_list = []
             for b in range (Input_B):
-                # reference_uniform = np.random.random_sample(size=(NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE]) , NUM_BLOCK ))    # FP라면 계산에서 뺴주자
-                # reference_f = f_distribution ( NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE]) , NUM_BLOCK   )
                 if kwargs ["NUM_BLOCK"] >= 2:
                     reference_multiply = multiply_npvaf ( NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE]) , NUM_BLOCK , np_vaf, 
                                                                                         sorted (set( range(0, NUM_MUTATION) ) - set(cluster.fp_member_index_record [NUM_CLONE])) , b )
@@ -463,18 +454,16 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
                     reference_multiply = multiply_npvaf ( NUM_MUTATION , NUM_BLOCK , np_vaf, 
                                                                                         sorted (set( range(0, NUM_MUTATION) ))  , b ) 
                 reference_np = reference_multiply
-                # if NUM_BLOCK == 0:
-                #     reference_np = reference_uniform
 
-                #kmeans = KMeans(n_clusters=NUM_CLONE - int (cluster.includefp_record [NUM_CLONE]), init='k-means++', max_iter=10, random_state=0)  # model 생성,  FP 가 있다면 n_cluster를 하나 줄이는게 맞다
-                if (kwargs["NUM_BLOCK"] == 1) | (cluster.includefp_record [NUM_CLONE] == False):
-                    kmeans = KMeans(n_clusters=NUM_CLONE, init = cluster.mixture_record [NUM_CLONE].transpose() , max_iter=3, random_state=0)  # model 생성,  FP 가 있다면 n_cluster를 하나 줄이는게 맞다
-                else:   # FP 있을 경우 빼고 돌린다
-                    kmeans = KMeans(n_clusters=NUM_CLONE - 1, init = np.delete(cluster.mixture_record [NUM_CLONE].transpose(), cluster.fp_index_record [NUM_CLONE], axis = 0), max_iter=3, random_state=0)  # model 생성,  outlier (fp) 가 있다면 n_cluster를 하나 줄이는게 맞다
 
-                kmeans.fit(reference_np)  # model에 집어넣어줄 nparray 지정
+                if (kwargs["NUM_BLOCK"] == 1) | (cluster.includefp_record [NUM_CLONE] == False): 
+                    kmeans = KMeans(n_clusters=NUM_CLONE, init = cluster.mixture_record [NUM_CLONE].transpose() , max_iter=3, random_state=0)  
+                else: 
+                    kmeans = KMeans(n_clusters=NUM_CLONE - 1, init = np.delete(cluster.mixture_record [NUM_CLONE].transpose(), cluster.fp_index_record [NUM_CLONE], axis = 0), max_iter=3, random_state=0)  
+
+                kmeans.fit(reference_np)  # nparray
                 Wkb_list.append ( round (math.log10(kmeans.inertia_), 3) )
-                drawfigure (reference_np, kmeans.labels_,  kwargs["CLEMENT_DIR"] + "/Kmeans/Kmeans.clone"  +   str (NUM_CLONE) + "." + str(b) + ".jpg")
+                drawfigure (reference_np, kmeans.labels_,  kwargs["CLEMENT_DIR"] + "/Kmeans/Kmeans.clone"  +   str (NUM_CLONE) + "." + str(b) + ".jpg", **kwargs)
 
             Gap_list [NUM_CLONE] = round ( np.mean(Wkb_list) - Wk, 3)
             Std_list [NUM_CLONE] = round ( np.std (Wkb_list), 3)
@@ -495,12 +484,13 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
     Gap_list_df = pd.DataFrame ( Gap_list  ).sort_values ( by = 0, ascending = False)
     
     Gap_list_df = Gap_list_df [ Gap_list_df[0] != float(12345)]
+    Gap_list = Gap_list_df[0]   # because of 12345
 
     for i in range( len(Gap_list_df) ):
         print ("Gap statistics method (max Gap): {}th optimal NUM_CLONE = {}".format(i  + 1, Gap_list_df.index[i]  ))
         Gap_list_index.append ( Gap_list_df.index[i]  )
 
-    return Gap_list_index           # Gap 큰 순서대로 NUM_CLONE의 list를 보내주자
+    return Gap_list_index, Gap_list       
 
 
     # Original Gap Number 
@@ -514,7 +504,7 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
     #                 return [maxmaxmax_NUM_CLONE]
 
     #     print ("Original Gap statistics method : optimal NUM_CLONE = {}".format( maxmaxmax_NUM_CLONE  ))
-    #     return [ maxmaxmax_NUM_CLONE  ]            # 맨 마지막은 그 다음과 비교할 수 없으니...
+    #     return [ maxmaxmax_NUM_CLONE  ]     
 
 
 
@@ -553,87 +543,7 @@ def decision_silhouette (cluster, np_vaf, **kwargs):
 
 
 
-def decision_BIC (cluster, np_vaf, **kwargs):
-    import pandas as pd
-    import numpy as np
-    import math, scipy
-    from sklearn.cluster import KMeans
 
-    NUM_MUTATION, NUM_BLOCK = kwargs["NUM_MUTATION"], kwargs["NUM_BLOCK"]
-
-    BIC_list = np.zeros (kwargs["NUM_CLONE_TRIAL_END"] + 1, dtype ="float")
-
-
-    for NUM_CLONE in range (kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] + 1):
-        if (kwargs["VERBOSE"] in ["True", "T"]) | (kwargs["VERBOSE"] >= 1):
-            print ("NUM_CLONE == {}".format(NUM_CLONE))
-            print ("\tincludefp = {} (fp_index = {})\t\t-> {}".format( cluster.includefp_record [NUM_CLONE], cluster.fp_index_record [NUM_CLONE],  NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE])   ))
-
-        if (cluster.stepindex_record[NUM_CLONE] == 0) | (cluster.likelihood_record[NUM_CLONE] < -9999990):  # 그 어떤 답도 찾을 수 없어서 stepindex = 0인 경우
-            BIC_list [NUM_CLONE] = float("-inf")
-
-        else:
-            # if cluster.includefp_record [NUM_CLONE] == False:
-            #     BIC_list [NUM_CLONE] = (-2) * cluster.likelihood_record [NUM_CLONE] + (  NUM_CLONE  * math.log (NUM_MUTATION))
-            # else :
-            #     BIC_list [NUM_CLONE] = (-2) * cluster.likelihood_record [NUM_CLONE] + (  (NUM_CLONE - 1)  * math.log (NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE]) ) )
-
-
-            membership = cluster.membership_record[NUM_CLONE]
-            mixture = cluster.mixture_record[NUM_CLONE]
-
-            Nc = np.unique ( membership, return_counts = True) [1]
-            #print ("Nc : {}  (shape = {})".format (Nc, Nc.shape))
-            Vc = np.zeros ((NUM_BLOCK, NUM_CLONE), dtype = "float")     # 각 cluster 별로 variance를 계산한 것
-            V = np.zeros ((NUM_BLOCK, NUM_CLONE), dtype = "float")       # 모든 mutation 별로 variance를 계산한 것
-            LL = np.zeros ( NUM_CLONE, dtype = "float" )       # 모든 mutation 별로 variance를 계산한 것
-
-
-            for j in range (NUM_CLONE):
-                if j == cluster.fp_index_record [NUM_CLONE]:
-                    continue
-
-                NUM_CLONE_index = np.where (membership == j)[0]
-                for i in range (NUM_BLOCK):
-                    m = np.mean (np_vaf [NUM_CLONE_index][i] ) * 2
-                    inertia = 0
-                    for k in NUM_CLONE_index:
-                        inertia = inertia + math.pow ( (np_vaf [k][i] * 2) - m, 2 )
-                    Vc [i][j] = inertia  /  ( len(NUM_CLONE_index) - 1 )
-
-                    m = np.mean (np_vaf [:, i] ) * 2
-                    inertia = 0 
-                    for k in range (NUM_MUTATION):
-                        inertia = inertia + math.pow ( (np_vaf [k][i] * 2) - m, 2 )
-                    V [i][j] = inertia / (NUM_MUTATION - 1)
-
-                    #print ("({},{}) VC[i][j] ={}\tV[i][j] = {}".format (i , j , Vc[i][j], V[i][j]))
-
-            for j in range (NUM_CLONE):
-                if j == cluster.fp_index_record [NUM_CLONE]:
-                    continue
-
-                csum = 0
-                for i in range (NUM_BLOCK):
-                    csum = csum + math.log (  ( Vc[i][j] + V[i][j] )  / 2   )
-                LL[j] = (-1) * Nc [j]  * csum
-            #print ("LL = {}".format (LL))
-
-            if cluster.includefp_record [NUM_CLONE] == False:
-                BIC_list [NUM_CLONE] = (-2) * np.sum(LL) + ( 2 * NUM_CLONE * NUM_BLOCK * math.log (NUM_MUTATION))
-            else:
-                BIC_list [NUM_CLONE] = (-2) * np.sum(LL) + ( 2 * (NUM_CLONE - 1) * NUM_BLOCK * math.log (NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE]) ))
-
-    print (BIC_list)
-
-    BIC_list_df = pd.DataFrame ( BIC_list ).sort_values ( by = 0, ascending = False)
-    BIC_list_df = BIC_list_df [ BIC_list_df[0] != 0]
-    BIC_list_index = []
-
-    for i in range( len(BIC_list_df) ):
-        print ("BIC statistics method (max BIC): {}th optimal NUM_CLONE = {}".format(i  + 1, BIC_list_df.index[i]  ))
-        BIC_list_index.append ( BIC_list_df.index[i]  )
-   
 
 def XieBeni_calcualtor (cluster, np_vaf, **kwargs):
     import math, scipy
@@ -644,7 +554,7 @@ def XieBeni_calcualtor (cluster, np_vaf, **kwargs):
 
 
     min = float("inf")
-    for j1 in range (kwargs["NUM_CLONE"]):   # fp index는 빼고 centroid 돌아야지
+    for j1 in range (kwargs["NUM_CLONE"]): 
         for j2 in range (j1 + 1, kwargs["NUM_CLONE"]) :
             if (j1 == cluster.fp_index_record [ kwargs["NUM_CLONE"] ]) | (j2 == cluster.fp_index_record [ kwargs["NUM_CLONE"] ]) :
                 continue
@@ -653,7 +563,7 @@ def XieBeni_calcualtor (cluster, np_vaf, **kwargs):
                 min = math.pow (scipy.spatial.distance.euclidean(cluster.mixture_record[kwargs["NUM_CLONE"]][:, j1], cluster.mixture_record[kwargs["NUM_CLONE"]][:, j2]), 2)
 
     v = 0
-    for j in range (kwargs["NUM_CLONE"])  :   # fp index는 빼고 centroid 돌아야지
+    for j in range (kwargs["NUM_CLONE"])  :  
         if (j == cluster.fp_index_record [ kwargs["NUM_CLONE"] ]) :
             continue
 
@@ -664,7 +574,7 @@ def XieBeni_calcualtor (cluster, np_vaf, **kwargs):
             v2 = math.pow ( (scipy.spatial.distance.euclidean(cluster.mixture_record[kwargs["NUM_CLONE"]][:, j], np_vaf[k] * 2)) , 2)
             v = v + (v1 * v2)
 
-    if min == 0:       #분모가 0이 되는 경우
+    if min == 0:  
         return 1111111111111 - kwargs["NUM_CLONE"]
     else:
         return (v / (min * ( kwargs["NUM_MUTATION"] - len(cluster.fp_member_index_record[kwargs["NUM_CLONE"]]) )))
@@ -687,7 +597,7 @@ def decision_XieBeni(cluster, np_vaf, **kwargs):
             print ("NUM_CLONE == {}".format(NUM_CLONE))
             print ("\tincludefp = {} (fp_index = {})\t\t-> {}".format( cluster.includefp_record [NUM_CLONE], cluster.fp_index_record [NUM_CLONE],  NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE])   ))
 
-        if (cluster.stepindex_record[NUM_CLONE] == 0) | (cluster.likelihood_record[NUM_CLONE] < -9999990):  # 그 어떤 답도 찾을 수 없어서 stepindex = 0인 경우
+        if (cluster.stepindex_record[NUM_CLONE] == 0) | (cluster.likelihood_record[NUM_CLONE] < -9999990):  
             XieBeni_list [NUM_CLONE] = float("inf")
         else:
             kwargs ["NUM_CLONE"] = NUM_CLONE
@@ -696,8 +606,8 @@ def decision_XieBeni(cluster, np_vaf, **kwargs):
         if (kwargs["VERBOSE"] in ["True", "T"]) | (kwargs["VERBOSE"] >= 1):
             print ("\tXie-Beni index : {}".format (XieBeni_list[NUM_CLONE]))
 
+
     # Max XieBeni Number
-        
     XieBeni_list_df = pd.DataFrame ( XieBeni_list ).sort_values ( by = 0, ascending = True)
     XieBeni_list_df = XieBeni_list_df [ XieBeni_list_df[0] != 0]
     XieBeni_list_index = []
@@ -749,7 +659,7 @@ def decision_max(cluster, np_vaf, **kwargs):
             candidate_df_after = pd.concat( [ candidate_df_after, temp_df.loc[ [0] ] ])
             check.append  (candidate_df.loc[k, "NUM_CHILD"])
         
-    candidate_df_after = candidate_df_after [ candidate_df_after["NUM_CLONE"] != 0 ]   # NUM_CLONE =0 은 지워준다
+    candidate_df_after = candidate_df_after [ candidate_df_after["NUM_CLONE"] != 0 ]   
     candidate_df_after = candidate_df_after.astype ({"NUM_CHILD" : "int",  "NUM_CLONE" : "int"})
     candidate_df_after = candidate_df_after.reset_index(drop = True)
 

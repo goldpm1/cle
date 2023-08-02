@@ -1,10 +1,9 @@
-import filetype
-import argparse
-import os
-import glob
+import filetype, argparse, os, glob
 import numpy as np
 import pandas as pd
 import random
+
+SCRIPT_DIR = os.getcwd()
 
 # [1D]  10 x (BENCHMARK_NO) x (BENCHMARK_NUM_PARENT + 1)
 # python3 2.CellData_master.py --DIMENSION 1D --DATA_DATE 230111  --BENCHMARK_NO 10 --FP_RATIO 0  --FP_USEALL "False" --AXIS_RATIO 0   --BENCHMARK_NUM_PARENT  1   --MAXIMUM_NUM_PARENT 1
@@ -85,8 +84,7 @@ elif kwargs["DATA_DATE"] == "230111":      # Revision dataset (2023.01.11)
 SAMPLENAME_LIST = [i.split("/")[-1] for i in DIR_LIST]
 
 global MRS_set
-MRS_set = [['M1-2', 'M1-5', 'M1-6', 'M1-7', 'M1-8'],
-           ['M2-2', 'M2-4', 'M2-6', 'M2-8', 'M2-10']]
+MRS_set = [['M1-2', 'M1-5', 'M1-6', 'M1-7', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-8', 'M2-10']]
 
 
 def M1only(SAMPLENAME, DIMENSION):
@@ -131,13 +129,12 @@ for INPUT_TSV_k, INPUT_TSV in enumerate(DIR_LIST):
                 kwargs["NPVAF_DIR"] = "/data/project/Alzheimer/YSscript/EM_MRS/data/npvaf/MRS_" + kwargs["DIMENSION"] + "/" + str( kwargs["RANDOM_PICK"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "/" +  SAMPLENAME + "/" + str(i)
                 kwargs["CLEMENT_DIR"] = "/data/project/Alzheimer/YSscript/EM_MRS/data/CLEMENT/MRS_" + kwargs["DIMENSION"] + "/" +  str(kwargs["RANDOM_PICK"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "/" + SAMPLENAME  + "/" + str(i)
                 kwargs["SCICLONE_DIR"] = "/data/project/Alzheimer/YSscript/EM_MRS/data/sciclone/MRS_" + kwargs["DIMENSION"] + "/" + str( kwargs["MAKEONE_STRICT"]) + "/" + str(kwargs["RANDOM_PICK"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "/" + SAMPLENAME + "/" + str(i)
-                kwargs["PYCLONE_DIR"] = "/data/project/Alzheimer/YSscript/EM_MRS/data/pyclone/MRS_" + kwargs["DIMENSION"] + "/" +  str(kwargs["RANDOM_PICK"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "/" + SAMPLENAME + "/" + str(i)
                 kwargs["PYCLONEVI_DIR"] = "/data/project/Alzheimer/YSscript/EM_MRS/data/pyclone-vi/MRS_" + kwargs["DIMENSION"] + "/"  + str(kwargs["RANDOM_PICK"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "/" + SAMPLENAME +   "/" + str(i)
                 kwargs["QUANTUMCLONE_DIR"] = "/data/project/Alzheimer/YSscript/EM_MRS/data/quantumclone/MRS_" + kwargs["DIMENSION"] + "/"  + str(kwargs["RANDOM_PICK"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "/" + SAMPLENAME +  "/" + str(i)
                 kwargs["COMBINED_OUTPUT_DIR"] = "/data/project/Alzheimer/YSscript/EM_MRS/data/combinedoutput/MRS_" + kwargs["DIMENSION"] + "/" + str(kwargs["RANDOM_PICK"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "/" + SAMPLENAME +  "/" + str(i)
 
-                for DIR in [ kwargs["NPVAF_DIR"], kwargs["CLEMENT_DIR"], kwargs["SCICLONE_DIR"], kwargs["PYCLONE_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["QUANTUMCLONE_DIR"], kwargs["COMBINED_OUTPUT_DIR"]  ]:
-                    if os.path.isdir( DIR   ) == False:
+                for DIR in [ kwargs["NPVAF_DIR"], kwargs["CLEMENT_DIR"], kwargs["SCICLONE_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["QUANTUMCLONE_DIR"], kwargs["COMBINED_OUTPUT_DIR"]  ]:
+                    if os.path.exists ( DIR ) == False:
                         os.system("mkdir -p " + DIR  )
 
                 logPath = "/data/project/Alzheimer/YSscript/EM_MRS/log/MRS_" + kwargs["DIMENSION"] + "/"  + str(kwargs["RANDOM_PICK"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "/" + SAMPLENAME  + "/" + str(i)
@@ -148,15 +145,14 @@ for INPUT_TSV_k, INPUT_TSV in enumerate(DIR_LIST):
                 #COMPUTE_RANDOM = "cpu.q@compute" + str( random.randint (1,14) ).zfill(2)
                 hold_j.append( "_" + kwargs["DIMENSION"] + "_" + str(kwargs["RANDOM_PICK"]) + "_" + str( kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "_" + SAMPLENAME + "_" + str(i) )
                 command = " ".join(["qsub -pe smp 1", "-e", logPath, "-o", logPath, "-N", "_" + kwargs["DIMENSION"] + "_"  + str(kwargs["RANDOM_PICK"]) + "_" + str( kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "_" + SAMPLENAME + "_" + str(i),
-                                    "2.CellData_pipe1_EMhybrid.sh",
-                                    str(INPUT_TSV),  str(kwargs["MODE"]),  str(kwargs["NUM_CLONE_TRIAL_START"]),  str( kwargs["NUM_CLONE_TRIAL_END"]),  str(kwargs["NUM_CLONE_TRIAL_FORCE"]),
+                                    "2.CellData_pipe1_CLEMENT_bm.sh",
+                                    str(SCRIPT_DIR), str(INPUT_TSV),  str(kwargs["MODE"]),  str(kwargs["NUM_CLONE_TRIAL_START"]),  str( kwargs["NUM_CLONE_TRIAL_END"]),  
                                     str(kwargs["RANDOM_PICK"]), str(kwargs["AXIS_RATIO"]),  str(kwargs["PARENT_RATIO"]),  str( kwargs["NUM_PARENT"]),  str(kwargs["FP_RATIO"]),  str(kwargs["FP_USEALL"]),
                                     str(kwargs["TRIAL_NO"]), str(kwargs["DEPTH_CUTOFF"]),  str( kwargs["MIN_CLUSTER_SIZE"]),  str(kwargs["VERBOSE"]),
                                     str(kwargs["KMEANS_CLUSTERNO"]),  str(i), str( kwargs["SAMPLENAME"]), str(kwargs["BENCHMARK_NO"]),
-                                    str(kwargs["NPVAF_DIR"]), str(kwargs["CLEMENT_DIR"]), str(kwargs["SCICLONE_DIR"]), str(kwargs["PYCLONE_DIR"]), str( kwargs["PYCLONEVI_DIR"]), str(kwargs["QUANTUMCLONE_DIR"]), str(kwargs["COMBINED_OUTPUT_DIR"]),
+                                    str(kwargs["NPVAF_DIR"]), str(kwargs["SIMPLE_KMEANS_DIR"]),  str(kwargs["CLEMENT_DIR"]), str(kwargs["SCICLONE_DIR"]), str(kwargs["PYCLONE_DIR"]), str( kwargs["PYCLONEVI_DIR"]), str(kwargs["QUANTUMCLONE_DIR"]), str(kwargs["COMBINED_OUTPUT_DIR"]),
                                     str(kwargs["SCORING"]), str(kwargs["MAKEONE_STRICT"]), str(kwargs["MAXIMUM_NUM_PARENT"])])
                 
-                #print (command)
                 os.system(command)
                 n = n+1
 
@@ -170,14 +166,13 @@ for INPUT_TSV_k, INPUT_TSV in enumerate(DIR_LIST):
             command = " ".join(["qsub -pe smp 1", "-e", logPath, "-o", logPath, "-N", "_" + kwargs["DIMENSION"] + "_" + str(kwargs["RANDOM_PICK"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "_" + SAMPLENAME +  "_visualization",
                                 "-hold_jid",  str(",".join(hold_j)), 
                                 "2.CellData_pipe2_benchmark.sh",
-                                str(INPUT_TSV),  str(kwargs["MODE"]),  str(kwargs["NUM_CLONE_TRIAL_START"]),  str( kwargs["NUM_CLONE_TRIAL_END"]),  str(kwargs["NUM_CLONE_TRIAL_FORCE"]),
+                                str(SCRIPT_DIR), str(INPUT_TSV),  str(kwargs["MODE"]),  str(kwargs["NUM_CLONE_TRIAL_START"]),  str( kwargs["NUM_CLONE_TRIAL_END"]),  
                                 str(kwargs["RANDOM_PICK"]), str(kwargs["AXIS_RATIO"]),  str(kwargs["PARENT_RATIO"]),  str(kwargs["NUM_PARENT"]),  str(kwargs["FP_RATIO"]),  str(kwargs["FP_USEALL"]),
                                 str(kwargs["TRIAL_NO"]), str(kwargs["DEPTH_CUTOFF"]),  str( kwargs["MIN_CLUSTER_SIZE"]),  str(kwargs["VERBOSE"]),
                                 str(kwargs["KMEANS_CLUSTERNO"]),  str(i), str(kwargs["SAMPLENAME"]), str(kwargs["BENCHMARK_NO"]),
-                                str(kwargs["NPVAF_DIR"]), str(kwargs["CLEMENT_DIR"]), str(kwargs["SCICLONE_DIR"]), str(kwargs["PYCLONE_DIR"]), str(kwargs["PYCLONEVI_DIR"]), str(kwargs["QUANTUMCLONE_DIR"]), str(kwargs["COMBINED_OUTPUT_DIR"]),
+                                str(kwargs["NPVAF_DIR"]), str(kwargs["SIMPLE_KMEANS_DIR"]), str(kwargs["CLEMENT_DIR"]), str(kwargs["SCICLONE_DIR"]), str(kwargs["PYCLONEVI_DIR"]), str(kwargs["QUANTUMCLONE_DIR"]), str(kwargs["COMBINED_OUTPUT_DIR"]),
                                 str(kwargs["SCORING"]), str(kwargs["DIMENSION"]), str(kwargs["MAKEONE_STRICT"])])
 
-            #print (command)
             #os.system(command)
             n = n+1
             hold_jj.append(  "_" + kwargs["DIMENSION"] + "_" + str(kwargs["RANDOM_PICK"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "_" + SAMPLENAME +  "_visualization"  )

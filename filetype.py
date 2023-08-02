@@ -10,6 +10,9 @@ def main (INPUT_TSV):
                     break
         else:
             INPUT_FILETYPE = "TSV"
-            NUM_BLOCK = int(len(line.split("\t")[-1].split(",")) / 2)
+            if len(line.split("\t")) == 4:  # If 4th column (BQ) is present
+                NUM_BLOCK = int(len(line.split("\t")[-2].split(",")) / 2)         
+            elif len(line.split("\t")) == 3:  # If 4th column (BQ) is absent
+                NUM_BLOCK = int(len(line.split("\t")[-1].split(",")) / 2)
         return INPUT_FILETYPE, NUM_BLOCK
     

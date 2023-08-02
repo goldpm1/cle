@@ -1,4 +1,4 @@
-def main(df, np_vaf, step, option, **kwargs):  # 새로운 MIXTURE 정하는 과정
+def main(df, np_vaf, np_BQ, step, option, **kwargs):  
     import math
     import isparent, EMhard
     import visualizationsinglesoft,  visualizationeachstep
@@ -12,71 +12,57 @@ def main(df, np_vaf, step, option, **kwargs):  # 새로운 MIXTURE 정하는 과
     if option in ["Hard", "hard"]:
         ############################### HARD CLUSTERING ##############################
         for j in range(NUM_CLONE):
-            ind_list = np.where(step.membership == j)[0]   # membership == j 인 index를 구하기
+            ind_list = np.where(step.membership == j)[0]   # Find the index  where membership == j
             for i in range(NUM_BLOCK):
                 sum_depth, sum_alt = 0, 0
-                for ind in ind_list:       # depth, alt를 다 더하기
-                    sum_depth = sum_depth + df[ind][i]["depth"]
-                    sum_alt = sum_alt + df[ind][i]["alt"]
-                step.mixture[i][j] = round((sum_alt * 2) / sum_depth, 2) if sum_depth != 0 else 0 # j번째 clone만을 생각한 이상적인 분율을 일단 assign
+                for ind in ind_list:       # Summing depth and alt
+                    if df[ind][i]["alt"] != 0:
+                        sum_depth = sum_depth + df[ind][i]["depth"]
+                        sum_alt = sum_alt + df[ind][i]["alt"]
+                step.mixture[i][j] = round((sum_alt * 2) / sum_depth, 2) if sum_depth != 0 else 0   # Ideal centroid allocation
 
         
-        if kwargs["adjustment"] in ["True", "true", True]:       # Block당 Mixture의 합이 1이 되도록 재조정  (쓸모 X)
-            for i in range(NUM_BLOCK):
-                sum = np.sum(step.mixture[i])
-                # 만약 sum이 0이면 분모에 0이 들어갈 수 있으니까...
-                step.mixture[i] = np.round(step.mixture[i] / sum, 4) if sum != 0 else 0
+        
+        previous_fp_index = step.fp_index
+        step.makeone_index, p_list, step.fp_index = isparent.makeone(df, np_vaf, np_BQ, step, **kwargs)
 
 
-        elif kwargs["adjustment"] in ["Half", "half"]:               # makeone_index만 Mixture의 합이 1이 되도록 재조정
-            previous_fp_index = step.fp_index
-            step.makeone_index, p_list, step.fp_index = isparent.makeone(df, np_vaf, step, **kwargs)
-
-            if step.fp_index != -1:  # FP clone이 있다면
-                step.includefp = True
-                step.fp_member_index = list(np.where(step.membership == step.fp_index)[0])
-                # if previous_fp_index != step.fp_index:
-                #     if kwargs["STEP"] != 0:
-                #         step.likelihood = -9999999
-                #         print ("\t\t♣  FP clone을 갑자기 바꿨기 때문에 likelihood 계산이 불가하다 previous_fp_index = {}, step.fp_index = {}".format( previous_fp_index, step.fp_index) )  
-                #     else:
-                #         print ("\t\t♣  FP clone을 바꿨다고 하는데 0번째 step에 뭘 바꿔 ㅡㅡ  previous_fp_index = {}, step.fp_index = {}".format( previous_fp_index, step.fp_index) )
-
-            else:   # FP clone이 없다면
-                step.includefp = False
-                step.fp_member_index = []
-
-    
-
-            if NUM_CLONE == 1:
-                step.mixture = np.array([[1.0]] * kwargs["NUM_BLOCK"])
-
-            if step.makeone_index == []:
-                step.likelihood = -9999999
-                step.makeone_prenormalization = False
-                #print ("\t\t여러 조건 (parent, child) 때문에 합쳐서 1을 못 만든다\t {}".format( list(step.mixture)) )
-
-            if kwargs["STEP"] <= 4:
-                if step.makeone_index != []:
-                    step.makeone_prenormalization =  EMhard.checkall (step, **kwargs)  # prenormalization mixture를 가지고 0.9 ~ 1.1 사이에 확실히 들어오는지를 판단
-                    print ("\t\t\tstep.makeone_prenormalization = {}".format (  step.makeone_prenormalization))
-            
-                    for i in range(NUM_BLOCK):
-                        sum = 0
-                        for j in range(NUM_CLONE):
-                            if j in step.makeone_index:                # boundary clone들만 붙잡고 normalization
-                                sum = sum + step.mixture[i][j]
-                        step.mixture[i] = np.round( step.mixture[i] / sum, 4) if sum != 0 else 0   # 만약 sum이 0이면 분모에 0이 들어갈 수 있으니까...
-                    #print ("\t\tafter-normalization : {}".format (step.mixture))
+        if step.fp_index != -1:  # If FP is present
+            step.includefp = True
+            step.fp_member_index = list(np.where(step.membership == step.fp_index)[0])
+        else:   # If FP is absent
+            step.includefp = False
+            step.fp_member_index = []
 
 
 
-            if (kwargs["VERBOSE"] in ["True", "T"]) | (int(str(kwargs["VERBOSE"])) >= 1):
-                if (kwargs["NUM_BLOCK"] == 1):
-                    visualizationeachstep.drawfigure_1d_hard(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_NOMINAL"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard).jpg", **kwargs)
-                if (kwargs["NUM_BLOCK"] >= 2):
-                    visualizationeachstep.drawfigure_2d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_NOMINAL"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard).jpg", **kwargs)
-        #############################################################################
+
+        if step.makeone_index == []:
+            step.likelihood = -9999999
+            step.makeone_prenormalization = False
+            print ("\t\t\tUnavailable to make 1 (Mstep.py)", end = "\t"  )
+            print( ",".join( str(row) for row in step.mixture ))
+
+        if kwargs["STEP"] <= 4:
+            if step.makeone_index != []:
+                step.makeone_prenormalization, sum_mixture =  EMhard.checkall (step, **kwargs) 
+                print ("\t\t\tstep.makeone_prenormalization = {} (Mstep.py)".format(step.makeone_prenormalization), end = "\t") 
+                print(" ".join(str(row) for row in sum_mixture ))
+
+        
+                for i in range(NUM_BLOCK):
+                    sum = 0
+                    for j in range(NUM_CLONE):
+                        if j in step.makeone_index:   
+                            sum = sum + step.mixture[i][j]
+                    step.mixture[i] = np.round( step.mixture[i] / sum, 4) if sum != 0 else 0   # If sum = 0, let mixture = 0
+                
+        
+    if (kwargs["NUM_BLOCK"] == 1):
+        visualizationeachstep.drawfigure_1d_hard(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_NOMINAL"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard).pdf", **kwargs)
+    if (kwargs["NUM_BLOCK"] >= 2):
+        visualizationeachstep.drawfigure_2d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_NOMINAL"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard).pdf", **kwargs)
+    ###############################################################################
 
     ################################ SOFT CLUSTERING ##############################
 
@@ -89,25 +75,22 @@ def main(df, np_vaf, step, option, **kwargs):  # 새로운 MIXTURE 정하는 과
                 makeone_index_i.append(k)
 
         for j in range(NUM_CLONE):
-            # child가 아닌 애들 (parent, fp)은 mixutre도 그냥 hard처럼 mixture를 계산해준다
             if j not in step.makeone_index:
                 for i in range(NUM_BLOCK):
+                    # Summing all depth and alt
                     sum_depth, sum_alt = 0, 0
-                    # depth, alt를 다 더하기
                     for ind in np.where(step.membership == j)[0]:
-                        sum_depth = sum_depth + df[ind][i]["depth"]
-                        sum_alt = sum_alt + df[ind][i]["alt"]
-                    # j번째 clone만을 생각한 이상적인 분율을 일단 assign
+                        if df[ind][i]["alt"] != 0:
+                            sum_depth = sum_depth + df[ind][i]["depth"]
+                            sum_alt = sum_alt + df[ind][i]["alt"]
+                    
                     step.mixture[i][j] = round((sum_alt * 2) / sum_depth, 2) if sum_depth != 0 else 0
 
-            elif j in step.makeone_index:  # child clone들만 soft clustering 한다
-                for i in range(NUM_BLOCK):   # 각 block에 대해 weighted mean을 계산
+            elif j in step.makeone_index:  
+                for i in range(NUM_BLOCK):   # Calculate the weighted mean
                     vaf, weight = np.zeros(NUM_MUTATION, dtype="float"), np.zeros(NUM_MUTATION, dtype="float")
                     for k in range(NUM_MUTATION):
                         vaf[k] = int(df[k][i]["alt"]) / int(df[k][i]["depth"])
-                        # weight는 block과는 상관없다
-                        # if (len(step.membership_p[k]) == NUM_CLONE + 1) & (step.membership_p[k][-1] == 0):   # FP 처리한 mutation의 경우 완전 뺴기 위해서
-                        #     weight[k] = 0
 
                         if step.membership[k] in step.makeone_index:
                             weight[k] = math.pow(10, step.membership_p[k][j])
@@ -115,22 +98,21 @@ def main(df, np_vaf, step, option, **kwargs):  # 새로운 MIXTURE 정하는 과
 
                     step.mixture[i][j] = round(np.average(vaf[makeone_index_i], weights=weight[makeone_index_i]), 4) * 2
 
-        #print ("\t\tb. Mixture (after soft clustering) : {}". format(list(step.mixture)))
-
-        # Block당 Mixture의 합이 1이 되도록 재조정
+        
+        # Normalize to make 1
         if kwargs["adjustment"] in ["True", "true", True]:
             for i in range(NUM_BLOCK):
                 sum = np.sum(step.mixture[i])
-                # 만약 sum이 0이면 분모에 0이 들어갈 수 있으니까...
+                
                 step.mixture[i] = np.round(step.mixture[i] / sum, 4) if sum != 0 else 0
 
         elif kwargs["adjustment"] in ["Half", "half"]:
             # step.makeone_index, p_list, step.fp_index = isparent.makeone (step, **kwargs)
 
-            if step.fp_index != -1:  # FP clone이 있다면
+            if step.fp_index != -1:  # If FP is present
                 step.includefp = True
                 step.fp_member_index = list(np.where(step.membership == step.fp_index)[0])
-            else:   # FP clone이 없다면
+            else:   # If FP is absent
                 step.includefp = False
                 step.fp_member_index = []
 
@@ -140,19 +122,19 @@ def main(df, np_vaf, step, option, **kwargs):  # 새로운 MIXTURE 정하는 과
             if step.makeone_index == []:
                 step.likelihood = -9999999
                 step.makeone_prenormalization = False
-                # print ("여러 조건 (parent, child) 때문에 합쳐서 1을 못 만든다\t", list(mixture))
+                
 
         if kwargs["STEP"] <= 5:
             if step.makeone_index != []:
                 for i in range(NUM_BLOCK):
                     sum = 0
                     for j in range(NUM_CLONE):
-                        if j in step.makeone_index:                # 1과 가장 가까운 clone들만 붙잡아줌
+                        if j in step.makeone_index:            
                             sum = sum + step.mixture[i][j]
-                    # 만약 sum이 0이면 분모에 0이 들어갈 수 있으니까...
+                    
 
                     for j in range(NUM_CLONE):
-                        if j in step.makeone_index:                # 1과 가장 가까운 clone들만 붙잡아줌
+                        if j in step.makeone_index:      
                             step.mixture[i][j] = np.round(step.mixture[i][j] / sum, 4) if sum != 0 else 0
 
         #print ("\t\tc. Mixture (after normalization) : {}". format(list(step.mixture)))
@@ -161,19 +143,18 @@ def main(df, np_vaf, step, option, **kwargs):  # 새로운 MIXTURE 정하는 과
         step.membership_p_normalize = np.zeros((NUM_MUTATION, step.membership_p.shape[1]), dtype="float64")
         for k in range(NUM_MUTATION):
             if k in step.fp_member_index:
-                step.membership_p_normalize[k] = np.zeros(step.membership_p_normalize.shape[1], dtype="float64")  # 1 (FP_index) 0 0 0 0 0 으로 만들어준다
-                # 1 (FP_index) 0 0 0 0 0 으로 만들어준다
+                step.membership_p_normalize[k] = np.zeros(step.membership_p_normalize.shape[1], dtype="float64")  # Set  1 (FP_index) 0 0 0 0 0 
+    
                 step.membership_p_normalize[k][step.fp_index] = 1
             else:
-                step.membership_p_normalize[k] = np.round(np.power(10, step.membership_p[k])/np.power(10, step.membership_p[k]).sum(axis=0, keepdims=1), 2)   # 로그를 취해으나 다시 지수를 취해준다
-                if step.fp_index != -1:     # fp가 있을 때에만...  fp가 없는데도 -1 column이 0으로 되버리는 참사
-                    # 0  (FP_index) 0.2 0.7 0.1 0 0 으로 만들어준다
+                step.membership_p_normalize[k] = np.round(np.power(10, step.membership_p[k])/np.power(10, step.membership_p[k]).sum(axis=0, keepdims=1), 2)  
+                if step.fp_index != -1: 
                     step.membership_p_normalize[k][step.fp_index] = 0
 
         if (kwargs["NUM_BLOCK"] == 1):
-            visualizationeachstep.drawfigure_1d_soft(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_NOMINAL"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(soft).jpg", **kwargs)
+            visualizationeachstep.drawfigure_1d_soft(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_NOMINAL"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(soft).pdf", **kwargs)
         if (kwargs["NUM_BLOCK"] == 2):
-            visualizationeachstep.drawfigure_2d_soft(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_NOMINAL"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(soft).jpg", **kwargs)
+            visualizationeachstep.drawfigure_2d_soft(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_NOMINAL"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(soft).pdf", **kwargs)
 
     #############################################################################
 

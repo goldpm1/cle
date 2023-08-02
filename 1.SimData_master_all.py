@@ -105,7 +105,7 @@ if __name__ == "__main__":
                 command2 = " ".join(["qsub -pe smp 1 -e", logPath, "-o", logPath, "-N simulation_" + str(NUM_BLOCK) + "D_clone_" + str(NUM_CLONE) + "_" + kwargs["SIMDATA"] + "_" + str(ii),
                                      "-hold_jid SimDataFormation_" + str(NUM_BLOCK) + "D_clone_" + str(NUM_CLONE) + "_" + kwargs["SIMDATA"] + "_" + str(ii),
                                      "-q ", COMPUTE_RANDOM, 
-                                    "1.SimData_pipe1_EMhybrid.sh",
+                                    "1.SimData_pipe1_CLEMENT_bm.sh",
                                      "--INPUT_TSV", str(kwargs["INPUT_TSV"]), "--NPVAF_DIR", str(kwargs["NPVAF_DIR"]),
                                      "--CLEMENT_DIR", str(kwargs["CLEMENT_DIR"]),
                                      "--SCICLONE_DIR", str(kwargs["SCICLONE_DIR"]),
