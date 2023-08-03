@@ -9,10 +9,11 @@ from sklearn.decomposition import TruncatedSVD, PCA
 
 
 def drawfigure_1d_hard(bunch, np_vaf, output_filename, **kwargs):
-    if kwargs["OPTION"] in ["Hard", "hard"]:
-        matplotlib.pyplot.style.use("seaborn-whitegrid")
-    elif kwargs["OPTION"] in ["Soft", "soft"]:
-        matplotlib.pyplot.style.use("seaborn-darkgrid")
+    # if kwargs["OPTION"] in ["Hard", "hard"]:
+    #     matplotlib.pyplot.style.use("seaborn-whitegrid")
+    # elif kwargs["OPTION"] in ["Soft", "soft"]:
+    #     matplotlib.pyplot.style.use("seaborn-darkgrid")
+    matplotlib.pyplot.style.use("seaborn-white")
 
     if (bunch.makeone_index == []) | (bunch.makeone_index == None):  
         matplotlib.pyplot.style.use("Solarize_Light2")
@@ -77,10 +78,11 @@ def drawfigure_1d_soft(bunch, np_vaf, output_filename, **kwargs):
     mixture = bunch.mixture
     membership_p_normalize = bunch.membership_p_normalize
 
-    if kwargs["OPTION"] in ["Hard", "hard"]:
-        matplotlib.pyplot.style.use("seaborn-whitegrid")
-    elif kwargs["OPTION"] in ["Soft", "soft"]:
-        matplotlib.pyplot.style.use("seaborn-darkgrid")
+    # if kwargs["OPTION"] in ["Hard", "hard"]:
+    #     matplotlib.pyplot.style.use("seaborn-whitegrid")
+    # elif kwargs["OPTION"] in ["Soft", "soft"]:
+    #     matplotlib.pyplot.style.use("seaborn-darkgrid")
+    matplotlib.pyplot.style.use("seaborn-white")
 
     if (bunch.makeone_index == []) | (bunch.makeone_index == None): 
         matplotlib.pyplot.style.use("Solarize_Light2")
@@ -129,10 +131,11 @@ def drawfigure_1d_soft(bunch, np_vaf, output_filename, **kwargs):
 
 
 def drawfigure_2d(bunch, np_vaf, output_filename, **kwargs):
-    if kwargs["OPTION"] in ["Hard", "hard"]:
-        matplotlib.pyplot.style.use("seaborn-white")
-    elif kwargs["OPTION"] in ["Soft", "soft"]:
-        matplotlib.pyplot.style.use("seaborn-darkgrid")
+    # if kwargs["OPTION"] in ["Hard", "hard"]:
+    #     matplotlib.pyplot.style.use("seaborn-white")
+    # elif kwargs["OPTION"] in ["Soft", "soft"]:
+    #     matplotlib.pyplot.style.use("seaborn-darkgrid")
+    matplotlib.pyplot.style.use("seaborn-white")
 
     if (bunch.makeone_index == []) | (bunch.makeone_index == None):  
         matplotlib.pyplot.style.use("Solarize_Light2")

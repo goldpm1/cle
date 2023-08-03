@@ -1,7 +1,8 @@
 import os
 
-SCRIPT_DIR = "/".join ( os.path.abspath(__file__).split("/")[:-1] )
+SCRIPT_DIR = SCRIPT_DIR = os.path.dirname(__file__)
 print (SCRIPT_DIR, "\n")
+
 
 # python3 /data/project/Alzheimer/YSscript/cle/1.SimData_master_all.py
 
@@ -11,15 +12,19 @@ if __name__ == "__main__":
     NUM_BLOCK_LIST = [1]             # 1, 2, 3
     NUM_MUTATION_LIST = [500]    # 500, 100
     DEPTH_MEAN_LIST = [100]       # 100, 30
-    FP_RATIO_LIST = [0.0 ]        # 0.0, 0.1
-    SIMDATA_LIST = ["decoy", "lump"]
-    NUM_CLONE_LIST = [3]      # 2, 3, 4, 5, 6, 7
+    FP_RATIO_LIST = [0.0, 0.1 ]        # 0.0, 0.1
+    SIMDATA_LIST = [ "decoy", "lump"] # "decoy", "lump"
+    NUM_CLONE_LIST = [3, 4]      # 2, 3, 4, 5, 6, 7
     BENCHMARK_LIST = [0, 4]; kwargs["BENCHMARK_START"] = BENCHMARK_LIST[0];  kwargs["BENCHMARK_END"] = BENCHMARK_LIST[1]
 
     kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] = 2, 7
     kwargs["MAXIMUM_NUM_PARENT"] = 0
     kwargs["TRIAL_NO"] = 8
+    kwargs["MAKEONET_STRICT"] = 1
     kwargs["VERBOSE"] = 1
+    kwargs["SCORING"] = "True"
+    kwargs["MODE"] = "Both"
+                           
 
     n  = 0 
 
@@ -49,8 +54,8 @@ if __name__ == "__main__":
                                 kwargs["COMBINED_OUTPUT_DIR"] = "/data/project/Alzheimer/CLEMENT/03.combinedoutput/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) + "/" +  str(ii) 
                                 kwargs["SIMPLE_KMEANS_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/SIMPLE_KMEANS/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) + "/" +  str(ii) 
                                 kwargs["CLEMENT_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/CLEMENT/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) + "/" +  str(ii) 
-                                kwargs["SCICLONE_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/sciclone/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) + "/" +  str(ii) 
                                 kwargs["PYCLONEVI_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/pyclone-vi/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) + "/" +  str(ii) 
+                                kwargs["SCICLONE_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/sciclone/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) + "/" +  str(ii) 
                                 kwargs["QUANTUMCLONE_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/quantumclone/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) + "/" +  str(ii) 
 
                                 for DIR in ["/".join(kwargs["INPUT_TSV"].split("/")[:-1]), kwargs["NPVAF_DIR"], kwargs["SIMPLE_KMEANS_DIR"],  kwargs["CLEMENT_DIR"], kwargs["SCICLONE_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["QUANTUMCLONE_DIR"], kwargs["COMBINED_OUTPUT_DIR"]]:
@@ -81,13 +86,12 @@ if __name__ == "__main__":
                                                     "--BENCHMARK_I", str(ii),
                                                     "--SIMDATA", kwargs["SIMDATA"]
                                                     ])
-                                #print (command1)
                                 n = n + 1
                                 os.system(command1)
 
-                                # 2. EM 돌리기 (2-7, Hard)
+                                # 2. EM 돌리기 
 
-                                hold_j.append("simulation_" + str(NUM_BLOCK) + "D_clone_" + str(NUM_CLONE) + "_" + kwargs["SIMDATA"] + "_" + str(ii))
+                                hold_j.append( "SimData_EM_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_" + str(SIMDATA) + "_" + str(FP_RATIO) + "_clone_" + str(NUM_CLONE) + "_" +  str(ii) )
                                 command2 = " ".join(["qsub -pe smp 1 -e", logPath, "-o", logPath, "-N SimData_EM_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_" + str(SIMDATA) + "_" + str(FP_RATIO) + "_clone_" + str(NUM_CLONE) + "_" +  str(ii) ,
                                                      "-hold_jid SimData_Formation_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_" + str(SIMDATA) + "_" + str(FP_RATIO) + "_clone_" + str(NUM_CLONE) + "_" +  str(ii),
                                                      #"-q ", COMPUTE_RANDOM, 
@@ -107,33 +111,36 @@ if __name__ == "__main__":
                                                      "--DEPTH_CUTOFF", str(kwargs["DEPTH_CUTOFF"]),  
                                                      "--VERBOSE", str( kwargs["VERBOSE"]), 
                                                      "--TRIAL_NO", str( kwargs["TRIAL_NO"]), 
+                                                     "--MAKEONE_STRICT", str ( kwargs["MAKEONET_STRICT"] ),
                                                      "--RANDOM_SEED", str(ii), 
-                                                     "--SCORING True", 
-                                                     "--MODE Both"
+                                                     "--SCORING", kwargs["SCORING"], 
+                                                     "--MODE", kwargs["MODE"]
                                                      ])
-                                # print(command2)
                                 os.system(command2)
 
-    #         # 채점하기
-    #         kwargs["COMBINED_OUTPUT_DIR"] = "/data/project/Alzheimer/YSscript/EM_MRS/data/combinedoutput/simulation_" + str(NUM_BLOCK) + "D/" + kwargs["SIMDATA"] + "/" +  str(kwargs["FP_RATIO"]) + "/clone_" + str(NUM_CLONE)
-    #         kwargs["SAMPLENAME"] = "simulation_" + str(NUM_BLOCK) + "D_clone_" + str(NUM_CLONE)
-    #         kwargs["OUTPUT_TTEST"] = kwargs["COMBINED_OUTPUT_DIR"] + "/ttest.txt"
-    #         kwargs["OUTPUT_JPG"] = kwargs["COMBINED_OUTPUT_DIR"] +  "/benchmark.jpg"
-    #         logPath = "/data/project/Alzheimer/YSscript/EM_MRS/log/simulation_" + str(NUM_BLOCK) + "D/" + kwargs["SIMDATA"] + "/" + str(kwargs["FP_RATIO"]) + "/clone_" + str(NUM_CLONE) + "/visualization"
+                            # 채점하기
+                            kwargs["COMBINED_OUTPUT_DIR"] = "/data/project/Alzheimer/CLEMENT/03.combinedoutput/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) 
+                            kwargs["SAMPLENAME"] = "SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) 
+                            kwargs["OUTPUT_TTEST"] = kwargs["COMBINED_OUTPUT_DIR"] + "/ttest.txt"
+                            kwargs["OUTPUT_JPG"] = kwargs["COMBINED_OUTPUT_DIR"] +  "/benchmark.jpg"
 
-    #         os.system("rm -rf " + logPath)
-    #         os.system("mkdir -p " + logPath)
+                            logPath = "/data/project/Alzheimer/YSscript/cle/log/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) + "/benchmark"
+                            os.system("rm -rf " + logPath)
+                            os.system("mkdir -p " + logPath)
 
-    #         command3 = " ".join(["qsub -pe smp 1 -e", logPath, "-o", logPath, "-N visualization",  "-hold_jid",  str(",".join(hold_j)),
-    #                              "-q ", COMPUTE_RANDOM, 
-    #                             "1.SimData_pipe2_benchmark.sh",
-    #                              "--COMBINED_OUTPUT_DIR", str(kwargs["COMBINED_OUTPUT_DIR"]),
-    #                              "--SAMPLENAME", str(kwargs["SAMPLENAME"]),
-    #                              "--BENCHMARK_START", str(kwargs["BENCHMARK_START"]),
-    #                              "--BENCHMARK_END", str(kwargs["BENCHMARK_END"]),
-    #                              "--OUTPUT_TTEST", str(kwargs["OUTPUT_TTEST"]),
-    #                              "--OUTPUT_JPG", str(kwargs["OUTPUT_JPG"])
-    #                              ])
-    #         ##print (command3)
-    #         os.system(command3)
-    # print ("Total job = {}".format( n ))
+                            command3 = " ".join(["qsub -pe smp 1 -e", logPath, "-o", logPath, 
+                                                 "-N benchmark_" + "SimData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_" + str(SIMDATA) + "_" + str(FP_RATIO) + "_clone_" + str(NUM_CLONE) ,  
+                                                 "-hold_jid",  str(",".join(hold_j)),
+                                                #"-q ", COMPUTE_RANDOM, 
+                                                str(SCRIPT_DIR) + "/1.SimData_pipe2_benchmark.sh",
+                                                "--SCRIPT_DIR", str(SCRIPT_DIR),
+                                                "--COMBINED_OUTPUT_DIR", str(kwargs["COMBINED_OUTPUT_DIR"]),
+                                                "--SAMPLENAME", str(kwargs["SAMPLENAME"]),
+                                                "--BENCHMARK_START", str(kwargs["BENCHMARK_START"]),
+                                                "--BENCHMARK_END", str(kwargs["BENCHMARK_END"]),
+                                                "--OUTPUT_TTEST", str(kwargs["OUTPUT_TTEST"]),
+                                                "--OUTPUT_JPG", str(kwargs["OUTPUT_JPG"])
+                                                ])
+                            ##print (command3)
+                            os.system(command3)
+    print ("Total job = {}".format( n ))

@@ -153,59 +153,6 @@ def clustering (np_vaf, **kwargs):
     return (kwargs, simpleK)
 
 
-def visualization (simpleK, np_vaf, **kwargs):
-    import visualizationsingle
-    import numpy as np
-
-    if kwargs ["NUM_BLOCK"] == 1:
-        visualizationsingle.drawfigure_1d ( membership = simpleK.membership_record [simpleK.elbow_K],
-                                                                output_suptitle = "simpleKmeans_Elbow",
-                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"],
-                                                                np_vaf = np_vaf,
-                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.elbow_K] ) + 1)},
-                                                                includefp = False,
-                                                                fp_index = -1,
-                                                                makeone_index = sorted( np.unique ( simpleK.membership_record [simpleK.elbow_K] ))  ,
-                                                                **kwargs)
-        visualizationsingle.drawfigure_1d ( membership = simpleK.membership_record [simpleK.silhouette_K],
-                                                                output_suptitle = "simpleKmeans_Silhouette",
-                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/silhouette/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"],
-                                                                np_vaf = np_vaf,
-                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.silhouette_K] ) + 1)},
-                                                                includefp = False,
-                                                                fp_index = -1,
-                                                                makeone_index = sorted( np.unique ( simpleK.membership_record [simpleK.silhouette_K] ))  ,
-                                                                **kwargs)
-        visualizationsingle.drawfigure_1d ( membership = simpleK.membership_record [simpleK.gap_K],
-                                                                output_suptitle = "simpleKmeans_Gap*",
-                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/gap/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"],
-                                                                np_vaf = np_vaf,
-                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.gap_K] ) + 1)},
-                                                                includefp = False,
-                                                                fp_index = -1,
-                                                                makeone_index = sorted( np.unique ( simpleK.membership_record [simpleK.gap_K] ))  ,
-                                                                **kwargs)
-    elif kwargs ["NUM_BLOCK"] == 2:
-        visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.elbow_K],
-                                                                output_suptitle = "simpleKmeans_Elbow",
-                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"],
-                                                                np_vaf = np_vaf,
-                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.elbow_K] ) + 1)},
-                                                                includefp = False,
-                                                                fp_index = -1,
-                                                                dimensionreduction = "None"
-                                                                **kwargs)
-    elif kwargs ["NUM_BLOCK"] >= 3:
-        visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.elbow_K],
-                                                                output_suptitle = "simpleKmeans_Elbow",
-                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"],
-                                                                np_vaf = np_vaf,
-                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.elbow_K] ) + 1)},
-                                                                includefp = False,
-                                                                fp_index = -1,
-                                                                dimensionreduction = "SVD"
-                                                                **kwargs)
-
 
 
 def scoring (membership_answer, membership_answer_numerical, simpleK, **kwargs):
@@ -219,3 +166,153 @@ def scoring (membership_answer, membership_answer_numerical, simpleK, **kwargs):
                                                                                                                                             simpleK.membership_record [simpleK.gap_K], -1 , [] ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
 
     return simpleK
+
+
+
+
+def visualization (simpleK, np_vaf, **kwargs):
+    import visualizationsingle, subprocess
+    import numpy as np
+
+    if kwargs ["NUM_BLOCK"] == 1:
+        visualizationsingle.drawfigure_1d ( membership = simpleK.membership_record [simpleK.elbow_K],
+                                                                output_suptitle = "simpleKmeans_Elbow_" + str( simpleK.elbow_K_score ),
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.elbow_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                makeone_index = sorted( np.unique ( simpleK.membership_record [simpleK.elbow_K] ))  ,
+                                                                **kwargs)
+        subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"] + "  "  + kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"] ], shell = True)
+
+        visualizationsingle.drawfigure_1d ( membership = simpleK.membership_record [simpleK.silhouette_K],
+                                                                output_suptitle = "simpleKmeans_Silhouette_" +  str( simpleK.silhouette_K_score ),
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/silhouette/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.silhouette_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                makeone_index = sorted( np.unique ( simpleK.membership_record [simpleK.silhouette_K] ))  ,
+                                                                **kwargs)
+        subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/silhouette/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"] + "  "  + kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"] ], shell = True)
+
+        visualizationsingle.drawfigure_1d ( membership = simpleK.membership_record [simpleK.gap_K],
+                                                                output_suptitle = "simpleKmeans_Gap*_" + str( simpleK.gap_K_score ),
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/gap/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.gap_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                makeone_index = sorted( np.unique ( simpleK.membership_record [simpleK.gap_K] ))  ,
+                                                                **kwargs)
+        subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/gap/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"] + "  "  + kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"] ], shell = True)
+
+    elif kwargs ["NUM_BLOCK"] == 2:
+        visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.elbow_K],
+                                                                output_suptitle = "simpleKmeans_Elbow_" + str( simpleK.elbow_K_score ),
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.elbow_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                dimensionreduction = "None"
+                                                                **kwargs)
+        subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"] + "  "  + kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"] ], shell = True)
+
+        visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.silhouette_K],
+                                                                output_suptitle = "simpleKmeans_Silhouette_" +  str( simpleK.silhouette_K_score ),
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/silhouette/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.silhouette_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                dimensionreduction = "None"
+                                                                **kwargs)
+        subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/silhouette/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"] + "  "  + kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"] ], shell = True)
+
+        visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.gap_K],
+                                                                output_suptitle = "simpleKmeans_Gap*_" +  str( simpleK.gap_K_score ),
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/gap/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.gap_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                dimensionreduction = "None"
+                                                                **kwargs)
+        subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/gap/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"] + "  "  + kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"] ], shell = True)
+
+    elif kwargs ["NUM_BLOCK"] >= 3:
+        visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.elbow_K],
+                                                                output_suptitle = "simpleKmeans_Elbow_" + str( simpleK.elbow_K_score ),
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.elbow_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                dimensionreduction = "SVD"
+                                                                **kwargs)
+        subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/elbow/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"] + "  "  + kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleKmeans_elbow." + kwargs["IMAGE_FORMAT"] ], shell = True)
+        
+        visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.silhouette_K],
+                                                                output_suptitle = "simpleKmeans_Silhouette_" +  str( simpleK.silhouette_K_score ),
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/silhouette/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.silhouette_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                dimensionreduction = "SVD"
+                                                                **kwargs)
+        subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/silhouette/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"] + "  "  + kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleKmeans_silhouette." + kwargs["IMAGE_FORMAT"] ], shell = True)
+
+        visualizationsingle.drawfigure_2d ( membership = simpleK.membership_record [simpleK.gap_K],
+                                                                output_suptitle = "simpleKmeans_Gap*_" +  str( simpleK.gap_K_score ),
+                                                                output_filename = kwargs["SIMPLE_KMEANS_DIR"] + "/gap/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"],
+                                                                np_vaf = np_vaf,
+                                                                samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( simpleK.membership_record [simpleK.gap_K] ) + 1)},
+                                                                includefp = False,
+                                                                fp_index = -1,
+                                                                dimensionreduction = "SVD"
+                                                                **kwargs)
+        subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/gap/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"] + "  "  + kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleKmeans_gap." + kwargs["IMAGE_FORMAT"] ], shell = True)
+
+
+
+
+
+def save (simpleK, elapsed_time, **kwargs):
+    import pandas as pd
+    import subprocess
+
+
+    with open (kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_elbow.results.txt", "w", encoding = "utf8") as output_file:
+        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nrunningtime\t{}".
+            format( simpleK.elbow_K, simpleK.elbow_K, simpleK.elbow_K_score, kwargs["NUM_MUTATION"], elapsed_time), file = output_file) 
+    subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_elbow.results.txt  "  + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/simpleK_elbow.results.txt"], shell = True)
+
+    pd.DataFrame(simpleK.membership_record [simpleK.elbow_K]).to_csv(kwargs["SIMPLE_KMEANS_DIR"] + "/simpleK_elbow.membership.txt", index=False, header=False,  sep="\t")
+    pd.DataFrame(simpleK.membership_record [simpleK.elbow_K]).to_csv(kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleK_elbow.membership.txt", index=False, header=False,  sep="\t")
+    pd.DataFrame(simpleK.mixture_record [simpleK.elbow_K]).to_csv(kwargs["SIMPLE_KMEANS_DIR"] + "/simpleK_elbow.mixture.txt", index=False, header=False,  sep="\t")
+    pd.DataFrame(simpleK.mixture_record [simpleK.elbow_K]).to_csv(kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleK_elbow.mixture.txt", index=False, header=False,  sep="\t")
+
+
+    with open (kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_silhouette.results.txt", "w", encoding = "utf8") as output_file:
+        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nrunningtime\t{}".
+            format( simpleK.silhouette_K, simpleK.silhouette_K, simpleK.silhouette_K_score, kwargs["NUM_MUTATION"], elapsed_time), file = output_file) 
+    subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_silhouette.results.txt  "  + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/simpleK_silhouette.results.txt"], shell = True)
+
+    pd.DataFrame(simpleK.membership_record [simpleK.silhouette_K]).to_csv(kwargs["SIMPLE_KMEANS_DIR"] + "/simpleK_silhouette.membership.txt", index=False, header=False,  sep="\t")
+    pd.DataFrame(simpleK.membership_record [simpleK.silhouette_K]).to_csv(kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleK_silhouette.membership.txt", index=False, header=False,  sep="\t")
+    pd.DataFrame(simpleK.mixture_record [simpleK.silhouette_K]).to_csv(kwargs["SIMPLE_KMEANS_DIR"] + "/simpleK_silhouette.mixture.txt", index=False, header=False,  sep="\t")
+    pd.DataFrame(simpleK.mixture_record [simpleK.silhouette_K]).to_csv(kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleK_silhouette.mixture.txt", index=False, header=False,  sep="\t")
+
+
+    with open (kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_gap.results.txt", "w", encoding = "utf8") as output_file:
+        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nrunningtime\t{}".
+            format( simpleK.gap_K, simpleK.gap_K, simpleK.gap_K_score, kwargs["NUM_MUTATION"], elapsed_time), file = output_file)
+    subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_gap.results.txt  "  + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/simpleK_gap.results.txt"], shell = True)        
+
+    pd.DataFrame(simpleK.membership_record [simpleK.gap_K]).to_csv(kwargs["SIMPLE_KMEANS_DIR"] + "/simpleK_gap.membership.txt", index=False, header=False,  sep="\t")
+    pd.DataFrame(simpleK.membership_record [simpleK.gap_K]).to_csv(kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleK_gap.membership.txt", index=False, header=False,  sep="\t")
+    pd.DataFrame(simpleK.mixture_record [simpleK.gap_K]).to_csv(kwargs["SIMPLE_KMEANS_DIR"] + "/simpleK_gap.mixture.txt", index=False, header=False,  sep="\t")
+    pd.DataFrame(simpleK.mixture_record [simpleK.gap_K]).to_csv(kwargs["COMBINED_OUTPUT_DIR"] + "/result/simpleK_gap.mixture.txt", index=False, header=False,  sep="\t")
