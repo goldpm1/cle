@@ -3,18 +3,54 @@
 #$ -S /bin/bash
 
 
+if ! options=$(getopt -o h --long SCRIPT_DIR:,INPUT_DIR:,SAMPLENAME:,CONDITIONNAME:,BENCHMARK_START:,BENCHMARK_END:,OUTPUT_JPG:, -- "$@")
+then
+    echo "ERROR: invalid options"
+    exit 1
+fi
 
-INPUT_DIR=$1
-OUTPUT_FILENAME=$2
-BENCHMARK_NO=$3
+eval set -- $options
+
+while true; do
+    case "$1" in
+        -h|--help)
+            echo "Usage"
+        shift ;;
+        --SCRIPT_DIR)
+            SCRIPT_DIR=$2
+        shift 2 ;;
+        --INPUT_DIR)
+            INPUT_DIR=$2
+        shift 2 ;;
+        --SAMPLENAME)
+            SAMPLENAME=$2
+        shift 2 ;;
+        --CONDITIONNAME)
+            CONDITIONNAME=$2
+        shift 2 ;;
+        --BENCHMARK_START)
+            BENCHMARK_START=$2
+        shift 2 ;;
+        --BENCHMARK_END)
+            BENCHMARK_END=$2
+        shift 2 ;;
+        --OUTPUT_JPG)
+            OUTPUT_JPG=$2
+        shift 2 ;;
+        --)
+            shift
+            break
+    esac
+done
 
 
-
-
-python3 "2.CellData_pipe3_benchmark.py" \
+python3 ${SCRIPT_DIR}"/2.CellData_pipe3_benchmark.py" \
  --INPUT_DIR ${INPUT_DIR} \
- --OUTPUT_FILENAME ${OUTPUT_FILENAME} \
- --BENCHMARK_NO ${BENCHMARK_NO} 
+ --SAMPLENAME ${SAMPLENAME} \
+ --CONDITIONNAME ${CONDITIONNAME} \
+ --BENCHMARK_START ${BENCHMARK_START} \
+ --BENCHMARK_END ${BENCHMARK_END} \
+ --OUTPUT_JPG ${OUTPUT_JPG} 
 
 
  ###########$ -l h=!('compute15'|compute16')

@@ -5,7 +5,7 @@ import random
 def makedf ( **kwargs ):
     global  df, inputdf, input_containpos, np_vaf, np_BQ, membership, mutation_id, depth_list, membership_answer, mutation_id, mixture_answer, parent_type, parent_type_selected
 
-    input_containpos = pd.read_csv(kwargs["INPUT_TSV"],  header = None, names =["pos", "sample", "info"], sep = "\t") 
+    input_containpos = pd.read_csv(kwargs["INPUT_TSV"],  header = None,  sep = "\t") 
 
     if input_containpos.shape[1] == 3: #  If 4th column (BQ) is absent
         input_containpos.columns = ["pos", "sample", "info"]
@@ -29,8 +29,6 @@ def makedf ( **kwargs ):
     membership = []
     depth_list = []
     
-    #print ( input_containpos )
-
     # input 형식은 n * 3 으로 구성 :   ID (chr_pos), membmership(정답 set 일 경우),  kwargs["kwargs["NUM_BLOCK"]"](3)만큼의 depth, alt 정보
 
     depth_col = [[]] * int(len(input_containpos.iloc[0][2].split(","))/2)
@@ -176,7 +174,7 @@ def makedf ( **kwargs ):
 
 
 def RANDOM_PICK_fun(**kwargs):
-    global  df, inputdf, input_containpos, np_vaf, np_BQ, membership, mutation_id, depth_list, membership_answer, mutation_id, mixture_answer, parent_type, parent_type_selected
+    global  df, inputdf, input_containpos, np_vaf, np_BQ, membership, mutation_id, depth_list, membership_answer, mixture_answer, parent_type, parent_type_selected
 
     # RANDOM하게 1000개만 뽑기. FP 의 비율도 조절해서...
 
@@ -290,7 +288,7 @@ def pyclone_dataset( DIR, **kwargs ):
         PYCLONE_OUTPUT=DIR + "/block" + str(col) + ".tsv"
         with open (PYCLONE_OUTPUT, "w", encoding = "utf8") as output_pyclone:
             print ("\t".join(["mutation_id", "ref_counts", "var_counts", "normal_cn", "minor_cn", "major_cn"]), file = output_pyclone)
-            for row in range( kwargs["NUM_MUTATION"] ):
+            for row in range( kwargs["RANDOM_PICK"] ):
                 pyclone_row = [mutation_id[row] , str(df[row][col]["ref"]), str(df[row][col]["alt"]), str(2), str(1), str(1)]
                 print("\t".join(pyclone_row), file = output_pyclone)
 
@@ -298,8 +296,10 @@ def pyclonevi_dataset( DIR , **kwargs):
     PYCLONE_VI_OUTPUT=DIR + "/input.tsv"
     with open (PYCLONE_VI_OUTPUT, "w", encoding = "utf8") as output_pyclone_vi:
         print ("\t".join(["mutation_id", "sample_id", "ref_counts", "alt_counts", "normal_cn", "major_cn", "minor_cn", "tumour_content"]), file = output_pyclone_vi)
-        for row in range(kwargs["NUM_MUTATION"]):
+        for row in range(kwargs["RANDOM_PICK"]):
             for col in range(kwargs["NUM_BLOCK"]):
+                # print (mutation_id [row])
+                # print (df[row][col] )
                 pyclone_vi_row = [mutation_id[row] , "block" + str(col), str(df[row][col]["ref"]), str(df[row][col]["alt"]), str(2), str(1), str(1), str(1.0)]
                 print("\t".join(pyclone_vi_row), file = output_pyclone_vi)
 
@@ -310,7 +310,7 @@ def sciclone_dataset( DIR, **kwargs ):
         SCICLONE_OUTPUT=DIR + "/block" + str(col) + ".dat"
         with open (SCICLONE_OUTPUT, "w", encoding = "utf8") as output_sciclone:
             print ("\t".join(["chr", "pos", "ref_reads", "var_reads", "vaf"]), file = output_sciclone)
-            for row in range(kwargs["NUM_MUTATION"]):
+            for row in range(kwargs["RANDOM_PICK"]):
                 sciclone_row = [re.split(r'[_ :]', mutation_id[row])[0], re.split(r'[_ :]', mutation_id[row])[1]  , str(df[row][col]["ref"]), str(df[row][col]["alt"]), str(round((df[row][col]["alt"] / ( df[row][col]["alt"] + df[row][col]["ref"] )), 3) * 100)  ]
                 print("\t".join(sciclone_row), file = output_sciclone)
 
@@ -322,14 +322,14 @@ def quantumclone_dataset( DIR, **kwargs ):
         QUANTUMCLONE_OUTPUT=DIR + "/block" + str(col) + ".dat"
         with open (QUANTUMCLONE_OUTPUT, "w", encoding = "utf8") as output_quantumclone:
             print ("\t".join(["Sample", "SampleName", "Chr", "Start", "Alt", "Depth", "Genotype"]), file = output_quantumclone)
-            for row in range(kwargs["NUM_MUTATION"]):
+            for row in range(kwargs["RANDOM_PICK"]):
                 quantumclone_row = ["Sample" + str(col), "Sample" + str(col) , re.split(r'[_ :]', mutation_id[row])[0], re.split(r'[_ :]', mutation_id[row])[1]  , str(df[row][col]["alt"]), str(df[row][col]["ref"] + df[row][col]["alt"]),  "AB"  ]
                 print("\t".join(quantumclone_row), file = output_quantumclone)
 
 
 
 def main (**kwargs):
-    global  df, inputdf, input_containpos, np_vaf, np_BQ, membership, mutation_id, depth_list, membership_answer, mutation_id, mixture_answer, parent_type, parent_type_selected
+    global  df, inputdf, input_containpos, np_vaf, np_BQ, membership, mutation_id, depth_list, membership_answer,  mixture_answer, parent_type, parent_type_selected
 
 
     kwargs = makedf( **kwargs)

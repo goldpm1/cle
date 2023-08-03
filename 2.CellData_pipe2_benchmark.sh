@@ -2,54 +2,66 @@
 #$ -cwd
 #$ -S /bin/bash
 
+if ! options=$(getopt -o h --long SCRIPT_DIR:,INPUT_DIR:,SAMPLENAME:,CONDITIONNAME:,BENCHMARK_START:,BENCHMARK_END:,OUTPUT_JPG:,OUTPUT_TTEST:, -- "$@")
+then
+    echo "ERROR: invalid options"
+    exit 1
+fi
+
+eval set -- $options
+
+while true; do
+    case "$1" in
+        -h|--help)
+            echo "Usage"
+        shift ;;
+        --SCRIPT_DIR)
+            SCRIPT_DIR=$2
+        shift 2 ;;
+        --INPUT_DIR)
+            INPUT_DIR=$2
+        shift 2 ;;
+        --SAMPLENAME)
+            SAMPLENAME=$2
+        shift 2 ;;
+        --CONDITIONNAME)
+            CONDITIONNAME=$2
+        shift 2 ;;
+        --BENCHMARK_START)
+            BENCHMARK_START=$2
+        shift 2 ;;
+        --BENCHMARK_END)
+            BENCHMARK_END=$2
+        shift 2 ;;
+        --OUTPUT_JPG)
+            OUTPUT_JPG=$2
+        shift 2 ;;
+        --OUTPUT_TTEST)
+            OUTPUT_TTEST=$2
+        shift 2 ;;
+        --)
+            shift
+            break
+    esac
+done
 
 
-SCRIPT_DIR=${1}
-INPUT_TSV=${2}
-MODE=${3}
-NUM_CLONE_TRIAL_START=${4}
-NUM_CLONE_TRIAL_END=${5}
-RANDOM_PICK=${6}
-AXIS_RATIO=${7}
-PARENT_RATIO=${8}
-NUM_PARENT=${9}
-FP_RATIO=${10}
-FP_USEALL=${11}
-TRIAL_NO=${12}
-DEPTH_CUTOFF=${13}
-MIN_CLUSTER_SIZE=${14}
-VERBOSE=${15}
-KMEANS_CLUSTERNO=${16}
-RANDOM_SEED=${17}
-SAMPLENAME=${18}
-BENCHMARK_NO=${19}
-NPVAF_DIR=${20}
-SIMPLE_KMEANS_DIR=${21}
-CLEMENT_DIR=${22}
-SCICLONE_DIR=${23}
-PYCLONEVI_DIR=${24}
-QUANTUMCLONE_DIR=${25}
-COMBINED_OUTPUT_DIR=${26}
-SCORING=${27}
-DIMENSION=${28}
-MAKEONE_STRICT=${29}
+echo -e python3 ${SCRIPT_DIR}"/2.CellData_pipe2_benchmark.py" \
+ --INPUT_DIR ${INPUT_DIR}  \
+ --SAMPLENAME ${SAMPLENAME} \
+ --CONDITIONNAME ${CONDITIONNAME} \
+ --BENCHMARK_START ${BENCHMARK_START} \
+ --BENCHMARK_END ${BENCHMARK_END} \
+ --OUTPUT_JPG ${INPUT_DIR}"/benchmark.jpg"  --OUTPUT_TTEST ${INPUT_DIR}"/ttest.txt"  
 
-
-#2. CLEMENT_hard, pyclonevi, sciclone_result 데이터를 읽은 후 시각화 및 저장
-
-echo ${COMBINED_OUTPUT_DIR%/*}"/benchmark.jpg"
-echo -e "FP_RATIO = "${FP_RATIO}
 
 python3 ${SCRIPT_DIR}"/2.CellData_pipe2_benchmark.py" \
- --INPUT_DIR "/data/project/Alzheimer/YSscript/EM_MRS/data/combinedoutput/MRS_"${DIMENSION} \
+ --INPUT_DIR ${INPUT_DIR}  \
  --SAMPLENAME ${SAMPLENAME} \
- --BENCHMARK_NO ${BENCHMARK_NO} \
- --RANDOM_PICK ${RANDOM_PICK} \
- --NUM_PARENT ${NUM_PARENT}  \
- --FP_RATIO ${FP_RATIO} \
- --AXIS_RATIO ${AXIS_RATIO}  \
- --OUTPUT_JPG ${COMBINED_OUTPUT_DIR%/*}"/benchmark.jpg"  --OUTPUT_TTEST ${COMBINED_OUTPUT_DIR%/*}"/ttest.txt"  \
- --MAKEONE_STRICT ${MAKEONE_STRICT}
+ --CONDITIONNAME ${CONDITIONNAME} \
+ --BENCHMARK_START ${BENCHMARK_START} \
+ --BENCHMARK_END ${BENCHMARK_END} \
+ --OUTPUT_JPG ${INPUT_DIR}"/benchmark.jpg"  --OUTPUT_TTEST ${INPUT_DIR}"/ttest.txt"  
 
 
  ###########$ -l h=!('compute15'|compute16')

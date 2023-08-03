@@ -58,8 +58,6 @@ SAMPLENAME = re.split(r'[_ input]', INPUT_TSV.split("/")[-1])      # 'M1-5_M1-8_
 kwargs["CLEMENT_DIR"] = args.CLEMENT_DIR
 kwargs["MODE"] = args.MODE
 kwargs["RANDOM_PICK"] = int(args.RANDOM_PICK)
-kwargs["NUM_MUTATION"] = int(args.RANDOM_PICK)
-NUM_MUTATION = int(args.RANDOM_PICK)
 kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] = args.NUM_CLONE_TRIAL_START, args.NUM_CLONE_TRIAL_END
 kwargs["TRIAL_NO"] = int(args.TRIAL_NO)
 kwargs["MAXIMUM_NUM_PARENT"] = int(args.MAXIMUM_NUM_PARENT)
@@ -120,6 +118,7 @@ output_logfile.close()
 
 
 inputdf, df, np_vaf, np_BQ, membership_answer, mixture_answer, mutation_id, kwargs = datapreparation.main( **kwargs)
+NUM_MUTATION = kwargs["NUM_MUTATION"] = kwargs["RANDOM_PICK"]
 membership_answer_numerical = np.zeros(kwargs["NUM_MUTATION"], dtype="int")
 membership_answer_numerical_nofp_index = []
 
