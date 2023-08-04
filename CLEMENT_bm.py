@@ -160,9 +160,9 @@ if type(inputdf) != type(False):
         x_median = miscellaneous.VAFdensitogram(np_vaf, "INPUT DATA", kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"], **kwargs)
         visualizationsingle.drawfigure_1d(membership_answer_numerical, "ANSWER_SET (n={})".format(kwargs["NUM_MUTATION"]), kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"], np_vaf, kwargs["samplename_dict_NumToCharacter"], False, -1, [], **kwargs )
     elif kwargs["NUM_BLOCK"] == 2:
-        visualizationsingle.drawfigure_2d(membership_answer, "ANSWER_SET (n={})".format(kwargs["NUM_MUTATION"]), kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"], np_vaf, kwargs["samplename_dict_CharacterToNum"], False, "None", **kwargs)
+        visualizationsingle.drawfigure_2d(membership_answer, "ANSWER_SET (n={})".format(kwargs["NUM_MUTATION"]), kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"], np_vaf, kwargs["samplename_dict_CharacterToNum"], False,  -1, "None", **kwargs)
     elif kwargs["NUM_BLOCK"] >= 3:
-        visualizationsingle.drawfigure_2d(membership_answer, "ANSWER_SET (n={})".format(kwargs["NUM_MUTATION"]), kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"], np_vaf, kwargs["samplename_dict_CharacterToNum"], False, "SVD", **kwargs)
+        visualizationsingle.drawfigure_2d(membership_answer, "ANSWER_SET (n={})".format(kwargs["NUM_MUTATION"]), kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"], np_vaf, kwargs["samplename_dict_CharacterToNum"], False,  -1, "SVD", **kwargs)
     subprocess.run(["cp " + kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"] + " "  +  kwargs["CLEMENT_DIR"] + "/candidate/0.inputdata." + kwargs["IMAGE_FORMAT"]], shell=True)
     subprocess.run(["cp " + kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"] + " "  +  kwargs["CLEMENT_DIR"] + "/trial/0.inputdata." + kwargs["IMAGE_FORMAT"]], shell=True)
 
@@ -419,7 +419,7 @@ if kwargs["MODE"] in ["Hard", "Both"]:
             #visualizationpair
             if kwargs["NUM_BLOCK"] >= 2:
                 visualizationpair.drawfigure_2d (membership_answer, mixture_answer, cluster_hard.membership_record [NUM_CLONE_hard[i]], np.round(cluster_hard.mixture_record [NUM_CLONE_hard[i]], 2),
-                            score_df, kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"] ,  "ANSWER\n", "CLEMENT\n{}/{}, ARI={}".format(score, kwargs["NUM_MUTATION"], round (ARI_CLEMENT, 2) ), np_vaf, cluster_hard.includefp_record [NUM_CLONE_hard[i]],  cluster_hard.makeone_index_record [NUM_CLONE_hard[i]], dimensionreduction="None")
+                            score_df, kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"] ,  "ANSWER\n", "CLEMENT\n{}/{}, ARI={}".format(score, kwargs["NUM_MUTATION"], round (ARI_CLEMENT, 2) ), np_vaf, cluster_hard.includefp_record [NUM_CLONE_hard[i]],  cluster_hard.makeone_index_record [NUM_CLONE_hard[i]], dimensionreduction="None", **kwargs)
             else:  # 어차피 pair로 안 그릴거면 그냥 복사해오자
                 subprocess.run (["cp " +  kwargs["CLEMENT_DIR"]+ "/candidate/clone" + str( NUM_CLONE_hard[i] ) + ".\(hard\)." + kwargs["IMAGE_FORMAT"] + " "  + kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)    
                 # samplename_dict = {k:"clone {}".format(k) for k in range(0, np.max( cluster_hard.membership_record [NUM_CLONE_hard[i]] )+ 1)}
@@ -498,11 +498,11 @@ if kwargs["MODE"] in ["Hard", "Both"]:
             samplename_dict = {k:k for k in range(0, np.max(cluster_hard.membership_record [NUM_CLONE_hard[i]])+ 1)}
 
             if kwargs["NUM_BLOCK"] == 1:
-                visualizationsingle.drawfigure_1d (cluster_hard.membership_record [NUM_CLONE_hard[i]], "CLEMENT_hard : {}".format( round ( cluster_hard.likelihood_record [NUM_CLONE_hard[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_hard.includefp_record [NUM_CLONE_hard[i]] , cluster_hard.fp_index_record[NUM_CLONE_hard[i]] )
+                visualizationsingle.drawfigure_1d (cluster_hard.membership_record [NUM_CLONE_hard[i]], "CLEMENT_hard : {}".format( round ( cluster_hard.likelihood_record [NUM_CLONE_hard[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_hard.includefp_record [NUM_CLONE_hard[i]] , cluster_hard.fp_index_record[NUM_CLONE_hard[i]], cluster_hard.makeone_index_record [NUM_CLONE_hard[i]], **kwargs )
             elif kwargs["NUM_BLOCK"] == 2:
-                visualizationsingle.drawfigure_2d (cluster_hard.membership_record [NUM_CLONE_hard[i]], "CLEMENT_hard : {}".format( round ( cluster_hard.likelihood_record [NUM_CLONE_hard[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_hard.includefp_record [NUM_CLONE_hard[i]] , cluster_hard.fp_index_record[NUM_CLONE_hard[i]] )
+                visualizationsingle.drawfigure_2d (cluster_hard.membership_record [NUM_CLONE_hard[i]], "CLEMENT_hard : {}".format( round ( cluster_hard.likelihood_record [NUM_CLONE_hard[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_hard.includefp_record [NUM_CLONE_hard[i]] , cluster_hard.fp_index_record[NUM_CLONE_hard[i]], "None", **kwargs )
             else:
-                visualizationsingle.drawfigure_2d (cluster_hard.membership_record [NUM_CLONE_hard[i]], "CLEMENT_hard : {}".format( round ( cluster_hard.likelihood_record [NUM_CLONE_hard[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_hard.includefp_record [NUM_CLONE_hard[i]] , cluster_hard.fp_index_record[NUM_CLONE_hard[i]], "SVD" )
+                visualizationsingle.drawfigure_2d (cluster_hard.membership_record [NUM_CLONE_hard[i]], "CLEMENT_hard : {}".format( round ( cluster_hard.likelihood_record [NUM_CLONE_hard[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_hard.includefp_record [NUM_CLONE_hard[i]] , cluster_hard.fp_index_record[NUM_CLONE_hard[i]], "SVD", **kwargs )
 
 
             subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/candidate/clone" + str(NUM_CLONE_hard[i]) +".\(hard\)." + kwargs["IMAGE_FORMAT"] + " " + kwargs["CLEMENT_DIR"]+ "/CLEMENT_hard_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
@@ -547,10 +547,10 @@ if kwargs["MODE"] in ["Soft", "Both"]:
             #visualization
             if kwargs["NUM_BLOCK"] >= 3:
                 visualizationpair.drawfigure_2d (membership_answer, mixture_answer, cluster_soft.membership_record [NUM_CLONE_soft[i]], np.round(cluster_soft.mixture_record [NUM_CLONE_soft[i]], 2),
-                            score_df, kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"] ,  "ANSWER\n", "CLEMENT ", np_vaf, cluster_soft.includefp_record [NUM_CLONE_soft[i]],  cluster_soft.makeone_index_record [NUM_CLONE_soft[i]], dimensionreduction="SVD")
+                            score_df, kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"] ,  "ANSWER\n", "CLEMENT ", np_vaf, cluster_soft.includefp_record [NUM_CLONE_soft[i]],  cluster_soft.makeone_index_record [NUM_CLONE_soft[i]], dimensionreduction="SVD", **kwargs)
             elif kwargs["NUM_BLOCK"] == 2:
                 visualizationpair.drawfigure_2d (membership_answer, mixture_answer, cluster_soft.membership_record [NUM_CLONE_soft[i]], np.round(cluster_soft.mixture_record [NUM_CLONE_soft[i]], 2),
-                            score_df, kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"] ,  "ANSWER\n", "CLEMENT ", np_vaf, cluster_soft.includefp_record [NUM_CLONE_soft[i]],  cluster_soft.makeone_index_record [NUM_CLONE_soft[i]], dimensionreduction="None")
+                            score_df, kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"] ,  "ANSWER\n", "CLEMENT ", np_vaf, cluster_soft.includefp_record [NUM_CLONE_soft[i]],  cluster_soft.makeone_index_record [NUM_CLONE_soft[i]], dimensionreduction="None", **kwargs)
                 samplename_dict = {k:k for k in range(0, np.max(cluster_soft.membership_record [NUM_CLONE_soft[i]])+ 1)}
                 # visualizationsinglesoft.drawfigure_2d( cluster_soft.membership_record [NUM_CLONE_soft[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]], cluster_soft.membership_p_normalize_record [NUM_CLONE_soft[i]], 
                 #                                                             "CLEMENT", kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]], cluster_soft.fp_index_record[NUM_CLONE_soft[i]], cluster_soft.makeone_index_record[NUM_CLONE_soft[i]], dimensionreduction="None")
@@ -651,7 +651,7 @@ if kwargs["MODE"] in ["Soft", "Both"]:
                                                                         "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , cluster_soft.makeone_index_record[NUM_CLONE_soft[i]] )
             elif kwargs["NUM_BLOCK"] == 2:
                 visualizationsinglesoft.drawfigure_2d (cluster_soft.membership_record [NUM_CLONE_soft[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]], cluster_soft.membership_p_normalize_record [NUM_CLONE_soft[i]],
-                                                                        "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , cluster_soft.makeone_index_record[NUM_CLONE_soft[i]] )
+                                                                        "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , cluster_soft.makeone_index_record[NUM_CLONE_soft[i]], "None" )
             else:
                 visualizationsinglesoft.drawfigure_2d (cluster_soft.membership_record [NUM_CLONE_soft[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]], cluster_soft.membership_p_normalize_record [NUM_CLONE_soft[i]],
                                                                         "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]]) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , cluster_soft.makeone_index_record[NUM_CLONE_soft[i]], "SVD" )

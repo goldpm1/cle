@@ -52,12 +52,18 @@ def dirichlet_sampling ( **kwargs ):
 
 
     # Dirichlet sampling : Clone별 개수 정하고, VAF 정하고 , Depth/Alt 정해주기
-    if kwargs["FP_RATIO"]  in [0, 0.0]:
-        NUM_CLONE_ACTIVE = NUM_CLONE
-    else:
-        NUM_CLONE_ACTIVE = NUM_CLONE + 1
+    print ("NUM_CLONE : {}".format (NUM_CLONE))
+    print ("FP_RATIO : {}, {}".format (kwargs["FP_RATIO"], type(kwargs["FP_RATIO"])))
 
+    # if kwargs["FP_RATIO"]  in [0, 0.0]:
+    #     NUM_CLONE_ACTIVE = NUM_CLONE
+    #     print (NUM_CLONE_ACTIVE)
+    # else:
+    #     NUM_CLONE_ACTIVE = NUM_CLONE + 1
+    
+    NUM_CLONE_ACTIVE = NUM_CLONE
 
+    print (NUM_CLONE_ACTIVE)
 
     #0. 각 cluster마다 membership을 몇 개 줄지 정함   (clone 0은 무조건 low vaf로 주자)
     if (kwargs ["LOWVAF_RATIO"] != 0):

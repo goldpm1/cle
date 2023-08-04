@@ -71,6 +71,8 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
 
 
     NUM_CLONE_answer = int ( kwargs["COMBINED_OUTPUT_DIR"].split("_")[-1] )
+    # if kwargs["FP_RATIO"] > 0:  # FP가 있다면
+    #     NUM_CLONE_answer += 1
     print ("NUM_CLONE_answer : {}".format(NUM_CLONE_answer))
 
     # General
@@ -135,6 +137,7 @@ if __name__ == "__main__":
     parser.add_argument('--BENCHMARK_END', type = int)
     parser.add_argument('--OUTPUT_TTEST', type = str)
     parser.add_argument('--OUTPUT_JPG', type = str)
+    parser.add_argument('--FP_RATIO', type = float)
 
     kwargs = {}
     args = parser.parse_args()
@@ -146,6 +149,7 @@ if __name__ == "__main__":
     kwargs["BENCHMARK_END"] = int(args.BENCHMARK_END)
     kwargs["OUTPUT_TTEST"] = args.OUTPUT_TTEST
     kwargs["OUTPUT_JPG"] = args.OUTPUT_JPG
+    kwargs["FP_RATIO"] = float( args.FP_RATIO )
 
 
     toollist = ["CLEMENT_decision", "pyclonevi", "sciclone", "quantumclone", "simpleK_elbow", "simpleK_silhouette", "simpleK_gap"]

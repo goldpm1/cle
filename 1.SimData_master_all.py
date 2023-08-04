@@ -9,7 +9,7 @@ print (SCRIPT_DIR, "\n")
 if __name__ == "__main__":
     kwargs = {}
 
-    NUM_BLOCK_LIST = [1]             # 1, 2, 3
+    NUM_BLOCK_LIST = [2]             # 1, 2, 3
     NUM_MUTATION_LIST = [500]    # 500, 100
     DEPTH_MEAN_LIST = [100]       # 100, 30
     FP_RATIO_LIST = [0.0, 0.1 ]        # 0.0, 0.1
@@ -20,10 +20,10 @@ if __name__ == "__main__":
     kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] = 2, 7
     kwargs["MAXIMUM_NUM_PARENT"] = 0
     kwargs["TRIAL_NO"] = 8
-    kwargs["MAKEONET_STRICT"] = 1
-    kwargs["VERBOSE"] = 1
+    kwargs["MAKEONE_STRICT"] = 1
     kwargs["SCORING"] = "True"
     kwargs["MODE"] = "Both"
+    kwargs["VERBOSE"] = 1
                            
 
     n  = 0 
@@ -36,6 +36,8 @@ if __name__ == "__main__":
                 kwargs["DEPTH_MEAN"] = DEPTH_MEAN
                 kwargs["DEPTH_SD"] = 8 if DEPTH_MEAN >= 100 else 5
                 kwargs["DEPTH_CUTOFF"] = 30 if DEPTH_MEAN >= 100 else 10
+                kwargs["KMEANS_CLUSTERNO"] = 8 if DEPTH_MEAN >= 100 else 6
+                kwargs["MIN_CLUSTER_SIZE"] = 15 if DEPTH_MEAN >= 100 else 10
                 for SIMDATA in SIMDATA_LIST:
                     kwargs["SIMDATA"] = SIMDATA
                     for FP_RATIO in FP_RATIO_LIST:
@@ -111,10 +113,13 @@ if __name__ == "__main__":
                                                      "--DEPTH_CUTOFF", str(kwargs["DEPTH_CUTOFF"]),  
                                                      "--VERBOSE", str( kwargs["VERBOSE"]), 
                                                      "--TRIAL_NO", str( kwargs["TRIAL_NO"]), 
-                                                     "--MAKEONE_STRICT", str ( kwargs["MAKEONET_STRICT"] ),
+                                                     "--MAKEONE_STRICT", str ( kwargs["MAKEONE_STRICT"] ),
                                                      "--RANDOM_SEED", str(ii), 
-                                                     "--SCORING", kwargs["SCORING"], 
-                                                     "--MODE", kwargs["MODE"]
+                                                     "--SCORING", str(kwargs["SCORING"]), 
+                                                     "--KMEANS_CLUSTERNO", str(kwargs["KMEANS_CLUSTERNO"]), 
+                                                     "--MIN_CLUSTER_SIZE", str(kwargs["MIN_CLUSTER_SIZE"]), 
+                                                     "--MODE", str(kwargs["MODE"]),
+                                                     "--VERBOSE", str(kwargs["VERBOSE"])
                                                      ])
                                 os.system(command2)
 
@@ -139,7 +144,8 @@ if __name__ == "__main__":
                                                 "--BENCHMARK_START", str(kwargs["BENCHMARK_START"]),
                                                 "--BENCHMARK_END", str(kwargs["BENCHMARK_END"]),
                                                 "--OUTPUT_TTEST", str(kwargs["OUTPUT_TTEST"]),
-                                                "--OUTPUT_JPG", str(kwargs["OUTPUT_JPG"])
+                                                "--OUTPUT_JPG", str(kwargs["OUTPUT_JPG"]),
+                                                "--FP_RATIO", str(kwargs["FP_RATIO"])
                                                 ])
                             ##print (command3)
                             os.system(command3)

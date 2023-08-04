@@ -50,8 +50,6 @@ if __name__ == "__main__":
     kwargs["FP_USEALL"] = "False"
     kwargs["SCORING"] = "True"
     kwargs["MODE"] = "Both"
-    kwargs["MIN_CLUSTER_SIZE"] = 15
-    kwargs["KMEANS_CLUSTERNO"] = 8
     kwargs["PARENT_RATIO"] = 0
 
 
@@ -66,10 +64,10 @@ if __name__ == "__main__":
             for DEPTH_MEAN in DEPTH_MEAN_LIST:
                 kwargs["DEPTH_MEAN"] = DEPTH_MEAN
                 kwargs["DEPTH_CUTOFF"] = 30 if DEPTH_MEAN >= 100 else 10
+                kwargs["KMEANS_CLUSTERNO"] = 8 if DEPTH_MEAN >= 100 else 6
+                kwargs["MIN_CLUSTER_SIZE"] = 15 if DEPTH_MEAN >= 100 else 10
                 for NUM_PARENT in NUM_PARENT_LIST:
                     kwargs["NUM_PARENT"] = NUM_PARENT
-                    
-
                     for FP_RATIO in FP_RATIO_LIST:
                         kwargs["FP_RATIO"] = FP_RATIO
                         for AXIS_RATIO in AXIS_RATIO_LIST:
