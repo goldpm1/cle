@@ -163,7 +163,7 @@ for DIR_index, DIR in enumerate( INPUT_DIR_LIST) :
     ax_row  = int (DIR_index % NUM_ROW)
     ax_col = int (DIR_index / NUM_ROW)
     
-    drawfigure (result, toollist, ax, ax_row, ax_col, **kwargs)
+    drawfigure (result, toollist, toollist_concise, ax, ax_row, ax_col, **kwargs)
     
 fig.savefig(kwargs["OUTPUT_JPG"])
 

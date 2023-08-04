@@ -36,7 +36,7 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
     safe7 = palettable.cartocolors.qualitative.Vivid_10.mpl_colors
     Gr_10 = palettable.scientific.sequential.GrayC_20.mpl_colors
 
-    colorlist = [i for i in safe7]
+    colorlist = [i for i in tabl]
     sns.set_style("white")
     #sns.set_palette("tab10")
     sns.set_palette(sns.color_palette(colorlist))
@@ -76,28 +76,24 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
 
     fig, ax = matplotlib.pyplot.subplots(1, 4, figsize = (18,6))
     fig.subplots_adjust (wspace = 0.2, hspace = 0.8, bottom = 0.15, top = 0.85, left = 0.05, right = 0.95)
-    matplotlib.pyplot.suptitle ( kwargs["SAMPLENAME"] , fontsize = 30, y = 0.98, fontweight = "semibold")
-    matplotlib.pyplot.title ( kwargs["CONDITIONNAME"] , fontsize = 16, y = 0.88, fontweight = "semibold")
+    matplotlib.pyplot.suptitle ( kwargs["CONDITIONNAME"] + "  " + kwargs["SAMPLENAME"] , fontsize = 30, y = 0.98, fontweight = "semibold")
+    #matplotlib.pyplot.title ( kwargs["CONDITIONNAME"] , fontsize = 16, y = 0.88, fontweight = "semibold")
     
 
     #1.
-    sns.boxplot (data = df, x = "tool", y = "score",  ax = ax[0], linewidth = 1)
-    sns.swarmplot (data = df, x = "tool", y = "score", color = ".25", ax = ax[0])
+    sns.boxplot (data = df, x = "tool", y = "score",  ax = ax[0],  linewidth = 1)
+    sns.swarmplot (data = df, x = "tool", y = "score",  color = ".25", ax = ax[0 ])
 
     #2.
-    sns.boxplot (data = df, x = "tool", y = "ARI",  ax = ax[1], linewidth = 1)
-    sns.stripplot (data = df, x = "tool", y = "ARI", color = ".15", ax = ax[1])
+    sns.boxplot (data = df, x = "tool", y = "ARI",   ax = ax[1], linewidth = 1)
+    sns.stripplot (data = df, x = "tool", y = "ARI",  color = ".15", ax = ax[1])
 
     #3.
-    sns.swarmplot (data = df, x = "tool", y = "NUM_CLONE_answer", ax = ax[2])
-    ax[2].set_yticks ( range (np.min (df["NUM_CLONE_answer"]) , np.max (df["NUM_CLONE_answer"]) + 1  ))
+    sns.swarmplot (data = df, x = "tool", y = "NUM_CLONE_answer", hue = "tool", ax = ax[2])
+    #ax[2].set_yticks ( range (np.min (df["NUM_CLONE_answer"]) , np.max (df["NUM_CLONE_answer"]) + 1  ))
 
     #4.
-    # sns.boxplot (data = df, x = "tool", y = "f1score", ax = ax[3], linewidth = 1)
-    # ax[3].set_ylabel ("f1 score for FP")
-    sns.barplot (data = df, x = "tool", y = "runningtime", ax = ax[3], linewidth = 1, edgecolor = "black")
-    ax[3].set_ylabel ("runningtime (s)")
-    ax[3].set_yticks ( range ( int(ax[3].get_ylim() [0]) , int ( ax[3].get_ylim() [1]  ) + 1, 60  ))
+    sns.violinplot (data = df, x = "tool", y = "runningtime", hue = "tool", ax = ax[3], edgecolor = "black")
 
 
     for i, ax_individual in enumerate(ax):
@@ -109,13 +105,15 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
         xmin, xmax, ymin, ymax = ax_individual.axis()
         ymax = (ymax - ymin) * 0.2 + ymax
         ax_individual.axis ( [ xmin, xmax, ymin, ymax ]) 
-        ax_individual.set_title (chr (i+65) + "." , fontsize = 15, loc = "left")    # A. B. C.
+        ax_individual.set_title (chr (i+65) + "." , fontsize = 15, loc = "left", fontweight = "semibold")    # A. B. C.
         ax_individual.set_xticks ( list ( range ( len(toollist)  ) ) )   # 숫자로 tick을 박아놓고
         ax_individual.set_xticklabels( toollist_concise )  # 표시는 toollist_concise로
+        ax_individual.legend().set_visible(False)   # Legend는 안 보이게 한다
 
-        # if i == 3:
-        #     ymax = 1.1
+
     ax[2].set_yticks ( list ( range ( 1, int(ax[2].get_xlim()[1]) + 1) ) )  # 정수만 표시해준다
+    ax[3].set_ylabel ("runningtime (s)")
+    ax[3].set_yticks ( range ( 0, int ( ax[3].get_ylim() [1]  ) + 1, 60  ))
 
     
 
@@ -143,7 +141,7 @@ if __name__ == "__main__":
 
     kwargs["INPUT_DIR"] = args.INPUT_DIR
     kwargs["SAMPLENAME"] = args.SAMPLENAME
-    kwargs["CONDITIONNAME"] = args.SAMPLENAME
+    kwargs["CONDITIONNAME"] = args.CONDITIONNAME
     kwargs["BENCHMARK_START"] = int(args.BENCHMARK_START)
     kwargs["BENCHMARK_END"] = int(args.BENCHMARK_END)
     kwargs["OUTPUT_TTEST"] = args.OUTPUT_TTEST

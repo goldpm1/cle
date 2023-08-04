@@ -407,11 +407,11 @@ if kwargs["MODE"] in ["Hard", "Both"]:
             subprocess.run (["cp " + kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_hard_" + priority + ".results.txt"], shell = True)
 
 
-            pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(score_df).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".scoredf.txt", index = False, header= True,  sep = "\t")
             pd.DataFrame(score_df).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".scoredf.txt", index = False, header= True,  sep = "\t")
@@ -488,11 +488,11 @@ if kwargs["MODE"] in ["Hard", "Both"]:
                         format(cluster_hard.mixture_record [NUM_CLONE_hard[i]].shape[1] - int (cluster_hard.includefp_record [ NUM_CLONE_hard[i] ]) , len (cluster_hard.makeone_index_record [NUM_CLONE_hard[i]]),   round((datetime.datetime.now() - START_TIME).total_seconds()), cluster_hard.includefp_record [NUM_CLONE_hard[i]], cluster_hard.fp_index_record [NUM_CLONE_hard[i]] , cluster_hard.makeone_index_record [NUM_CLONE_hard[i]]  ), file = output_myEM)
             subprocess.run (["cp " + kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_hard_" + priority + ".results.txt"], shell = True)
 
-            pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_hard.membership_record [NUM_CLONE_hard[i]]).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_hard.mixture_record [NUM_CLONE_hard[i]],).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame( np.unique( cluster_hard.membership_record [NUM_CLONE_hard[i]], return_counts = True ) ).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_hard_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
 
             samplename_dict = {k:k for k in range(0, np.max(cluster_hard.membership_record [NUM_CLONE_hard[i]])+ 1)}
@@ -588,11 +588,11 @@ if kwargs["MODE"] in ["Soft", "Both"]:
             subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + ".results.txt"], shell = True)
 
 
-            pd.DataFrame(cluster_soft.membership_record [NUM_CLONE_soft[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_soft.membership_record [NUM_CLONE_soft[i]]).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_soft.membership_record [NUM_CLONE_soft[i]]).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_soft_" + priority + ".membership.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame(cluster_soft.mixture_record [NUM_CLONE_soft[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame(cluster_soft.mixture_record [NUM_CLONE_soft[i]],).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(cluster_soft.mixture_record [NUM_CLONE_soft[i]],).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_soft_" + priority + ".mixture.txt", index = False, header= False,  sep = "\t" )
-            pd.DataFrame( np.unique( cluster_soft.membership_record [NUM_CLONE_soft[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
+            pd.DataFrame( np.unique( cluster_soft.membership_record [NUM_CLONE_soft[i]], return_counts = True ) ).to_csv (kwargs["CLEMENT_DIR"] + "/CLEMENT_soft_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame( np.unique( cluster_soft.membership_record [NUM_CLONE_soft[i]], return_counts = True ) ).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_soft_" + priority + ".membership_count.txt", index = False, header= False,  sep = "\t" )
             pd.DataFrame(score_df).to_csv (kwargs["CLEMENT_DIR"] + "/result/CLEMENT_soft_" + priority + ".scoredf.txt", index = False, header= True,  sep = "\t")
             pd.DataFrame(score_df).to_csv (kwargs["COMBINED_OUTPUT_DIR"] + "/CLEMENT_soft_" + priority + ".scoredf.txt", index = False, header= True,  sep = "\t")
@@ -683,12 +683,12 @@ if kwargs["MODE"] in ["Soft", "Both"]:
         
 
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision." + kwargs["IMAGE_FORMAT"] ], shell = True)
-    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_" + DECISION + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.results.txt" ], shell = True)
-    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_" + DECISION + ".membership.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.membership.txt" ], shell = True)
-    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_" + DECISION + ".membership_count.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.membership_count.txt" ], shell = True)
-    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_" + DECISION + ".mixture.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.mixture.txt" ], shell = True)
     with open (kwargs["CLEMENT_DIR"]  + "/result/CLEMENT_decision.results.txt", "a", encoding = "utf8") as output_myEM:
         print ( "DECISION\t{}\nhard_std\t{}\nsoft_std\t{}".format( DECISION, round(hard_std, 3), round(soft_std, 3) ), file = output_myEM)
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.results.txt" ], shell = True)
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + ".membership.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.membership.txt" ], shell = True)
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + ".membership_count.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.membership_count.txt" ], shell = True)
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + ".mixture.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.mixture.txt" ], shell = True)
         
 
         

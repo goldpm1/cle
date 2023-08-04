@@ -20,7 +20,7 @@ def decision_elbow ( cluster, **kwargs):
     from kneed import KneeLocator
     import matplotlib.pyplot as plt
 
-    if kwargs["NUM_CLONE_TRIAL_START"] == kwargs["NUM_CLONE_TRIAL_END"]:       # 1개밖에 없으면  kneedle이 오류난다
+    if (kwargs["NUM_CLONE_TRIAL_START"] == kwargs["NUM_CLONE_TRIAL_END"]) :       # 1개밖에 없으면  kneedle이 오류난다
         threshold_x = kwargs["NUM_CLONE_TRIAL_END"]
     else:
         x = np.arange(start = kwargs["NUM_CLONE_TRIAL_START"], stop = kwargs["NUM_CLONE_TRIAL_END"] + 1)
@@ -48,6 +48,8 @@ def decision_silhouette (cluster, np_vaf, **kwargs):
     Silhouette_list = np.zeros (kwargs["NUM_CLONE_TRIAL_END"] + 1, dtype ="float")
 
     for k in range (kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] + 1):
+        if k == 1:           # silhouette score는 k = 1에서 오류난다
+            continue 
         silhouette_score_alldata = silhouette_samples(np_vaf , cluster.membership_record [k] )   # (500,1 )  500
         Silhouette_list [k] = np.mean (silhouette_score_alldata)
 
