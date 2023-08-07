@@ -20,7 +20,7 @@ if __name__ == "__main__":
                                     exome=False,
                                     genome_build="GRCh37", 
                                     signature_database=None,
-                                    exclude_signature_subgroups= ['remove_Colibactin_signatures', 'remove_Immunosuppressants_signatures', 'remove_UV_signatures', 'remove_Tobacco_signatures' ],   #  'remove_Unknown_signatures'
+                                    exclude_signature_subgroups= [ 'remove_Colibactin_signatures', 'remove_Unknown_signatures'  ],   #  'remove_Unknown_signatures'
                                     export_probabilities=False,
                                     export_probabilities_per_mutation=False, 
                                     make_plots=True,

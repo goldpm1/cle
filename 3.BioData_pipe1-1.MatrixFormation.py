@@ -38,9 +38,9 @@ def extract (Moore_VCF, **kwargs):
             GenerateMatrix (Moore_VCF_Clone_no, "clone" + str(Clone_no), **kwargs)
 
     # whole
-    # kwargs["OUTPUT_PATH"] = kwargs["OUTPUT_DIR"] + "/whole.txt"
-    # GenerateMatrix ( Moore_VCF [Moore_VCF['pos'].isin( list ( npvaf.iloc[:, 0] ) ) == True] , "whole", **kwargs)
-    # print ("whole : {}".format ( Moore_VCF [Moore_VCF['pos'].isin( list ( npvaf.iloc[:, 0] ) ) == True].shape) )
+    kwargs["OUTPUT_PATH"] = kwargs["OUTPUT_DIR"] + "/whole.txt"
+    GenerateMatrix ( Moore_VCF [Moore_VCF['pos'].isin( list ( npvaf.iloc[:, 0] ) ) == True] , "whole", **kwargs)
+    print ("whole : {}".format ( Moore_VCF [Moore_VCF['pos'].isin( list ( npvaf.iloc[:, 0] ) ) == True].shape) )
 
 
 
