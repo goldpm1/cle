@@ -9,7 +9,8 @@ def phred_to_percentile (phred_score):
     return round ( 10 ** (-phred_score / 10) , 3)  #  Converts a Phred score to a percentile.
 
 
-def calc_likelihood(df,  np_vaf, np_BQ, step, k, **kwargs):
+def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
+    import re
     mixture = step.mixture
 
     max_prob = float("-inf")
@@ -26,7 +27,10 @@ def calc_likelihood(df,  np_vaf, np_BQ, step, k, **kwargs):
         if (j == step.fp_index):   # Calculating the probability if this variants is false positive
             for i in range(kwargs["NUM_BLOCK"]):
                 SEQ_ERROR1 = phred_to_percentile ( np_BQ[k][i] )
-                depth_calc, alt_calc = int(df[k][i]["depth"] ), int(df[k][i]["depth"] * mixture[i][j] * 0.5)
+                if (kwargs["SEX"] == "M") & ( bool(re.search(r'X|Y', input_containpos.iloc[k]["pos"]))  == True  ) :
+                    depth_calc, alt_calc = int(df[k][i]["depth"] ), int(df[k][i]["depth"] * mixture[i][j])
+                else:
+                    depth_calc, alt_calc = int(df[k][i]["depth"] ), int(df[k][i]["depth"] * mixture[i][j] * 0.5)
                 depth_obs, alt_obs = int(df[k][i]["depth"]), int(df[k][i]["alt"])
 
             
@@ -41,7 +45,10 @@ def calc_likelihood(df,  np_vaf, np_BQ, step, k, **kwargs):
         else:  #  # Calculating the probability if this variants is in other clusters
             for i in range(kwargs["NUM_BLOCK"]):
                 SEQ_ERROR1 = phred_to_percentile ( np_BQ[k][i] )
-                depth_calc, alt_calc = int(df[k][i]["depth"] ), int(df[k][i]["depth"] * mixture[i][j] * 0.5)
+                if (kwargs["SEX"] == "M") & ( bool(re.search(r'X|Y', input_containpos.iloc[k]["pos"]))  == True  ) :
+                    depth_calc, alt_calc = int(df[k][i]["depth"] ), int(df[k][i]["depth"] * mixture[i][j])
+                else:
+                    depth_calc, alt_calc = int(df[k][i]["depth"] ), int(df[k][i]["depth"] * mixture[i][j] * 0.5)
                 depth_obs, alt_obs = int(df[k][i]["depth"]), int(df[k][i]["alt"])
 
                 # Beta binomial distribution
@@ -88,7 +95,7 @@ def calc_likelihood(df,  np_vaf, np_BQ, step, k, **kwargs):
 
 
 
-def main (df, np_vaf, np_BQ, step, **kwargs):
+def main (input_containpos, df, np_vaf, np_BQ, step, **kwargs):
     total_prob = 0
 
     if (step.fp_index != -1) & (kwargs["OPTION"] in ["Soft", "soft"]):
@@ -99,7 +106,7 @@ def main (df, np_vaf, np_BQ, step, **kwargs):
         temp1_membership = np.zeros ( kwargs["NUM_MUTATION"]  ,dtype = "int")
         temp1_membership_p = np.zeros ( (kwargs["NUM_MUTATION"], kwargs["NUM_CLONE"])  ,dtype = "float")
         for k in range(kwargs["NUM_MUTATION"]):
-            temp1_membership_p[k], max_prob, temp1_membership[k] = calc_likelihood(df,  np_vaf, np_BQ, step, k, **kwargs)
+            temp1_membership_p[k], max_prob, temp1_membership[k] = calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs)
             total_prob1 = total_prob1 + max_prob
 
         #2. FP is indepenent clone
@@ -107,7 +114,7 @@ def main (df, np_vaf, np_BQ, step, **kwargs):
         temp2_membership = np.zeros ( kwargs["NUM_MUTATION"]  ,dtype = "int")
         temp2_membership_p = np.zeros ( (kwargs["NUM_MUTATION"], kwargs["NUM_CLONE"])  ,dtype = "float")
         for k in range(kwargs["NUM_MUTATION"]):
-            temp2_membership_p[k], max_prob, temp2_membership[k] = calc_likelihood(df,  np_vaf, np_BQ, step, k, **kwargs)
+            temp2_membership_p[k], max_prob, temp2_membership[k] = calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs)
             total_prob2 = total_prob2 + max_prob
 
 
@@ -131,7 +138,7 @@ def main (df, np_vaf, np_BQ, step, **kwargs):
         total_prob = 0
         FPorCluster3_prob = 0
         for k in range(kwargs["NUM_MUTATION"]):
-            step.membership_p[k], max_prob, step.membership[k] = calc_likelihood(df,  np_vaf, np_BQ, step, k, **kwargs)
+            step.membership_p[k], max_prob, step.membership[k] = calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs)
             total_prob = total_prob + max_prob
         step.likelihood = total_prob
         step.likelihood_record[kwargs["STEP"]] = total_prob

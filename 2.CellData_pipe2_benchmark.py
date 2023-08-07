@@ -74,7 +74,7 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
     
 
 
-    fig, ax = matplotlib.pyplot.subplots(1, 4, figsize = (18,6))
+    fig, ax = matplotlib.pyplot.subplots(1, 3, figsize = (14,6))
     fig.subplots_adjust (wspace = 0.2, hspace = 0.8, bottom = 0.15, top = 0.85, left = 0.05, right = 0.95)
     matplotlib.pyplot.suptitle ( kwargs["CONDITIONNAME"] + "  " + kwargs["SAMPLENAME"] , fontsize = 30, y = 0.98, fontweight = "semibold")
     #matplotlib.pyplot.title ( kwargs["CONDITIONNAME"] , fontsize = 16, y = 0.88, fontweight = "semibold")
@@ -89,11 +89,31 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
     sns.stripplot (data = df, x = "tool", y = "ARI",  color = ".15", ax = ax[1])
 
     #3.
-    sns.swarmplot (data = df, x = "tool", y = "NUM_CLONE_answer", hue = "tool", ax = ax[2])
-    #ax[2].set_yticks ( range (np.min (df["NUM_CLONE_answer"]) , np.max (df["NUM_CLONE_answer"]) + 1  ))
+    #sns.swarmplot (data = df, x = "tool", y = "NUM_CLONE_answer", hue = "tool", ax = ax[2])
+    for j, tool in enumerate( toollist ):
+        value_count = df [df ["tool"] == tool ] ["NUM_CLONE_answer"].value_counts()
+        #print ("{} -> value_count : {}".format (tool, value_count))
+        value_count_dict = {}      # {2:8, 3:69, 4:148, 5:112, 6:26, 7:17}
+        for i in value_count.index:
+            value_count_dict [i] = value_count.loc[i]
+            ax[2].scatter ( x = j, y = i, s = value_count_dict[i] * 80, color = tabl[j])
+
+    # 사각형 그리기
+    if "M1" in kwargs["SAMPLENAME"]:
+        NUM_CLONE_answer = 3
+    if "M2" in kwargs["SAMPLENAME"]:
+        NUM_CLONE_answer = 4
+    if "M3" in kwargs["SAMPLENAME"]:
+        NUM_CLONE_answer = 4
+
+    rect = matplotlib.patches.Rectangle((-0.5, NUM_CLONE_answer - 0.5),                                # 사각형 꼭지점의 시작위치
+                                                    ax[2].get_xlim()[1] - ax[2].get_xlim()[0] + 0.5, 1,        # x 길이, y 길이
+                                                    linewidth=0.5, edgecolor='red', facecolor='black', alpha=0.3)
+    ax[2].add_patch(rect)
+
 
     #4.
-    sns.violinplot (data = df, x = "tool", y = "runningtime", hue = "tool", ax = ax[3], edgecolor = "black")
+    #sns.violinplot (data = df, x = "tool", y = "runningtime", hue = "tool", ax = ax[3], edgecolor = "black")
 
 
     for i, ax_individual in enumerate(ax):
@@ -112,8 +132,8 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
 
 
     ax[2].set_yticks ( list ( range ( 1, int(ax[2].get_xlim()[1]) + 1) ) )  # 정수만 표시해준다
-    ax[3].set_ylabel ("runningtime (s)")
-    ax[3].set_yticks ( range ( 0, int ( ax[3].get_ylim() [1]  ) + 1, 60  ))
+    # ax[3].set_ylabel ("runningtime (s)")
+    # ax[3].set_yticks ( range ( 0, int ( ax[3].get_ylim() [1]  ) + 1, 60  ))
 
     
 

@@ -1,5 +1,5 @@
-def main(df, np_vaf, np_BQ, step, option, **kwargs):  
-    import math
+def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):  
+    import math, re
     import isparent, EMhard
     import visualizationsinglesoft,  visualizationeachstep
     import numpy as np
@@ -17,8 +17,12 @@ def main(df, np_vaf, np_BQ, step, option, **kwargs):
                 sum_depth, sum_alt = 0, 0
                 for ind in ind_list:       # Summing depth and alt
                     if df[ind][i]["alt"] != 0:
-                        sum_depth = sum_depth + df[ind][i]["depth"]
-                        sum_alt = sum_alt + df[ind][i]["alt"]
+                        if (kwargs["SEX"] == "M") & ( bool(re.search(r'X|Y', input_containpos.iloc[ind]["pos"]))  == True  ) :
+                            sum_depth = sum_depth + df[ind][i]["depth"] * 2
+                            sum_alt = sum_alt + df[ind][i]["alt"]
+                        else: #Most of the cases
+                            sum_depth = sum_depth + df[ind][i]["depth"]
+                            sum_alt = sum_alt + df[ind][i]["alt"]
                 step.mixture[i][j] = round((sum_alt * 2) / sum_depth, 2) if sum_depth != 0 else 0   # Ideal centroid allocation
 
         
@@ -81,8 +85,12 @@ def main(df, np_vaf, np_BQ, step, option, **kwargs):
                     sum_depth, sum_alt = 0, 0
                     for ind in np.where(step.membership == j)[0]:
                         if df[ind][i]["alt"] != 0:
-                            sum_depth = sum_depth + df[ind][i]["depth"]
-                            sum_alt = sum_alt + df[ind][i]["alt"]
+                            if (kwargs["SEX"] == "M") & ( bool(re.search(r'X|Y', input_containpos.iloc[ind]["pos"]))  == True  ) :
+                                sum_depth = sum_depth + df[ind][i]["depth"] * 2
+                                sum_alt = sum_alt + df[ind][i]["alt"]
+                            else: #Most of the cases
+                                sum_depth = sum_depth + df[ind][i]["depth"]
+                                sum_alt = sum_alt + df[ind][i]["alt"]
                     
                     step.mixture[i][j] = round((sum_alt * 2) / sum_depth, 2) if sum_depth != 0 else 0
 
@@ -90,7 +98,10 @@ def main(df, np_vaf, np_BQ, step, option, **kwargs):
                 for i in range(NUM_BLOCK):   # Calculate the weighted mean
                     vaf, weight = np.zeros(NUM_MUTATION, dtype="float"), np.zeros(NUM_MUTATION, dtype="float")
                     for k in range(NUM_MUTATION):
-                        vaf[k] = int(df[k][i]["alt"]) / int(df[k][i]["depth"])
+                        if (kwargs["SEX"] == "M") & ( bool(re.search(r'X|Y', input_containpos.iloc[k]["pos"]))  == True  ) :
+                            vaf[k] = int(df[k][i]["alt"])  / ( int(df[k][i]["depth"]) * 2)
+                        else:
+                            vaf[k] = int(df[k][i]["alt"]) / int(df[k][i]["depth"])
 
                         if step.membership[k] in step.makeone_index:
                             weight[k] = math.pow(10, step.membership_p[k][j])

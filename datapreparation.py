@@ -344,4 +344,4 @@ def main (**kwargs):
             quantumclone_dataset( kwargs["QUANTUMCLONE_DIR"], **kwargs )
 
             
-    return (inputdf, df, np_vaf, np_BQ, membership_answer, mixture_answer, mutation_id, kwargs)
+    return (input_containpos, inputdf, df, np_vaf, np_BQ, membership_answer, mixture_answer, mutation_id, kwargs)

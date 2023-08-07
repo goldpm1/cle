@@ -9,8 +9,8 @@ print (SCRIPT_DIR, "\n")
 if __name__ == "__main__":
     kwargs = {}
 
-    NUM_BLOCK_LIST = [2]             # 1, 2, 3
-    NUM_MUTATION_LIST = [500]    # 500, 100
+    NUM_BLOCK_LIST = [1, 2, 3]             # 1, 2, 3
+    NUM_MUTATION_LIST = [500, 100]    # 500, 100
     DEPTH_MEAN_LIST = [100]       # 100, 30
     FP_RATIO_LIST = [0.0, 0.1 ]        # 0.0, 0.1
     SIMDATA_LIST = [ "decoy", "lump"] # "decoy", "lump"

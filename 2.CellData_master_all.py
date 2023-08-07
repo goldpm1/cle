@@ -34,11 +34,11 @@ def M1only(SAMPLENAME, NUM_BLOCK):
 if __name__ == "__main__":
     kwargs = {}
     
-    NUM_BLOCK_LIST = [2]             # 1, 2, 3
-    NUM_MUTATION_LIST = [500]    # 500, 100
+    NUM_BLOCK_LIST = [1, 2, 3]             # 1, 2, 3
+    NUM_MUTATION_LIST = [500, 100]    # 500, 100
     DEPTH_MEAN_LIST = [125]       # 125, 30
     NUM_PARENT_LIST = [  0 ]       # 0 , 1
-    FP_RATIO_LIST = [0.0 ]        # 0.0, 0.1
+    FP_RATIO_LIST = [0.0, 0.1 ]        # 0.0, 0.1
     AXIS_RATIO_LIST = [0.0, 0.1 ]        # 0.0, 0.1
     BENCHMARK_LIST = [0, 4]; kwargs["BENCHMARK_START"] = BENCHMARK_LIST[0];  kwargs["BENCHMARK_END"] = BENCHMARK_LIST[1]
 
@@ -101,28 +101,28 @@ if __name__ == "__main__":
                                         kwargs["SCICLONE_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/sciclone/2.CellData/CellData_" +  str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/" + SAMPLENAME + "/" + str(ii) 
                                         kwargs["QUANTUMCLONE_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/quantumclone/2.CellData/CellData_" +  str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/" + SAMPLENAME + "/" + str(ii) 
 
-                                        for DIR in [ kwargs["NPVAF_DIR"], kwargs["SIMPLE_KMEANS_DIR"], kwargs["CLEMENT_DIR"], kwargs["SCICLONE_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["QUANTUMCLONE_DIR"], kwargs["COMBINED_OUTPUT_DIR"]  ]:
-                                            if os.path.exists ( DIR ) == True:
-                                                os.system("rm -rf " + DIR  )
-                                            if os.path.exists ( DIR ) == False:
-                                                os.system("mkdir -p " + DIR  )
+                                        # for DIR in [ kwargs["NPVAF_DIR"], kwargs["SIMPLE_KMEANS_DIR"], kwargs["CLEMENT_DIR"], kwargs["SCICLONE_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["QUANTUMCLONE_DIR"], kwargs["COMBINED_OUTPUT_DIR"]  ]:
+                                        #     if os.path.exists ( DIR ) == True:
+                                        #         os.system("rm -rf " + DIR  )
+                                        #     if os.path.exists ( DIR ) == False:
+                                        #         os.system("mkdir -p " + DIR  )
                                             
-                                        logPath = "/data/project/Alzheimer/YSscript/cle/log/2.CellData/CellData_" +  str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/" + SAMPLENAME + "/" + str(ii) 
-                                        os.system("rm -rf " + logPath)
-                                        os.system("mkdir -p " + logPath)
+                                        # logPath = "/data/project/Alzheimer/YSscript/cle/log/2.CellData/CellData_" +  str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/" + SAMPLENAME + "/" + str(ii) 
+                                        # os.system("rm -rf " + logPath)
+                                        # os.system("mkdir -p " + logPath)
 
-                                        hold_j.append( "CellData_EM_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + SAMPLENAME + "_" + str(ii)  )
-                                        command = " ".join(["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
-                                                                        "-N", "CellData_EM_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + SAMPLENAME + "_" + str(ii) ,
-                                                                        SCRIPT_DIR + "/2.CellData_pipe1_CLEMENT_bm.sh",
-                                                                        str(SCRIPT_DIR), str(INPUT_TSV),  str(kwargs["MODE"]),  str(kwargs["NUM_CLONE_TRIAL_START"]),  str( kwargs["NUM_CLONE_TRIAL_END"]),  
-                                                                        str(kwargs["NUM_MUTATION"]), str(kwargs["AXIS_RATIO"]),  str(kwargs["PARENT_RATIO"]),  str( kwargs["NUM_PARENT"]),  str(kwargs["FP_RATIO"]),  str(kwargs["FP_USEALL"]),
-                                                                        str(kwargs["TRIAL_NO"]), str(kwargs["DEPTH_CUTOFF"]),  str( kwargs["MIN_CLUSTER_SIZE"]),  str(kwargs["VERBOSE"]),
-                                                                        str(kwargs["KMEANS_CLUSTERNO"]),  str(ii), str( kwargs["SAMPLENAME"]), str(kwargs["BENCHMARK_END"]),
-                                                                        str(kwargs["NPVAF_DIR"]), str(kwargs["SIMPLE_KMEANS_DIR"]),  str(kwargs["CLEMENT_DIR"]), str(kwargs["SCICLONE_DIR"]), str( kwargs["PYCLONEVI_DIR"]), str(kwargs["QUANTUMCLONE_DIR"]), str(kwargs["COMBINED_OUTPUT_DIR"]),
-                                                                        str(kwargs["SCORING"]), str(kwargs["MAKEONE_STRICT"]), str(kwargs["MAXIMUM_NUM_PARENT"])])
-                                        os.system(command)
-                                        n += 1
+                                        # hold_j.append( "CellData_EM_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + SAMPLENAME + "_" + str(ii)  )
+                                        # command = " ".join(["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
+                                        #                                 "-N", "CellData_EM_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + SAMPLENAME + "_" + str(ii) ,
+                                        #                                 SCRIPT_DIR + "/2.CellData_pipe1_CLEMENT_bm.sh",
+                                        #                                 str(SCRIPT_DIR), str(INPUT_TSV),  str(kwargs["MODE"]),  str(kwargs["NUM_CLONE_TRIAL_START"]),  str( kwargs["NUM_CLONE_TRIAL_END"]),  
+                                        #                                 str(kwargs["NUM_MUTATION"]), str(kwargs["AXIS_RATIO"]),  str(kwargs["PARENT_RATIO"]),  str( kwargs["NUM_PARENT"]),  str(kwargs["FP_RATIO"]),  str(kwargs["FP_USEALL"]),
+                                        #                                 str(kwargs["TRIAL_NO"]), str(kwargs["DEPTH_CUTOFF"]),  str( kwargs["MIN_CLUSTER_SIZE"]),  str(kwargs["VERBOSE"]),
+                                        #                                 str(kwargs["KMEANS_CLUSTERNO"]),  str(ii), str( kwargs["SAMPLENAME"]), str(kwargs["BENCHMARK_END"]),
+                                        #                                 str(kwargs["NPVAF_DIR"]), str(kwargs["SIMPLE_KMEANS_DIR"]),  str(kwargs["CLEMENT_DIR"]), str(kwargs["SCICLONE_DIR"]), str( kwargs["PYCLONEVI_DIR"]), str(kwargs["QUANTUMCLONE_DIR"]), str(kwargs["COMBINED_OUTPUT_DIR"]),
+                                        #                                 str(kwargs["SCORING"]), str(kwargs["MAKEONE_STRICT"]), str(kwargs["MAXIMUM_NUM_PARENT"])])
+                                        # os.system(command)
+                                        # n += 1
 
                                     # 2. i 개 trial의 benchmark
                                     logPath = "/data/project/Alzheimer/YSscript/cle/log/2.CellData/CellData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/" + str(SAMPLENAME) + "/bm"
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                                     hold_jj.append ( "bm_CellData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + str(SAMPLENAME) )
                                     command = " ".join(["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
                                                                     "-N", "bm_CellData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + str(SAMPLENAME),
-                                                                    "-hold_jid",  str(",".join(hold_j)), 
+                                                                    #"-hold_jid",  str(",".join(hold_j)), 
                                                                     SCRIPT_DIR + "/2.CellData_pipe2_benchmark.sh",
                                                                     "--SCRIPT_DIR", str(SCRIPT_DIR), 
                                                                     "--INPUT_DIR", str(INPUT_DIR) , 
@@ -151,6 +151,7 @@ if __name__ == "__main__":
 
 
                             #3. 큰 단위에서의 benchmark visualization
+                            INPUT_DIR = "/".join(kwargs["COMBINED_OUTPUT_DIR"].split("/")[ : -1])
                             OUTPUT_FILENAME = INPUT_DIR + "/" + str(kwargs["NUM_MUTATION"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "_total.jpg"
                             logPath = "/data/project/Alzheimer/YSscript/cle/log/2.CellData/CellData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/BM"
                             os.system("rm -rf " + logPath)
@@ -161,7 +162,7 @@ if __name__ == "__main__":
 
                             command = " ".join(  ["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
                                                 "-N", "BM_CellData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + str(SAMPLENAME),
-                                                "-hold_jid",  str(",".join(hold_jj)), 
+                                                #"-hold_jid",  str(",".join(hold_jj)), " ",
                                                 SCRIPT_DIR + "/2.CellData_pipe3_benchmark.sh",
                                                                     "--SCRIPT_DIR", str(SCRIPT_DIR), 
                                                                     "--INPUT_DIR", str(INPUT_DIR) , 
@@ -171,7 +172,6 @@ if __name__ == "__main__":
                                                                     "--BENCHMARK_END", str( kwargs["BENCHMARK_END"]), 
                                                                     "--OUTPUT_JPG", str(INPUT_DIR) + "/BM.jpg"]  )
                             
-                            #print (command)
                             os.system(command)
                             n += 1
 

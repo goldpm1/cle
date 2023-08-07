@@ -25,7 +25,8 @@ if __name__ == "__main__":
         TISSUE_LIST = sorted( glob.glob (DIR + "/" + DONOR + "/*") ) 
         TISSUE_LIST = [i.split("/")[-1] for i in TISSUE_LIST]
 
-        for TISSUE in TISSUE_LIST:               # colon_crypt, pancreas_islet
+        #for TISSUE in TISSUE_LIST:               # colon_crypt, pancreas_islet
+        for TISSUE in ["bronchus_epithelium", "adrenal_gland_zona_glomerulosa"]:
             SAMPLE_LIST = sorted ( glob.glob (DIR + "/" + DONOR + "/" + TISSUE + "/*") ) 
             SAMPLE_LIST = [i.split("/")[-1].split(".")[0] for i in SAMPLE_LIST]
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
                                 "RANDOM_PICK" : 0, "AXIS_RATIO":0, "PARENT_RATIO": 0, "NUM_PARENT" : 0,  "FP_RATIO":0,  "FP_USEALL" : "False", 
                                 "RANDOM_SEED" : 0, "SAMPLENAME" : "", "BENCHMARK_NO" : 0, 
                                 "NPVAF_DIR" : "", "SIMPLE_KMEANS_DIR" : "", "CLEMENT_DIR" : "", "SCICLONE_DIR" : "", "PYCLONEVI_DIR" : "",  "COMBINED_OUTPUT_DIR" : "",
-                                "SCORING" : False,  "MAXIMUM_NUM_PARENT" : 1, "VERBOSE" : 3 }
+                                "SCORING" : False,  "MAXIMUM_NUM_PARENT" : 1, "VERBOSE" : 1 }
 
                 NUMBER_LINE = int(out ("wc -l  " + INPUT_TSV).split(" ")[0]) 
 
@@ -60,20 +61,20 @@ if __name__ == "__main__":
                 kwargs["SCICLONE_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/sciclone/3.BioData/Moore_1D/" + TISSUE + "/" + DONOR + "-" + SAMPLENAME
                 kwargs["QUANTUMCLONE_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/quantumclone/3.BioData/Moore_1D/" + TISSUE  + "/" + DONOR + "-" + SAMPLENAME
 
-                for SUBDIR in [ kwargs["NPVAF_DIR"],  kwargs["COMBINED_OUTPUT_DIR"] , kwargs["SIMPLE_KMEANS_DIR"],  kwargs["CLEMENT_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["SCICLONE_DIR"],  kwargs["QUANTUMCLONE_DIR"] ]:
-                    if os.path.exists(SUBDIR) == True:
-                        os.system("rm -rf " + SUBDIR)
-                    if os.path.exists(SUBDIR) == False:
-                        os.system("mkdir -p " + SUBDIR)
+                # for SUBDIR in [ kwargs["NPVAF_DIR"],  kwargs["COMBINED_OUTPUT_DIR"] , kwargs["SIMPLE_KMEANS_DIR"],  kwargs["CLEMENT_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["SCICLONE_DIR"],  kwargs["QUANTUMCLONE_DIR"] ]:
+                #     if os.path.exists(SUBDIR) == True:
+                #         os.system("rm -rf " + SUBDIR)
+                #     if os.path.exists(SUBDIR) == False:
+                #         os.system("mkdir -p " + SUBDIR)
                 
 
-                logPath = "/data/project/Alzheimer/YSscript/cle/log/3.BioData/Moore_1D/" + TISSUE + "/" + DONOR + "-" + SAMPLENAME
-                os.system ("rm -rf " + logPath)
-                os.system ("mkdir -p " + logPath)
 
                 print ("# n = {}\tNUMBER_LINE = {}".format (n,  NUMBER_LINE))
 
                 #1. EM 돌리기
+                logPath = "/data/project/Alzheimer/YSscript/cle/log/3.BioData/Moore_1D/" + TISSUE + "/" + DONOR + "-" + SAMPLENAME
+                os.system ("rm -rf " + logPath)
+                os.system ("mkdir -p " + logPath)
                 hold_j = TISSUE + "_" + DONOR + "_" + SAMPLE
                 command = " ".join ( [ "qsub -pe smp 1", "-e", logPath, "-o", logPath, 
                                                     "-N", TISSUE + "_" + DONOR + "_" + SAMPLE, 
@@ -85,7 +86,26 @@ if __name__ == "__main__":
                                                     str(kwargs["NPVAF_DIR"]), str(kwargs["SIMPLE_KMEANS_DIR"]), str(kwargs["CLEMENT_DIR"]), str(kwargs["SCICLONE_DIR"]), str(kwargs["PYCLONEVI_DIR"]) , str(kwargs["QUANTUMCLONE_DIR"]),  str(kwargs["COMBINED_OUTPUT_DIR"]), 
                                                     str(kwargs["SCORING"]), str(kwargs["MAKEONE_STRICT"]), str(kwargs["MAXIMUM_NUM_PARENT"])     ] )
                 n = n  + 1
-                os.system (command)
-                #print (command)
+                #os.system (command)
 
-                str(kwargs["COMBINED_OUTPUT_DIR"]) + "/result/CLEMENT_decision."
+
+                #2. MatrixFormation + SigProfiler
+                logPath = "/data/project/Alzheimer/YSscript/cle/log/3.BioData/Moore_1D/" + TISSUE + "/" + DONOR + "-" + SAMPLENAME
+                os.system ("rm -rf " + logPath)
+                os.system ("mkdir -p " + logPath)
+
+                kwargs["OUTPUT_DIR"] = kwargs["COMBINED_OUTPUT_DIR"] + "/SigProfiler"
+                os.system ("rm -rf " + kwargs["OUTPUT_DIR"])
+                os.system ("rm -rf " + kwargs["OUTPUT_DIR"] + "MatrixGenerator")
+                os.system ("mkdir -p " + kwargs["OUTPUT_DIR"])
+                command = " ".join(["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
+                                "-N", "Sig_" + TISSUE + "_" + DONOR + "_" + SAMPLE,
+                                "-hold_jid",  str( hold_j ), 
+                                SCRIPT_DIR + "/3.BioData_pipe1_Signature.sh",
+                                "--SCRIPT_DIR", str(SCRIPT_DIR), 
+                                "--DECISION_MEMBERSHIP_PATH", kwargs["COMBINED_OUTPUT_DIR"] + "/result/CLEMENT_decision.membership.txt" , 
+                                "--NPVAF_PATH", kwargs["NPVAF_DIR"] + "/npvaf.txt", 
+                                "--DONOR", DONOR,
+                                "--TISSUE", TISSUE,
+                                "--OUTPUT_DIR", str( kwargs["OUTPUT_DIR"] ) ])
+                os.system (command)

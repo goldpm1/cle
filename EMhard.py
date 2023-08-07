@@ -42,7 +42,7 @@ def checkall (step, **kwargs):
     
 
 
-def main ( df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
+def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
     NUM_BLOCK, kwargs["NUM_BLOCK"]= len(df[0]), len(df[0])
     NUM_MUTATION =  kwargs["RANDOM_PICK"]
     kwargs["STEP_NO"] = 30
@@ -83,7 +83,7 @@ def main ( df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                     kwargs["OPTION"] = "hard"
                     print ("\t\tStep #{}".format(step_index))
 
-                    step = Estep.main(df, np_vaf, np_BQ, step, **kwargs)  
+                    step = Estep.main(input_containpos, df, np_vaf, np_BQ, step, **kwargs)  
                     
                     
                     ################################ Early terminating condition  (NUM_PARENT, MIN_CLUSTER_SIZE) ################################################
@@ -114,7 +114,7 @@ def main ( df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                     ###########################################################################################
                     
                     
-                    step = Mstep.main(df, np_vaf, np_BQ, step, "Hard", **kwargs)   # M step
+                    step = Mstep.main(input_containpos, df, np_vaf, np_BQ, step, "Hard", **kwargs)   # M step
 
                     if kwargs["STEP"] >= 5:
                         if checkall (step, **kwargs) == False:

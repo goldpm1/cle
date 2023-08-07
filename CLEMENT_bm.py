@@ -55,6 +55,7 @@ INPUT_TSV = kwargs["INPUT_TSV"]
 INPUT_FILETYPE, NUM_BLOCK = filetype.main(INPUT_TSV)
 kwargs["NUM_BLOCK_INPUT"], kwargs["NUM_BLOCK"] = NUM_BLOCK, NUM_BLOCK
 SAMPLENAME = re.split(r'[_ input]', INPUT_TSV.split("/")[-1])      # 'M1-5_M1-8_input' -> 'M1-5_M1-8'
+kwargs["SEX"] = filetype.sexdetermination(INPUT_TSV)
 kwargs["CLEMENT_DIR"] = args.CLEMENT_DIR
 kwargs["MODE"] = args.MODE
 kwargs["RANDOM_PICK"] = int(args.RANDOM_PICK)
@@ -98,8 +99,9 @@ kwargs["DECISION_STANDARD"]= 0.8 + (0.03 * kwargs ["NUM_BLOCK"])
 
 
 
-print("\n\n\n\nNOW RUNNING IS STARTED  :  {}h:{}m:{}s\n".format(time.localtime().tm_hour, time.localtime().tm_min, round(time.localtime().tm_sec)))
-print("NUMBER OF INPUT SAMPLES = {}\n\n\n".format(NUM_BLOCK))
+print("\n\n\n\nNOW RUNNING IS STARTED  :  {}h:{}m:{}s\n\n".format(time.localtime().tm_hour, time.localtime().tm_min, round(time.localtime().tm_sec)))
+print("NUMBER OF INPUT SAMPLES = {}".format(NUM_BLOCK))
+print("SEX = {}\n\n\n".format(kwargs["SEX"]))
 
 
 
@@ -117,7 +119,7 @@ output_logfile.close()
 
 
 
-inputdf, df, np_vaf, np_BQ, membership_answer, mixture_answer, mutation_id, kwargs = datapreparation.main( **kwargs)
+input_containpos, inputdf, df, np_vaf, np_BQ, membership_answer, mixture_answer, mutation_id, kwargs = datapreparation.main( **kwargs)
 NUM_MUTATION = kwargs["NUM_MUTATION"] = kwargs["RANDOM_PICK"]
 membership_answer_numerical = np.zeros(kwargs["NUM_MUTATION"], dtype="int")
 membership_answer_numerical_nofp_index = []
@@ -163,6 +165,7 @@ if type(inputdf) != type(False):
         visualizationsingle.drawfigure_2d(membership_answer, "ANSWER_SET (n={})".format(kwargs["NUM_MUTATION"]), kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"], np_vaf, kwargs["samplename_dict_CharacterToNum"], False,  -1, "None", **kwargs)
     elif kwargs["NUM_BLOCK"] >= 3:
         visualizationsingle.drawfigure_2d(membership_answer, "ANSWER_SET (n={})".format(kwargs["NUM_MUTATION"]), kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"], np_vaf, kwargs["samplename_dict_CharacterToNum"], False,  -1, "SVD", **kwargs)
+    subprocess.run(["cp " + kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"] + " "  +  kwargs["COMBINED_OUTPUT_DIR"] + "/result/0.inputdata." + kwargs["IMAGE_FORMAT"] ], shell=True)
     subprocess.run(["cp " + kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"] + " "  +  kwargs["CLEMENT_DIR"] + "/candidate/0.inputdata." + kwargs["IMAGE_FORMAT"]], shell=True)
     subprocess.run(["cp " + kwargs["COMBINED_OUTPUT_DIR"] + "/0.inputdata." + kwargs["IMAGE_FORMAT"] + " "  +  kwargs["CLEMENT_DIR"] + "/trial/0.inputdata." + kwargs["IMAGE_FORMAT"]], shell=True)
 
@@ -200,7 +203,7 @@ print ( "\t▸ Gap* method : k = {}, score = {}".format (simpleK.gap_K, simpleK.
 ######################################################### Step 4. Hard clustering ########################################################
 print ("\n\n\n======================================== STEP #4.   EM HARD  ========================================")
 
-cluster_hard = EMhard.main (df, np_vaf, np_BQ, mixture_kmeans, **kwargs)
+cluster_hard = EMhard.main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs)
 subprocess.run (["cp -r " + kwargs["CLEMENT_DIR"] + "/candidate  " + kwargs["COMBINED_OUTPUT_DIR"]  ], shell = True)
 subprocess.run (["cp -r " + kwargs["CLEMENT_DIR"] + "/trial  " + kwargs["COMBINED_OUTPUT_DIR"]  ], shell = True)
 
@@ -228,9 +231,9 @@ if kwargs["MODE"] in ["Soft", "Both"]:
                 
                 print("\t\t#{}번째 step ( = TOTAL {}번째 step)".format(kwargs["STEP"], kwargs["STEP_TOTAL"]) )
 
-                step_soft = Estep.main(df, np_vaf, np_BQ, step_soft, **kwargs)                   # 주어진 mixture 내에서 새 membership 정하기
+                step_soft = Estep.main(input_containpos, df, np_vaf, np_BQ, step_soft, **kwargs)                   # 주어진 mixture 내에서 새 membership 정하기
                 print ( "\t\t\tE step 이후 : {}\tmakeone_index : {}".format( np.unique(step_soft.membership  , return_counts=True), step_soft.makeone_index ) )
-                step_soft = Mstep.main(df, np_vaf, np_BQ, step_soft, "Soft", **kwargs)     # 새 memberhsip에서 새 mixture구하기
+                step_soft = Mstep.main(input_containpos, df, np_vaf, np_BQ, step_soft, "Soft", **kwargs)     # 새 memberhsip에서 새 mixture구하기
                 print("\t\t\tM step 이후 : fp_index {}\tmakeone_index {}\tlikelihood : {}".format( step_soft.fp_index, step_soft.makeone_index, round (step_soft.likelihood, 1), step_soft.mixture ))
 
 
@@ -324,10 +327,10 @@ subprocess.run (["cp -r " +  kwargs["CLEMENT_DIR"]+ "/candidate  " + kwargs["COM
 DECISION = "hard_1st"
 max_score_CLEMENT = 0
 
+print ("\n\nOrder : {}".format(NUM_CLONE_hard))
+
 if kwargs["MODE"] in ["Hard", "Both"]:
     if kwargs["SCORING"] == True:
-        print ("\n\nOrder : {}".format(NUM_CLONE_hard))
-
         for i, priority in enumerate(["1st"]):   # "2nd"
             if ( i >= len (NUM_CLONE_hard) ):
                 break
@@ -365,7 +368,7 @@ if kwargs["MODE"] in ["Hard", "Both"]:
                         print ( "Hard (n = {}) : std = {}\tstep = {}\nhard_mixture = {}\n".format( cluster_hard.mixture_record [NUM_CLONE_hard[i]].shape[1],  round( hard_std, 3) ,  cluster_hard.stepindex_record [ NUM_CLONE_hard[i] ],  cluster_hard.mixture_record [ NUM_CLONE_hard[i] ]   ) , file = output_hard_vs_fuzzy  )
                         print ( "Soft (n = {}) : std = {}\tstep = {}\nhard_mixture = {}".format( cluster_soft.mixture_record [NUM_CLONE_hard[i]].shape[1],  round( soft_std, 3) ,  cluster_soft.stepindex_record [ NUM_CLONE_hard[i] ],  cluster_soft.mixture_record [ NUM_CLONE_hard[i] ]   )  , file = output_hard_vs_fuzzy )
                         print ( "ratio : {}".format ( round(soft_std, 3) / round(hard_std, 3) ), file = output_hard_vs_fuzzy )
-                        print ("\nsoft 선택 기준 :  < {}\nDECISION\t{}".format(kwargs["DECISION_STANDARD"], DECISION) , file = output_hard_vs_fuzzy )
+                        print ("\nsoft 선택 기준 :  < {}\nDECISION\t{}".format( round (kwargs["DECISION_STANDARD"], 2) , DECISION) , file = output_hard_vs_fuzzy )
                 
 
             #정답set과 점수 맞춰보고 색깔 맞추기  (Hard clustering)
@@ -519,7 +522,7 @@ if kwargs["MODE"] in ["Hard", "Both"]:
 
 
 if kwargs["MODE"] in ["Soft", "Both"]:
-    print ("\n\n\n======================================= STEP #8.  SCORING :  EM SOFT  =======================================")
+    print ("\n\n\n\n=============================================== STEP #8.  SCORING :  EM SOFT  =======================================")
     if kwargs["SCORING"] == True:
         print ("\n\nOrder : {}".format(NUM_CLONE_soft))
         for i, priority in enumerate(["1st"]):        
@@ -558,6 +561,9 @@ if kwargs["MODE"] in ["Soft", "Both"]:
                 samplename_dict = {k:k for k in range(0, np.max(cluster_soft.membership_record [NUM_CLONE_soft[i]])+ 1)}
                 visualizationsinglesoft.drawfigure_1d (cluster_soft.membership_record [NUM_CLONE_soft[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]], cluster_soft.membership_p_normalize_record [NUM_CLONE_soft[i]],
                                                                         "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]], cluster_soft.fp_index_record[NUM_CLONE_soft[i]], cluster_soft.makeone_index_record[NUM_CLONE_soft[i]] )
+                visualizationsingle.drawfigure_1d (cluster_soft.membership_record [NUM_CLONE_soft[i]],
+                                                                        "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft(tohard)_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]], cluster_soft.fp_index_record[NUM_CLONE_soft[i]], cluster_soft.makeone_index_record[NUM_CLONE_soft[i]] )
+                subprocess.run (["cp " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft\(tohard\)_" + priority + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft\(tohard\)_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
             
             subprocess.run (["cp " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
 
@@ -649,15 +655,22 @@ if kwargs["MODE"] in ["Soft", "Both"]:
             if kwargs["NUM_BLOCK"] == 1:
                 visualizationsinglesoft.drawfigure_1d (cluster_soft.membership_record [NUM_CLONE_soft[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]], cluster_soft.membership_p_normalize_record [NUM_CLONE_soft[i]],
                                                                         "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , cluster_soft.makeone_index_record[NUM_CLONE_soft[i]] )
+                visualizationsingle.drawfigure_1d (cluster_soft.membership_record [NUM_CLONE_soft[i]], 
+                                                                        "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft(tohard)_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , cluster_soft.makeone_index_record[NUM_CLONE_soft[i]], **kwargs )
             elif kwargs["NUM_BLOCK"] == 2:
                 visualizationsinglesoft.drawfigure_2d (cluster_soft.membership_record [NUM_CLONE_soft[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]], cluster_soft.membership_p_normalize_record [NUM_CLONE_soft[i]],
                                                                         "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , cluster_soft.makeone_index_record[NUM_CLONE_soft[i]], "None" )
+                visualizationsingle.drawfigure_2d (cluster_soft.membership_record [NUM_CLONE_soft[i]], 
+                                                                        "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft(tohard)_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , "None", **kwargs )
             else:
                 visualizationsinglesoft.drawfigure_2d (cluster_soft.membership_record [NUM_CLONE_soft[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]], cluster_soft.membership_p_normalize_record [NUM_CLONE_soft[i]],
                                                                         "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]]) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , cluster_soft.makeone_index_record[NUM_CLONE_soft[i]], "SVD" )
+                visualizationsingle.drawfigure_2d (cluster_soft.membership_record [NUM_CLONE_soft[i]], 
+                                                                        "CLEMENT_soft : {}".format( round (cluster_soft.likelihood_record [NUM_CLONE_soft[i]] ) ), kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft(tohard)_" + priority + "." + kwargs["IMAGE_FORMAT"], np_vaf, samplename_dict, cluster_soft.includefp_record [NUM_CLONE_soft[i]] , cluster_soft.fp_index_record[NUM_CLONE_soft[i]] , "SVD", **kwargs )
 
             subprocess.run (["cp -rf " + kwargs["CLEMENT_DIR"] + "/candidate/clone" + str(NUM_CLONE_soft[i]) +".\(soft\)." + kwargs["IMAGE_FORMAT"]  +" " + kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
             subprocess.run (["cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"] + "  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
+            subprocess.run (["cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_soft\(tohard\)_" + priority + "." + kwargs["IMAGE_FORMAT"] + "  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_soft\(tohard\)_" + priority + "." + kwargs["IMAGE_FORMAT"]], shell = True)
         
             print ("\tSoft {} results printed".format(priority))
 
@@ -668,11 +681,20 @@ if kwargs["MODE"] in ["Soft", "Both"]:
     print ("\n\n\n======================================= STEP #9. DECISION:  HARD VS SOFT  =======================================")
     if soft_std != 0 :
         print ( "DECISION : {}\t\thard_std : {}\tsoft_std : {}\tratio : {}\tcriteria : < {}".format( DECISION, round(hard_std, 3), round(soft_std, 3), round ( round(soft_std, 3) / round(hard_std, 3), 2) , round (kwargs["DECISION_STANDARD"], 2) ))
+        with open ( kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt"  , "w", encoding = "utf8") as output_myEM:
+            print ( "DECISION\t{}\nhard_std\t{}\nsoft_std\t{}".format( DECISION, round(hard_std, 3), round(soft_std, 3) ), file = output_myEM)
     else:
         try:
             print ( "DECISION : {}\t\tmoved_col_mean : {}\tnot_moved_col_mean : {}\tcriteria : > 0.1".format( DECISION, moved_col_mean, not_moved_col_mean ) )
+            with open ( kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt" , "w", encoding = "utf8") as output_myEM:
+                print ( "DECISION : {}\t\tmoved_col_mean : {}\tnot_moved_col_mean : {}\tcriteria : > 0.1".format( DECISION, moved_col_mean, not_moved_col_mean ), file = output_myEM)
         except:
             print ( "DECISION : {}\t\tmoved_col_list : {}".format( DECISION, moved_col_list) )
+            with open ( kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt" , "w", encoding = "utf8") as output_myEM:
+                print ("DECISION : {}\t\tmoved_col_list : {}".format( DECISION, moved_col_list), file = output_myEM)
+    
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.evidence.txt" ], shell = True)
+
     
     if "hard" in DECISION:
         NUM_CLONE_CLEMENT = cluster_hard.mixture_record [NUM_CLONE_hard[0]].shape[1] - int (cluster_hard.includefp_record [ NUM_CLONE_hard[0] ])
@@ -683,9 +705,11 @@ if kwargs["MODE"] in ["Soft", "Both"]:
         
 
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision." + kwargs["IMAGE_FORMAT"] ], shell = True)
-    with open (kwargs["CLEMENT_DIR"]  + "/result/CLEMENT_decision.results.txt", "a", encoding = "utf8") as output_myEM:
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_decision." + kwargs["IMAGE_FORMAT"] ], shell = True)
+    with open (kwargs["CLEMENT_DIR"]  + "/result/CLEMENT_decision.evidence.txt", "a", encoding = "utf8") as output_myEM:
         print ( "DECISION\t{}\nhard_std\t{}\nsoft_std\t{}".format( DECISION, round(hard_std, 3), round(soft_std, 3) ), file = output_myEM)
-    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.results.txt" ], shell = True)
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.evidence.txt" ], shell = True)
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_" + DECISION + ".results.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.results.txt" ], shell = True)
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + ".membership.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.membership.txt" ], shell = True)
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + ".membership_count.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.membership_count.txt" ], shell = True)
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + ".mixture.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.mixture.txt" ], shell = True)
@@ -912,6 +936,7 @@ if NUM_BLOCK == 3:
 elif NUM_BLOCK == 2:
     subprocess.run(["bash " + SCRIPT_DIR + "/qc_pipe_2D.sh " + SCRIPT_DIR + " " + INPUT_First + " " + INPUT_Second + " " + kwargs["QUANTUMCLONE_DIR"]], shell=True)
 elif NUM_BLOCK == 1:
+    print ( "bash " + SCRIPT_DIR + "/qc_pipe_1D.sh " + SCRIPT_DIR + " " + INPUT_First + " " + kwargs["QUANTUMCLONE_DIR"]  )
     subprocess.run(["bash " + SCRIPT_DIR + "/qc_pipe_1D.sh " + SCRIPT_DIR + " "+ INPUT_First + " " + kwargs["QUANTUMCLONE_DIR"]], shell=True)
 
 INPUT_QUANTUMCLONE_RESULT = kwargs["QUANTUMCLONE_DIR"]

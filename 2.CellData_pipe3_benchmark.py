@@ -116,19 +116,19 @@ if len (INPUT_DIR_LIST) > 15:
 elif len (INPUT_DIR_LIST) > 9:
     NUM_ROW = 3
 
-fig, ax = matplotlib.pyplot.subplots(nrows = NUM_ROW,  ncols = int (len(INPUT_DIR_LIST) / NUM_ROW) + 1, figsize = (18,NUM_ROW * 3.5))
+NUM_COL = int (len(INPUT_DIR_LIST) / NUM_ROW) + 1
+fig, ax = matplotlib.pyplot.subplots(nrows = NUM_ROW,  ncols = NUM_COL, figsize = (18,NUM_ROW * 3.5))
 fig.subplots_adjust (wspace = 0.4, hspace = 0.5, bottom = 0.1, top = 0.9, left = 0.05, right = 0.95)
 fig.suptitle( "{}".format(kwargs["CONDITIONNAME"]), fontsize = 30, fontweight = "bold")
 
 ####################################################################################################
 
 
+tt = 0
 
 for DIR_index, DIR in enumerate( INPUT_DIR_LIST) :
     if os.path.isfile(DIR) == True:
         continue
-    
-    print (DIR)
 
     result = ResultClass(toollist, **kwargs)
 
@@ -159,9 +159,12 @@ for DIR_index, DIR in enumerate( INPUT_DIR_LIST) :
 
             result.acc (i, j, score, Yindex, ARI, NUM_CLONE_answer, runningtime, f1score)
 
+    kwargs["SAMPLENAME"] = DIR.split("/")[-1]
+    ax_col = int (tt % NUM_COL)
+    ax_row  = int (tt / NUM_COL)
 
-    ax_row  = int (DIR_index % NUM_ROW)
-    ax_col = int (DIR_index / NUM_ROW)
+    #print ( "tt= {}\tDIR_index = {}\tax_row = {}\tax_col = {}".format (tt, DIR_index,ax_row, ax_col))
+    tt += 1
     
     drawfigure (result, toollist, toollist_concise, ax, ax_row, ax_col, **kwargs)
     

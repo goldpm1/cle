@@ -43,6 +43,14 @@ while true; do
     esac
 done
 
+echo -e  python3 ${SCRIPT_DIR}"/2.CellData_pipe3_benchmark.py" \
+ --INPUT_DIR ${INPUT_DIR} \
+ --SAMPLENAME ${SAMPLENAME} \
+ --CONDITIONNAME ${CONDITIONNAME} \
+ --BENCHMARK_START ${BENCHMARK_START} \
+ --BENCHMARK_END ${BENCHMARK_END} \
+ --OUTPUT_JPG ${OUTPUT_JPG} 
+
 
 python3 ${SCRIPT_DIR}"/2.CellData_pipe3_benchmark.py" \
  --INPUT_DIR ${INPUT_DIR} \
