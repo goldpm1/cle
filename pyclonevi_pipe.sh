@@ -10,6 +10,10 @@ INPUT_TSV=$1
 OUTPUT_H5=$2
 OUTPUT_TSV=$3
 
+# echo -e "INPUT_TSV\t"${INPUT_TSV}
+# echo -e "OUTPUT_H5\t"${OUTPUT_H5}
+# echo -e "OUTPUT_TSV\t"${OUTPUT_TSV}
+
 
 source /home/goldpm1/.bashrc
 conda activate cnvpytor

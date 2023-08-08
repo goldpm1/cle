@@ -28,7 +28,7 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
         
         
         previous_fp_index = step.fp_index
-        step.makeone_index, p_list, step.fp_index = isparent.makeone(df, np_vaf, np_BQ, step, **kwargs)
+        step.makeone_index, p_list, step.fp_index = isparent.makeone(input_containpos, df, np_vaf, np_BQ, step, **kwargs)
 
 
         if step.fp_index != -1:  # If FP is present
@@ -44,14 +44,14 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
         if step.makeone_index == []:
             step.likelihood = -9999999
             step.makeone_prenormalization = False
-            print ("\t\t\tUnavailable to make 1 (Mstep.py)", end = "\t"  )
+            print ("\t\t\tUnable to make 1 (Mstep.py)", end = "\t"  )
             print( ",".join( str(row) for row in step.mixture ))
 
         if kwargs["STEP"] <= 4:
             if step.makeone_index != []:
                 step.makeone_prenormalization, sum_mixture =  EMhard.checkall (step, **kwargs) 
                 print ("\t\t\tstep.makeone_prenormalization = {} (Mstep.py)".format(step.makeone_prenormalization), end = "\t") 
-                print(" ".join(str( np.round(row, 2) ) for row in sum_mixture ))
+                print( "(sum = {})".format  ( " ".join(str( np.round(row, 2) ) for row in sum_mixture )) )
 
         
                 for i in range(NUM_BLOCK):

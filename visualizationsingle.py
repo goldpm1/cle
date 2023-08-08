@@ -95,7 +95,8 @@ def drawfigure_2d(membership, output_suptitle, output_filename, np_vaf, samplena
         tsvd = TruncatedSVD(n_components=2)
         tsvd.fit(np_vaf)
         np_vaf = tsvd.transform(np_vaf)
-        ax.axis([np.min(np_vaf[:, 0]) * 2.1,  np.max(np_vaf[:, 0]) *  2.1,  np.min(np_vaf[:, 1]) * 2.1,  np.max(np_vaf[:, 1]) * 2.1])
+        #ax.axis([np.min(np_vaf[:, 0]) * 2.1,  np.max(np_vaf[:, 0]) *  2.1,  np.min(np_vaf[:, 1]) * 2.1,  np.max(np_vaf[:, 1]) * 2.1])
+        ax.axis ( [ -0.02, 1, -0.02, 1])
         ax.set_xlabel("SVD1", fontdict = {"fontsize" : 14})
         ax.set_ylabel("SVD2", fontdict = {"fontsize" : 14})
     elif dimensionreduction == "PCA":
@@ -103,11 +104,13 @@ def drawfigure_2d(membership, output_suptitle, output_filename, np_vaf, samplena
         pca = PCA(n_components=2)
         pca.fit(np_vaf)
         np_vaf = pca.transform(np_vaf)
-        ax.axis([np.min(np_vaf[:, 0]) * 2.1,  np.max(np_vaf[:, 0]) * 2.1,  np.min(np_vaf[:, 1]) * 2.1,  np.max(np_vaf[:, 1]) * 2.1])
+        #ax.axis([np.min(np_vaf[:, 0]) * 2.1,  np.max(np_vaf[:, 0]) * 2.1,  np.min(np_vaf[:, 1]) * 2.1,  np.max(np_vaf[:, 1]) * 2.1])
+        ax.axis ( [ -0.02, 1, -0.02, 1])
         ax.set_xlabel("PC1", fontdict = {"fontsize" : 14})
         ax.set_ylabel("PC2", fontdict = {"fontsize" : 14})
     else:
-        ax.axis([0,  np.max(np_vaf[:, :]) * 2.1, 0,  np.max(np_vaf[:, :]) * 2.1])
+        #ax.axis([0,  np.max(np_vaf[:, :]) * 2.1, 0,  np.max(np_vaf[:, :]) * 2.1])
+        ax.axis ( [ -0.02, 1, -0.02, 1])
         ax.set_xlabel("Mixture ( = VAF x 2) of Sample 1", fontdict = {"fontsize" : 14})
         ax.set_ylabel("Mixture ( = VAF x 2) of Sample 2", fontdict = {"fontsize" : 14})
 
@@ -121,7 +124,7 @@ def drawfigure_2d(membership, output_suptitle, output_filename, np_vaf, samplena
         outlier_color_num = samplename_dict[ fp_index ] 
         colorlist [ outlier_color_num ] = Gr_10[8]
 
-    ax.scatter(np_vaf[:, 0] * 2, np_vaf[:, 1] * 2, color=[colorlist[samplename_dict[k]] for k in membership], s = 40)
+    ax.scatter(np_vaf[:, 0] * 2, np_vaf[:, 1] * 2, color=[colorlist[samplename_dict[k]] for k in membership], s = 40 )
 
 
     if (dimensionreduction != "SVD") & ( dimensionreduction != "PCA" ):
@@ -133,7 +136,7 @@ def drawfigure_2d(membership, output_suptitle, output_filename, np_vaf, samplena
             y_mean = round(np.mean(np_vaf[[x for x in range( len(membership)) if membership[x] == sample]][:, 1] * 2), 2)
 
             ax.text(x_mean, y_mean, "{0}".format([x_mean, y_mean]), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"})
-            ax.scatter(x_mean, y_mean, marker='*', color=colorlist[samplename_dict[sample]], edgecolor='black', s=220, label=str(sample) + " : " + str(list(membership).count(sample)))
+            ax.scatter(x_mean, y_mean, marker='*', color=colorlist[samplename_dict[sample]], edgecolor='black', s = 400, label=str(sample) + " : " + str(list(membership).count(sample)))
             ax.legend()
 
     if output_filename != "NotSave":

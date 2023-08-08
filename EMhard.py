@@ -96,21 +96,25 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                         break
                 
                     if ( len ( set (step.membership) ) < NUM_CLONE ) |  ( np.min( np.unique(step.membership, return_counts=True)[1] ) < kwargs["MIN_CLUSTER_SIZE"]  )  :          #  2nd early terminating condition
-                        failure_num = failure_num + 1
-                        extincted_clone_index = np.argmin ( np.unique(step.membership, return_counts=True)[1]  )
-                        if ( np.min( np.unique(step.membership, return_counts=True)[1] ) < kwargs["MIN_CLUSTER_SIZE"]  ):
-                            if extincted_clone_index == step.fp_index:    
-                                print ("\t\t\t♣ STOP:  {}th step, because in E step →  The number of variants in clone {} ( = FP clone) is  {} ( < {}). ({})".format(step_index, extincted_clone_index, np.min( np.unique(step.membership, return_counts=True)[1] ),  kwargs["MIN_CLUSTER_SIZE"], np.unique(step.membership, return_counts=True)[1] ))
-                                max_step =  step.find_max_likelihood_fp_voluntary(0, kwargs["STEP"] - 1)     
+                        if step.less_than_min_cluster_size == True:     # If it has previous history 
+                            failure_num = failure_num + 1
+                            extincted_clone_index = np.argmin ( np.unique(step.membership, return_counts=True)[1]  )
+                            if ( np.min( np.unique(step.membership, return_counts=True)[1] ) < kwargs["MIN_CLUSTER_SIZE"]  ):
+                                if extincted_clone_index == step.fp_index:    
+                                    print ("\t\t\t♣ STOP:  {}th step, because in E step →  The number of variants in clone {} ( = FP clone) is  {} ( < {}). ({})".format(step_index, extincted_clone_index, np.min( np.unique(step.membership, return_counts=True)[1] ),  kwargs["MIN_CLUSTER_SIZE"], np.unique(step.membership, return_counts=True)[1] ))
+                                    max_step =  step.find_max_likelihood_fp_voluntary(0, kwargs["STEP"] - 1)     
+                                else:
+                                    print ("\t\t\t♣ STOP: {}th step, because in E step →  The number of variants in clone {}  is {}개 ( < {}). ({})".format(step_index, extincted_clone_index, np.min( np.unique(step.membership, return_counts=True)[1] ),  kwargs["MIN_CLUSTER_SIZE"], np.unique(step.membership, return_counts=True)[1] ))
+                                    max_step =  step.find_max_likelihood_fp_voluntary(0, kwargs["STEP"] - 1)  
                             else:
-                                print ("\t\t\t♣ STOP: {}th step, because in E step →  The number of variants in clone {}  is {}개 ( < {}). ({})".format(step_index, extincted_clone_index, np.min( np.unique(step.membership, return_counts=True)[1] ),  kwargs["MIN_CLUSTER_SIZE"], np.unique(step.membership, return_counts=True)[1] ))
-                                max_step =  step.find_max_likelihood_fp_voluntary(0, kwargs["STEP"] - 1)  
-                        else:
-                            print ("\t\t\t♣ STOP:  {}th step, because in E step →  Empty clone.\t{}".format ( step_index, np.unique(step.membership, return_counts=True)  ))
-                            max_step =  step.find_max_likelihood_fp_voluntary(0, kwargs["STEP"] - 1) 
-                            
-                        step, trial = whether_trial_acc (max_step, step_index, step, trial, **kwargs)
-                        break
+                                print ("\t\t\t♣ STOP:  {}th step, because in E step →  Empty clone.\t{}".format ( step_index, np.unique(step.membership, return_counts=True)  ))
+                                max_step =  step.find_max_likelihood_fp_voluntary(0, kwargs["STEP"] - 1) 
+                                
+                            step, trial = whether_trial_acc (max_step, step_index, step, trial, **kwargs)
+                            break
+
+                        else:    # Just give a parodn in the first
+                            step.less_than_min_cluster_size = True
                     ###########################################################################################
                     
                     

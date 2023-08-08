@@ -13,6 +13,7 @@ def makedf ( **kwargs ):
     elif input_containpos.shape[1] == 4: #  If 4th column (BQ) is present
         input_containpos.columns = ["pos", "sample", "info", "BQ"]
         input_containpos.astype ({"pos":"str", "sample":"str", "info":"str", "BQ":"str"})
+    #membership_answer = list (input_containpos ["sample"])
 
 
     input_containpos ["cha1"] = "exclusive"  # monoclone이면 exclusive, 둘 이상의 clone이 합쳐진거면 parent
@@ -51,6 +52,9 @@ def makedf ( **kwargs ):
             ref = depth - alt
 
             col = int(i / 2)
+
+            if alt == 0:
+                input_containpos.loc[row,"cha2"] = "axis"
 
             if depth == 0:
                 np_vaf[row][col] = 0
@@ -156,6 +160,7 @@ def makedf ( **kwargs ):
     try:
         p = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "axis" in input_containpos.loc[i,"cha2"] ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]
         if len (p) / kwargs["RANDOM_PICK"] < kwargs["AXIS_RATIO"]:      # input 받은 kwargs["AXIS_RATIO"]보다 내 database에서 적게 보유하고 있으면
+            print ("We have less axis mutations (n = {}) than given AXIS_RATIO".format( len(p) ))
             kwargs["AXIS_RATIO"] = round( len ([i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "axis" in input_containpos.loc[i,"cha2"] ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]) / kwargs["RANDOM_PICK"], 3)
     except:
         print ("AXIS가 없음")
@@ -164,6 +169,7 @@ def makedf ( **kwargs ):
     try:
         p = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "FP" in input_containpos.loc[i,"sample"] ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]
         if len (p) / kwargs["RANDOM_PICK"] < kwargs["FP_RATIO"]:      # input 받은 kwargs["FP_RATIO"]보다 내 database에서 적게 보유하고 있으면
+            print ("We have less axis mutations (n = {}) than given FP_RATIO".format( len(p) ))
             kwargs["FP_RATIO"] = round( len ([i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "FP" in input_containpos.loc[i,"sample"] ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]) / kwargs["RANDOM_PICK"], 3)
     except:
         print ("FP가 없음")
@@ -180,76 +186,83 @@ def RANDOM_PICK_fun(**kwargs):
 
     random.seed(kwargs["RANDOM_SEED"])
 
-    if ((kwargs["FP_USEALL"] != "True") & (kwargs["FP_RATIO"] != 0)):
-        FP_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( (membership[i] == 'FP') & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        # Depth 너무 낮으면 곤란하니 input을 받자
-    elif kwargs["FP_USEALL"] == "True":
-        #FP_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( (membership[i] == 'FP') & ( input_containpos.loc[i,"cha2"] == "space" ) &  (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        # FP는 space에 있는 것만 밭자
-        FP_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( (membership[i] == 'FP') & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        # 굳이 space에만 있는 것을 뽑을 필요는 없다
+    if kwargs ["RANDOM_PICK"] == -1:  # Select all
+        random_index =  [i for i in range (0, kwargs["NUM_MUTATION"]) if ( depth_list[i] > kwargs["DEPTH_CUTOFF"] ) ]        # Depth 너무 낮으면 곤란하니 input을 받자
+        kwargs ["RANDOM_PICK"] = len (random_index)
 
-
-    if kwargs["NUM_PARENT"] != 0:
-        PARENT_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( membership[i] in parent_type_selected  ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        #    "parent" in input_containpos.loc[i,"cha1"] 
     else:
-        PARENT_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "parent" in input_containpos.loc[i,"cha1"]  ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        #    "parent" in input_containpos.loc[i,"cha1"] 
+        if ((kwargs["FP_USEALL"] != "True") & (kwargs["FP_RATIO"] != 0)):
+            FP_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( (membership[i] == 'FP') & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        # Depth 너무 낮으면 곤란하니 input을 받자
+        elif kwargs["FP_USEALL"] == "True":
+            #FP_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( (membership[i] == 'FP') & ( input_containpos.loc[i,"cha2"] == "space" ) &  (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        # FP는 space에 있는 것만 밭자
+            FP_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( (membership[i] == 'FP') & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        # 굳이 space에만 있는 것을 뽑을 필요는 없다
 
-    CHILD_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( (membership[i] != 'FP')  &  ( "exclusive" in input_containpos.loc[i,"cha1"] )  & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]               #
-    AXIS_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "axis" in input_containpos.loc[i,"cha2"] ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        #
+
+        if kwargs["NUM_PARENT"] != 0:
+            PARENT_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( membership[i] in parent_type_selected  ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        #    "parent" in input_containpos.loc[i,"cha1"] 
+        else:
+            PARENT_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "parent" in input_containpos.loc[i,"cha1"]  ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        #    "parent" in input_containpos.loc[i,"cha1"] 
+
+        CHILD_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( (membership[i] != 'FP')  &  ( "exclusive" in input_containpos.loc[i,"cha1"] )  & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]               #
+        AXIS_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "axis" in input_containpos.loc[i,"cha2"] ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        #
 
 
-    CHILD_SPACE_index = list(set(CHILD_index) - set(AXIS_index))      # CHILD 이면서 SPACE에 위치해 있는 것들
-    CHILD_AXIS_index = list(set(CHILD_index) & set(AXIS_index))       # CHILD 이면서  AXIS에 위치해 있는 것들
-    
-    print ( "len (CHILD_index) : {}\tlen (CHILD_SPACE_index) : {}".format (len (CHILD_index), len (CHILD_SPACE_index)))
-    
-    if (kwargs["FP_USEALL"] == "True"):        # kwargs["FP"] == True면 full로 뽑는다
-        FP_randomsample = FP_index
-        kwargs["FP_RATIO"] = len(FP_index) / kwargs["RANDOM_PICK"]
-    elif (kwargs["FP_USEALL"] == "False") & (kwargs["FP_RATIO"] == 0):      # 둘다 False, 0이면 하나도 안 뽑느다
-        FP_randomsample = FP_index = []
-        kwargs["FP_RATIO"] = 0
-    elif (kwargs["FP_USEALL"] == "False") & (kwargs["FP_RATIO"] != 0):
-        try:
-            FP_randomsample = random.sample(FP_index, int(kwargs["RANDOM_PICK"] * (kwargs["FP_RATIO"])))
-        except:
-            print (kwargs["INPUT_TSV"] + " - Can't extract FP data as requested")
+        CHILD_SPACE_index = list(set(CHILD_index) - set(AXIS_index))      # CHILD 이면서 SPACE에 위치해 있는 것들
+        CHILD_AXIS_index = list(set(CHILD_index) & set(AXIS_index))       # CHILD 이면서  AXIS에 위치해 있는 것들
+        
+        print ( "len (CHILD_index) : {}\tlen (CHILD_SPACE_index) : {}".format (len (CHILD_index), len (CHILD_SPACE_index)))
+        
+        if (kwargs["FP_USEALL"] == "True"):        # kwargs["FP"] == True면 full로 뽑는다
             FP_randomsample = FP_index
             kwargs["FP_RATIO"] = len(FP_index) / kwargs["RANDOM_PICK"]
-            return False
-    
-    if kwargs["NUM_PARENT"] == 0:     # 확률로 뽑고싶을 때
-        try:
-            PARENT_randomsample = random.sample(PARENT_index, int(kwargs["RANDOM_PICK"] * (kwargs["PARENT_RATIO"])))
-        except:
-            print (kwargs["INPUT_TSV"] + " - Can't extract Parent data as requested")
+        elif (kwargs["FP_USEALL"] == "False") & (kwargs["FP_RATIO"] == 0):      # 둘다 False, 0이면 하나도 안 뽑느다
+            FP_randomsample = FP_index = []
+            kwargs["FP_RATIO"] = 0
+        elif (kwargs["FP_USEALL"] == "False") & (kwargs["FP_RATIO"] != 0):
+            try:
+                FP_randomsample = random.sample(FP_index, int(kwargs["RANDOM_PICK"] * (kwargs["FP_RATIO"])))
+            except:
+                print (kwargs["INPUT_TSV"] + " - Can't extract FP data as requested")
+                FP_randomsample = FP_index
+                kwargs["FP_RATIO"] = len(FP_index) / kwargs["RANDOM_PICK"]
+                return False
+        
+        if kwargs["NUM_PARENT"] == 0:     # 확률로 뽑고싶을 때
+            try:
+                PARENT_randomsample = random.sample(PARENT_index, int(kwargs["RANDOM_PICK"] * (kwargs["PARENT_RATIO"])))
+            except:
+                print (kwargs["INPUT_TSV"] + " - Can't extract Parent data as requested")
+                PARENT_randomsample = PARENT_index
+                kwargs["PARENT_RATIO"] = len(PARENT_index) / kwargs["RANDOM_PICK"]
+                return False
+        else:   # 상위 몇 개 cluster를 뽑고싶을 때
+            PARENT_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( membership[i] in parent_type_selected  ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        #    "parent" in input_containpos.loc[i,"cha1"] 
             PARENT_randomsample = PARENT_index
             kwargs["PARENT_RATIO"] = len(PARENT_index) / kwargs["RANDOM_PICK"]
-            return False
-    else:   # 상위 몇 개 cluster를 뽑고싶을 때
-        PARENT_index = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( membership[i] in parent_type_selected  ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]        #    "parent" in input_containpos.loc[i,"cha1"] 
-        PARENT_randomsample = PARENT_index
-        kwargs["PARENT_RATIO"] = len(PARENT_index) / kwargs["RANDOM_PICK"]
 
-    try:
-        CHILD_AXIS_randomsample = random.sample(CHILD_AXIS_index, int(kwargs["RANDOM_PICK"] * (kwargs["AXIS_RATIO"])))
-    except:
-        print (kwargs["INPUT_TSV"] + " - Can't extract Child_axis data as requested")
-        return False, kwargs
+        try:
+            CHILD_AXIS_randomsample = random.sample(CHILD_AXIS_index, int(kwargs["RANDOM_PICK"] * (kwargs["AXIS_RATIO"])))
+        except:
+            print (kwargs["INPUT_TSV"] + " - Can't extract Child_axis data as requested")
+            return False, kwargs
 
 
-    print ( "RANDOM_PICK = {}\tFP_randomsample = {}\tPARENT_randomsample = {}\tCHILD_AXIS_randomsample = {}".format ( kwargs["RANDOM_PICK"], len(FP_randomsample), len(PARENT_randomsample), len (CHILD_AXIS_randomsample) ) )
+        print ( "RANDOM_PICK = {}\tFP_randomsample = {}\tPARENT_randomsample = {}\tCHILD_AXIS_randomsample = {}".format ( kwargs["RANDOM_PICK"], len(FP_randomsample), len(PARENT_randomsample), len (CHILD_AXIS_randomsample) ) )
 
-    try:
-        CHILD_SPACE_randomsample = random.sample(CHILD_SPACE_index, kwargs["RANDOM_PICK"] - (len(FP_randomsample) + len(PARENT_randomsample) + len(CHILD_AXIS_randomsample)))  
-    except:
-        print (kwargs["INPUT_TSV"] + " - Can't extract Child_space data as requested")
-        return False, kwargs
-    
+        try:
+            CHILD_SPACE_randomsample = random.sample(CHILD_SPACE_index, kwargs["RANDOM_PICK"] - (len(FP_randomsample) + len(PARENT_randomsample) + len(CHILD_AXIS_randomsample)))  
+        except:
+            print (kwargs["INPUT_TSV"] + " - Can't extract Child_space data as requested")
+            return False, kwargs
+        
 
-    print ("조정 후\n\tFP 개수 : {}\tPARENT 개수 : {}\tCHILD_SPACE 개수 : {}\tCHILD_AXIS 개수 : {}".format(len(FP_randomsample), len (PARENT_randomsample), len (CHILD_SPACE_randomsample), len (CHILD_AXIS_randomsample)))
+        print ("\n조정 후\n\tFP 개수 : {}\tPARENT 개수 : {}\tCHILD_SPACE 개수 : {}\tCHILD_AXIS 개수 : {}".format(len(FP_randomsample), len (PARENT_randomsample), len (CHILD_SPACE_randomsample), len (CHILD_AXIS_randomsample)))
+
+        random_index = sorted( FP_randomsample + PARENT_randomsample + CHILD_SPACE_randomsample + CHILD_AXIS_randomsample )             # 다 합치면 RADOM_PICK 개수가 되겠지
 
 
 
-    random_index = sorted( FP_randomsample + PARENT_randomsample + CHILD_SPACE_randomsample + CHILD_AXIS_randomsample )             # 다 합치면 RADOM_PICK 개수가 되겠지
+
 
     # kwargs["RANDOM_PICK"] 개만으로 재정비
     input_containpos =  input_containpos.iloc[random_index]

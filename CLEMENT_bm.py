@@ -120,7 +120,8 @@ output_logfile.close()
 
 
 input_containpos, inputdf, df, np_vaf, np_BQ, membership_answer, mixture_answer, mutation_id, kwargs = datapreparation.main( **kwargs)
-NUM_MUTATION = kwargs["NUM_MUTATION"] = kwargs["RANDOM_PICK"]
+NUM_MUTATION = kwargs["NUM_MUTATION"] = kwargs["RANDOM_PICK"] = input_containpos.shape[0]
+print("\n\nRANDOM_PICK = {}\n\n\n".format(kwargs["RANDOM_PICK"]))
 membership_answer_numerical = np.zeros(kwargs["NUM_MUTATION"], dtype="int")
 membership_answer_numerical_nofp_index = []
 
@@ -131,7 +132,7 @@ if type(inputdf) != type(False):
     # {0: 'FP', 1: 'V2', 2: 'S0', 3: 'V1'}
     kwargs["samplename_dict_NumToCharacter"] = {v: k for k, v in kwargs["samplename_dict_CharacterToNum"].items()}
 
-    print ("samplename_dict_CharacterToNum = {}\nsamplename_dict_NumToCharacter = {}".format( kwargs["samplename_dict_CharacterToNum"], kwargs["samplename_dict_NumToCharacter"] ))
+    print ("\nsamplename_dict_CharacterToNum = {}\nsamplename_dict_NumToCharacter = {}".format( kwargs["samplename_dict_CharacterToNum"], kwargs["samplename_dict_NumToCharacter"] ))
 
     with open(kwargs["COMBINED_OUTPUT_DIR"] + "/0.input_membership_numerical.txt", "w", encoding="utf8") as result_answer:
         for k in range(kwargs["NUM_MUTATION"]):
@@ -177,7 +178,8 @@ START_TIME = datetime.datetime.now()
 
 
 np_vaf = miscellaneous.np_vaf_extract(df)
-mixture_kmeans, kwargs["KMEANS_CLUSTERNO"] = miscellaneous.initial_kmeans (np_vaf, kwargs["KMEANS_CLUSTERNO"], kwargs["CLEMENT_DIR"] + "/trial/0.inqitial_kmeans." + kwargs["IMAGE_FORMAT"])
+print ("\n\n")
+mixture_kmeans, kwargs = miscellaneous.initial_kmeans (input_containpos, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/0.inqitial_kmeans." + kwargs["IMAGE_FORMAT"], **kwargs)
 
 cluster_hard = Bunch.Bunch2(**kwargs)
 cluster_soft = Bunch.Bunch2(**kwargs)
@@ -327,7 +329,7 @@ subprocess.run (["cp -r " +  kwargs["CLEMENT_DIR"]+ "/candidate  " + kwargs["COM
 DECISION = "hard_1st"
 max_score_CLEMENT = 0
 
-print ("\n\nOrder : {}".format(NUM_CLONE_hard))
+print ("NUM_CLONE_hard (by order) : {}".format(NUM_CLONE_hard))
 
 if kwargs["MODE"] in ["Hard", "Both"]:
     if kwargs["SCORING"] == True:
@@ -346,9 +348,9 @@ if kwargs["MODE"] in ["Hard", "Both"]:
             else:
                 if (priority == "1st") & (kwargs["MODE"] in ["Both"]):
                     moved_col_list = miscellaneous.movedcolumn ( cluster_hard, cluster_soft,  NUM_CLONE_hard[i]  )
-                    hard_std = np.std(  cluster_hard.mixture_record [ NUM_CLONE_hard[i] ] [ : , moved_col_list ]   )
-                    soft_std = np.std(  cluster_soft.mixture_record [ NUM_CLONE_hard[i] ] [ : , moved_col_list ]   )
+
                     if ( len (moved_col_list) == 1 )  & (  kwargs["NUM_BLOCK"] == 1 ) :  # Incalculable std in this condition
+                        hard_std = soft_std = -1
                         not_moved_col_list = [i for i in list(range ( NUM_CLONE_hard[i] )) if i not in moved_col_list]
                         print ( "moved_col_list = {}\nnot_moved_col_list = {}\ncluster_hard.mixture_record = {}".format (moved_col_list, not_moved_col_list, cluster_hard.mixture_record [ NUM_CLONE_hard[i] ] ))
                         not_moved_col_mean  =  np.mean ( cluster_hard.mixture_record [ NUM_CLONE_hard[i] ]  [0] [ not_moved_col_list ] ) 
@@ -359,9 +361,17 @@ if kwargs["MODE"] in ["Hard", "Both"]:
                             DECISION = "hard_1st"
                         else:
                             DECISION = "soft_1st"
-                    
-                    if  (soft_std < hard_std * kwargs["DECISION_STANDARD"]):
-                        DECISION = "soft_1st"
+
+                    else:
+                        hard_std = miscellaneous.std_movedcolumn ( cluster_hard.mixture_record [ NUM_CLONE_hard[i] ] , moved_col_list )
+                        soft_std = miscellaneous.std_movedcolumn ( cluster_soft.mixture_record [ NUM_CLONE_hard[i] ] , moved_col_list )
+                        # hard_std = np.std(  cluster_hard.mixture_record [ NUM_CLONE_hard[i] ] [ : , moved_col_list ]   )
+                        # soft_std = np.std(  cluster_soft.mixture_record [ NUM_CLONE_hard[i] ] [ : , moved_col_list ]   )
+                        
+                        if  ( (soft_std / hard_std ) <  kwargs["DECISION_STANDARD"]):
+                            DECISION = "soft_1st"
+                        else:
+                            DECISION = "hard_1st"
                     
                     with open (kwargs["COMBINED_OUTPUT_DIR"] + "/result/CLEMENT_hard_vs_fuzzy.txt", "w", encoding = "utf8") as output_hard_vs_fuzzy:
                         print ( "Moved column : {}".format(moved_col_list), file = output_hard_vs_fuzzy)
@@ -461,9 +471,9 @@ if kwargs["MODE"] in ["Hard", "Both"]:
             else:
                 if (priority == "1st") & (kwargs["MODE"] in ["Both"]):
                     moved_col_list = miscellaneous.movedcolumn ( cluster_hard, cluster_soft,  NUM_CLONE_hard[i]  )
-                    hard_std = np.std(  cluster_hard.mixture_record [ NUM_CLONE_hard[i] ] [ : , moved_col_list ]   )
-                    soft_std = np.std(  cluster_soft.mixture_record [ NUM_CLONE_hard[i] ] [ : , moved_col_list ]   )
+                    
                     if ( len (moved_col_list) == 1 )  & (  kwargs["NUM_BLOCK"] == 1 ) :  # Incalculable std in this condition
+                        hard_std = soft_std = -1
                         not_moved_col_list = [i for i in list(range ( NUM_CLONE_hard[i] )) if i not in moved_col_list]
                         print ( "moved_col_list = {}\nnot_moved_col_list = {}\ncluster_hard.mixture_record = {}".format (moved_col_list, not_moved_col_list, cluster_hard.mixture_record [ NUM_CLONE_hard[i] ] ))
                         not_moved_col_mean  =  np.mean ( cluster_hard.mixture_record [ NUM_CLONE_hard[i] ]  [0] [ not_moved_col_list ] ) 
@@ -474,9 +484,16 @@ if kwargs["MODE"] in ["Hard", "Both"]:
                             DECISION = "hard_1st"
                         else:
                             DECISION = "soft_1st"
+                    else:
+                        hard_std = miscellaneous.std_movedcolumn ( cluster_hard.mixture_record [ NUM_CLONE_hard[i] ] , moved_col_list )
+                        soft_std = miscellaneous.std_movedcolumn ( cluster_soft.mixture_record [ NUM_CLONE_hard[i] ] , moved_col_list )
+                        # hard_std = np.std(  cluster_hard.mixture_record [ NUM_CLONE_hard[i] ] [ : , moved_col_list ]   )
+                        # soft_std = np.std(  cluster_soft.mixture_record [ NUM_CLONE_hard[i] ] [ : , moved_col_list ]   )
                     
-                    if  (soft_std < hard_std * kwargs["DECISION_STANDARD"]):
-                        DECISION = "soft_1st"
+                        if  ( ( soft_std / hard_std )<  kwargs["DECISION_STANDARD"]):
+                            DECISION = "soft_1st"
+                        else:
+                            DECISION = "hard_1st"
                     
                     with open (kwargs["COMBINED_OUTPUT_DIR"] + "/result/CLEMENT_hard_vs_fuzzy.txt", "w", encoding = "utf8") as output_hard_vs_fuzzy:
                         print ( "Moved column : {}".format(moved_col_list), file = output_hard_vs_fuzzy)
@@ -680,16 +697,16 @@ if kwargs["MODE"] in ["Soft", "Both"]:
     #DECISION : Hard 인지 Soft인지
     print ("\n\n\n======================================= STEP #9. DECISION:  HARD VS SOFT  =======================================")
     if soft_std != 0 :
-        print ( "DECISION : {}\t\thard_std : {}\tsoft_std : {}\tratio : {}\tcriteria : < {}".format( DECISION, round(hard_std, 3), round(soft_std, 3), round ( round(soft_std, 3) / round(hard_std, 3), 2) , round (kwargs["DECISION_STANDARD"], 2) ))
+        print ( "DECISION : {}\nmoved_col_list : {}\nhard_std : {}\tsoft_std : {}\tratio : {}\tcriteria : < {}".format( DECISION, moved_col_list, round(hard_std, 3), round(soft_std, 3), round ( round(soft_std, 3) / round(hard_std, 3), 2) , round (kwargs["DECISION_STANDARD"], 2) ))
         with open ( kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt"  , "w", encoding = "utf8") as output_myEM:
-            print ( "DECISION\t{}\nhard_std\t{}\nsoft_std\t{}".format( DECISION, round(hard_std, 3), round(soft_std, 3) ), file = output_myEM)
+            print ( "DECISION : {}\nmoved_col_list : {}\nhard_std : {}\tsoft_std : {}\tratio : {}\tcriteria : < {}".format( DECISION, moved_col_list, round(hard_std, 3), round(soft_std, 3), round ( round(soft_std, 3) / round(hard_std, 3), 2) , round (kwargs["DECISION_STANDARD"], 2) ), file = output_myEM)
     else:
         try:
-            print ( "DECISION : {}\t\tmoved_col_mean : {}\tnot_moved_col_mean : {}\tcriteria : > 0.1".format( DECISION, moved_col_mean, not_moved_col_mean ) )
+            print ( "DECISION : {}\nmoved_col_mean : {}\tnot_moved_col_mean : {}\tcriteria : > 0.1".format( DECISION, moved_col_mean, not_moved_col_mean ) )
             with open ( kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt" , "w", encoding = "utf8") as output_myEM:
                 print ( "DECISION : {}\t\tmoved_col_mean : {}\tnot_moved_col_mean : {}\tcriteria : > 0.1".format( DECISION, moved_col_mean, not_moved_col_mean ), file = output_myEM)
         except:
-            print ( "DECISION : {}\t\tmoved_col_list : {}".format( DECISION, moved_col_list) )
+            print ( "DECISION : {}\nmoved_col_list : {}".format( DECISION, moved_col_list) )
             with open ( kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt" , "w", encoding = "utf8") as output_myEM:
                 print ("DECISION : {}\t\tmoved_col_list : {}".format( DECISION, moved_col_list), file = output_myEM)
     
@@ -704,8 +721,11 @@ if kwargs["MODE"] in ["Soft", "Both"]:
         NUM_CHILD_CLEMENT = len (cluster_soft.makeone_index_record [NUM_CLONE_soft[0]])
         
 
+    # 그림 옮기기
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision." + kwargs["IMAGE_FORMAT"] ], shell = True)
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["COMBINED_OUTPUT_DIR"]  + "/CLEMENT_decision." + kwargs["IMAGE_FORMAT"] ], shell = True)
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["CLEMENT_DIR"]  + "/result/CLEMENT_decision." + kwargs["IMAGE_FORMAT"] ], shell = True)
+    subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/CLEMENT_" + DECISION + "." + kwargs["IMAGE_FORMAT"]  + " " + kwargs["CLEMENT_DIR"]  + "/CLEMENT_decision." + kwargs["IMAGE_FORMAT"] ], shell = True)
     with open (kwargs["CLEMENT_DIR"]  + "/result/CLEMENT_decision.evidence.txt", "a", encoding = "utf8") as output_myEM:
         print ( "DECISION\t{}\nhard_std\t{}\nsoft_std\t{}".format( DECISION, round(hard_std, 3), round(soft_std, 3) ), file = output_myEM)
     subprocess.run ([ "cp -rf " +  kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt  " + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/CLEMENT_decision.evidence.txt" ], shell = True)

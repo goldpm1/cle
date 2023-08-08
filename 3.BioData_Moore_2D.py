@@ -27,14 +27,18 @@ if __name__ == "__main__":
     inputdf = pd.read_csv("/data/project/Alzheimer/EM_cluster/EM_input/summary/Moore_2_sample.txt", sep = "\t")
     TISSUE_set = set([])
 
+
     for k in range (inputdf.shape[0]):
         DONOR, TISSUE, SAMPLE = inputdf.iloc[k]["DONOR"], inputdf.iloc[k]["TISSUE"], inputdf.iloc[k]["SAMPLE"]
         INPUT_TSV = "/".join(["/data/project/Alzheimer/EM_cluster/EM_input/Moore_2_sample", DONOR, TISSUE, SAMPLE+"_input.txt"])
+
+        if TISSUE not in ["adrenal_gland_zona_glomerulosa", "visceral_fat", "bronchus_epithelium"]:
+            continue
         
 
         kwargs = {"INPUT_TSV" : INPUT_TSV,  "MODE" : "Both",  "NUM_CLONE_TRIAL_START" : 1, "NUM_CLONE_TRIAL_END" : 5, 
-                        "TRIAL_NO" : 5, "DEPTH_CUTOFF" : 10,  "KMEANS_CLUSTERNO" : 6, "MIN_CLUSTER_SIZE" : 5,  "MAKEONE_STRICT" :  2,
-                        "RANDOM_PICK" : 0, "AXIS_RATIO":0, "PARENT_RATIO": 0, "NUM_PARENT" : 0,  "FP_RATIO":0,  "FP_USEALL" : "False", 
+                        "TRIAL_NO" : 5, "DEPTH_CUTOFF" : 10,  "KMEANS_CLUSTERNO" : 6, "MIN_CLUSTER_SIZE" : 10,  "MAKEONE_STRICT" :  2,
+                        "RANDOM_PICK" : 0, "AXIS_RATIO":0.4, "PARENT_RATIO": 0, "NUM_PARENT" : 0,  "FP_RATIO":0,  "FP_USEALL" : "False", 
                         "RANDOM_SEED" : 0, "SAMPLENAME" : "", "BENCHMARK_NO" : 0, 
                         "NPVAF_DIR" : "", "SIMPLE_KMEANS_DIR" : "", "CLEMENT_DIR" : "", "SCICLONE_DIR" : "", "PYCLONEVI_DIR" : "",  "COMBINED_OUTPUT_DIR" : "",
                         "SCORING" : False,  "MAXIMUM_NUM_PARENT" : 1, "VERBOSE" : 1 }
@@ -61,7 +65,7 @@ if __name__ == "__main__":
         kwargs["QUANTUMCLONE_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/quantumclone/3.BioData/Moore_2D/" + TISSUE  + "/" + DONOR + "-" + SAMPLENAME
         
 
-        print ("k = {}\tSAMPLENAME : {}\tDONOR : {}\tSAMPLE : {}\tTISSUE : {}\t\tTOTAL : {}\tSHARED : {}".format (k, SAMPLENAME, DONOR, SAMPLE, TISSUE, int ( inputdf.iloc[k]["TOTAL"] ), int ( inputdf.iloc[k]["SHARED"] )) )
+        print ("k = {}\t{}/{}-{} (SAMPLE = {})\tTOTAL : {}\tSHARED : {}".format (k, TISSUE, DONOR, SAMPLENAME, SAMPLE, int ( inputdf.iloc[k]["TOTAL"] ), int ( inputdf.iloc[k]["SHARED"] )) )
 
         os.system ("mkdir -p " + kwargs["NPVAF_DIR"])   # 출력 디렉토리 만들기
         os.system ("mkdir -p " + kwargs["SIMPLE_KMEANS_DIR"])   # 출력 디렉토리 만들기
@@ -86,7 +90,7 @@ if __name__ == "__main__":
                                             str(kwargs["NPVAF_DIR"]), str(kwargs["SIMPLE_KMEANS_DIR"]), str(kwargs["CLEMENT_DIR"]), str(kwargs["SCICLONE_DIR"]), str(kwargs["PYCLONEVI_DIR"]) , str(kwargs["QUANTUMCLONE_DIR"]),  str(kwargs["COMBINED_OUTPUT_DIR"]), 
                                             str(kwargs["SCORING"]), str(kwargs["MAKEONE_STRICT"]), str(kwargs["MAXIMUM_NUM_PARENT"])     ] )
         
-        #os.system (command)
+        os.system (command)
         #print (command)
 
         # if k >= 1:

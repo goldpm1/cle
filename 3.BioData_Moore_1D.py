@@ -34,7 +34,7 @@ if __name__ == "__main__":
                 INPUT_TSV = DIR + "/" + DONOR + "/" + TISSUE + "/" + SAMPLE + ".txt"
                 
                 kwargs = {"INPUT_TSV" : INPUT_TSV,  "MODE" : "Both",  "NUM_CLONE_TRIAL_START" : 1, "NUM_CLONE_TRIAL_END" : 5, 
-                                "TRIAL_NO" : 5, "DEPTH_CUTOFF" : 10,  "KMEANS_CLUSTERNO" : 6, "MIN_CLUSTER_SIZE" : 5,  "MAKEONE_STRICT" :  2,
+                                "TRIAL_NO" : 10, "DEPTH_CUTOFF" : 10,  "KMEANS_CLUSTERNO" : 9, "MIN_CLUSTER_SIZE" : 5,  "MAKEONE_STRICT" :  2,
                                 "RANDOM_PICK" : 0, "AXIS_RATIO":0, "PARENT_RATIO": 0, "NUM_PARENT" : 0,  "FP_RATIO":0,  "FP_USEALL" : "False", 
                                 "RANDOM_SEED" : 0, "SAMPLENAME" : "", "BENCHMARK_NO" : 0, 
                                 "NPVAF_DIR" : "", "SIMPLE_KMEANS_DIR" : "", "CLEMENT_DIR" : "", "SCICLONE_DIR" : "", "PYCLONEVI_DIR" : "",  "COMBINED_OUTPUT_DIR" : "",
@@ -46,6 +46,8 @@ if __name__ == "__main__":
                     continue 
                 else:
                     kwargs ["RANDOM_PICK"] = 300
+
+                kwargs ["RANDOM_PICK"] = -1    # Select all
 
                 INPUT_FILETYPE, NUM_BLOCK = filetype.main (INPUT_TSV)
                 kwargs["NUM_BLOCK_INPUT"] = kwargs["NUM_BLOCK"] = NUM_BLOCK
@@ -108,4 +110,4 @@ if __name__ == "__main__":
                                 "--DONOR", DONOR,
                                 "--TISSUE", TISSUE,
                                 "--OUTPUT_DIR", str( kwargs["OUTPUT_DIR"] ) ])
-                os.system (command)
+                #os.system (command)

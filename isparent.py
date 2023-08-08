@@ -123,7 +123,7 @@ def Appropriate_Phylogeny_Verification (PhyAcc, subset_list, j2, j3, step, **kwa
 
 
 
-def makeone(df, np_vaf,  np_BQ, step, **kwargs):
+def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
     membership = step.membership
     mixture = step.mixture
     NUM_BLOCK = step.mixture.shape[0]
@@ -323,14 +323,14 @@ def makeone(df, np_vaf,  np_BQ, step, **kwargs):
                 #     print ("\t\t\t∇ {}위 : j2 = {}, subset_list_acc [j2] = {}\tsum_mixture_acc [j2] = {}\t{}번상황\tp = {}".format ( i + 1 , j2, subset_list_acc [ j2  ], sum_mixture_acc [ j2  ], int (p_list[2, i]) , round( p_list[0, i], 2)  ))
                 step.makeone_index = subset_list_acc[ best_j2 ]
                 step.fp_index = second_circumstance_fp_index [best_j2]                        
-                step_best = Estep.main (df, np_vaf, np_BQ, step, **kwargs )
+                step_best = Estep.main (input_containpos, df, np_vaf, np_BQ, step, **kwargs )
                 print ("\t\t\t\t∇ first j2 = {}\tstep.makeone_index = {}\tstep.fp_index = {}\tstep_best.likelihood = {}".format ( best_j2, step.makeone_index, step.fp_index, round(step_best.likelihood )  ))
                 step_best_likelihood = step_best.likelihood
                 
                 secondbest_j2 = int(p_list[1, 1])
                 step.makeone_index = subset_list_acc[ secondbest_j2 ]
                 step.fp_index = -1                  
-                step_secondbest = Estep.main (df, np_vaf, np_BQ, step, **kwargs )
+                step_secondbest = Estep.main (input_containpos, df, np_vaf, np_BQ, step, **kwargs )
                 step_secondbest_likelihood = step_secondbest.likelihood
                 print ("\t\t\t\t∇ secondbest j2 = {}\tstep.makeone_index = {}\tstep.fp_index = {}\tstep_secondbest.likelihood = {}".format ( secondbest_j2, step.makeone_index, step.fp_index, round (step_secondbest.likelihood) ))
             

@@ -115,7 +115,7 @@ def drawfigure_1d_soft(bunch, np_vaf, output_filename, **kwargs):
                          "linewidth": 5, "color": "gray"}, color=colorlist[k], kde=False, bins=50, label="cluster {}  (weighted vaf = {}, mixture = {})".format(k,  str(round((mixture[0][k]) / 2, 2)), str(round((mixture[0][k]), 2))))
         else:
             sns.distplot(pd.DataFrame(np_vaf[:, 0] * 2, columns=["vaf"])["vaf"], hist_kws={"weights": membership_p_normalize[:, k], "rwidth": 0.8}, color=colorlist[k],
-                         kde=False, bins=50, label="cluster {}  (weighted vaf = {}, mixture = {})".format(k,  str(round((mixture[0][k]) / 2, 2)), str(round((mixture[0][k]), 2))))
+                         kde=False, bins=50, label="cluster {}  (mixture = {})".format(k,  str(round((mixture[0][k]), 2))))
     matplotlib.pyplot. legend()
 
     matplotlib.pyplot.xlabel("VAF * 2 (= Mixture)")

@@ -16,8 +16,6 @@ def main (INPUT_SCICLONE_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answer, 
     df.loc[:,vaf_col] =  df.loc[:,vaf_col] / 100
     df["mutation_id"] = df["chr"] + "_" + df.astype({"st":"str"})["st"]
 
-
-
     # 각 mutation_id의 vaf 정보를 가져오기 위함
     np_vaf = pd.read_csv(INPUT_NPVAF, sep = "\t")
     np_vaf.rename(columns = {"Unnamed: 0":"mutation_id"}, inplace = True) 

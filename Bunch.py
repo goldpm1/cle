@@ -31,6 +31,7 @@ class Bunch1:        # step_hard, step_soft, trial_hard, trial_soft
         self.fp_involuntary_record = np.array ( [False] * (K))
         self.makeone_prenormalization = True
         self.makeone_prenormalization_record = np.zeros (K , dtype = "bool")
+        self.less_than_min_cluster_size = False
 
     def acc (self, mixture, membership, likelihood, membership_p, membership_p_normalize, makeone_index, fp_index, step_index, fp_member_index, includefp, fp_involuntary, makeone_prenormalization, max_step_index, K):
         self.mixture_record [K]= copy.deepcopy ( mixture )

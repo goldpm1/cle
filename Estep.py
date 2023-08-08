@@ -72,12 +72,10 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
         elif prob[j] == max_prob:
             max_prob_clone_candidate.append(j)
 
-    if ( int (df[k][i]["alt"] == 0)  ) & (kwargs["STEP"] == 1) & (k < 50) & (check == 1): 
-        print ("\t\t\t  k = {}, prob = {}".format(k, prob))
-
     max_clone = random.choice(max_prob_clone_candidate)
 
-
+    # if ( np_vaf [k][0] == 0 ) * (np_vaf[k][1] > 0.2):
+    #     print ("\t\t\t  k = {}, input_containpos = {}, max_clone = {}".format(k, input_containpos.iloc[k], max_clone ))
 
 
     if kwargs["OPTION"] in ["Hard", "hard"]:

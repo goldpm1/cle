@@ -19,17 +19,45 @@ def np_vaf_extract(df):
 
 ##################################################################################################################################################################################################################################################
 
-def DeleteCentroid (membership_kmeans, mixture_kmeans, **kwargs):
+def initial_kmeans (np_vaf, OUTPUT_FILENAME, **kwargs):
     import numpy as np
+    import matplotlib.pyplot as plt
+    from sklearn.cluster import KMeans
+    import palettable, itertools, random
+    import seaborn as sns
+    from scipy.stats import kde
+
+    NUM_BLOCK = np_vaf.shape[1]
+    NUM_MUTATION = np_vaf.shape[0]
+
+    tabl = palettable.tableau.Tableau_20.mpl_colors
+    colorlist = [i for i in tabl]
+
+    kmeans = KMeans(n_clusters=kwargs["KMEANS_CLUSTERNO"], init='k-means++', max_iter=100,random_state=0)  # model generation
+    kmeans.fit(np_vaf)  
+    membership_kmeans = kmeans.labels_     
+
+
+
+    plt.figure(figsize=(6, 6))
+    plt.suptitle ("INITIAL_KMEANS", fontdict={"fontsize": 14, "fontweight" : "semibold} )
+    
+    
+    mixture_kmeans = np.zeros (( NUM_BLOCK, kwargs["KMEANS_CLUSTERNO"]), dtype = "float")
+    for j in range(kwargs["KMEANS_CLUSTERNO"]):
+        for i in range (NUM_BLOCK):
+            mixture_kmeans[i][j] = round(np.mean(np_vaf[membership_kmeans == (j)][:, i] * 2), 3)
+
+
 
     ################Delete n (membership) less than MIN_CLUSTER_SIZE################
     mask = []
     t =   np.unique (membership_kmeans, return_counts = True ) 
-    #print ( "np.unique (return_counts = True)  :  {}".format( t ) )
     for j in range ( len( t[0] ) ):
         if t[1][j] >= kwargs["MIN_CLUSTER_SIZE"]:        # over MIN_CLUSTER_SIZE
             mask.append (j)
     mixture_kmeans = mixture_kmeans [:, mask]
+    kwargs["KMEANS_CLUSTERNO"] = len(mask)
     ###########################################################################
 
 
@@ -39,26 +67,11 @@ def DeleteCentroid (membership_kmeans, mixture_kmeans, **kwargs):
         if ( np.any ( mixture_kmeans [ : , j] > 1)  == False):   # under 1
             mask.append (j)
     mixture_kmeans =  mixture_kmeans [ :, mask ]
+    kwargs["KMEANS_CLUSTERNO"] = len (mask)
     ###########################################################################
 
-    return mixture_kmeans
-
-
-
-def initial_kmeans (input_containpos, np_vaf, OUTPUT_FILENAME, **kwargs):
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from sklearn.cluster import KMeans
-    import palettable, itertools, random,re 
-    import seaborn as sns
-    from scipy.stats import kde
-
-    NUM_BLOCK = np_vaf.shape[1]
-    NUM_MUTATION = np_vaf.shape[0]
-
-
+    ##############################  Add axis centroid ##############################
     
-    ##############################  Add axis centroid ##############################    
     if kwargs["NUM_BLOCK"] >= 2:
         combi =  itertools.chain(*map(lambda x: itertools.combinations( list (range (kwargs["NUM_BLOCK"])), x), range(1, len( list (range (  kwargs["NUM_BLOCK"])) ) )))
 
@@ -74,6 +87,8 @@ def initial_kmeans (input_containpos, np_vaf, OUTPUT_FILENAME, **kwargs):
                 index_interest = index_interest & set ( np.where ( np_vaf[: , zero_dim] == 0 )[0] )
                 index_interest = sorted ( list (index_interest))
 
+            #print ( "\nZero plane = {}\tnum_mutation on the plane = {}".format (subset_list, len ( index_interest) ))
+
             nonzero_dim = set (range (kwargs["NUM_BLOCK"])) - set(subset_list)
 
             tt = []
@@ -81,55 +96,29 @@ def initial_kmeans (input_containpos, np_vaf, OUTPUT_FILENAME, **kwargs):
                 t = round ( np.mean (  np_vaf[ index_interest , i]) , 2)
                 tt.append (  int ( 0.5 / t  )  )   # 그 축에서 몇 개까지의 clone이 가능할 것인가
 
-            print ( "\nZero plane = {}\tnum_mutation on the plane = {}\ttt = {}".format (subset_list, len ( index_interest), tt ))
             max_t = np.max(tt)
             select_t = np.min ( [max_t, int ( len(index_interest) / kwargs["MIN_CLUSTER_SIZE"]) ] )   # 한 clustert당 이만큼은 들어가야 하니..
 
             # 그 평면에서 select_t 개만큼 뽑아서 random으로 뽑아줌
-            random.seed(kwargs["RANDOM_SEED"])
-            index_interest_diploid = [i for i in index_interest if  ( bool(re.search(r'X|Y', input_containpos.iloc[i]["pos"])) == False  ) ]    # diploid 만 뽑음. Sex는 불안저앻서 안된다\
-            # index_interest_diploid = [i for i in index_interest if bool(re.search(r'X|Y', input_containpos.loc[i, "pos"])) == False]
-            # index_interest_diploid = [i for i in index_interest if bool(re.search(r'X|Y', input_containpos.iloc[i, index_of_pos_column])) == False]
-            sampling_index_interest =  sorted ( random.sample (index_interest_diploid, select_t)  ) 
+            sampling_index_interest =  sorted ( random.sample (index_interest, select_t)  ) 
             additional_centroid_index += sampling_index_interest
             #print ("new_point = {}".format( np_vaf[sampling_index_interest , :] ))
 
-        zeroplane_mixture =  np_vaf[ additional_centroid_index, :].T * 2
-        #print ("Zeroplane_mixture : \n{}".format (zeroplane_mixture))
-        
-        # 0 없는 평면에서 K means 돌리기
-        kmeans = KMeans(n_clusters = np.max ( [ kwargs["KMEANS_CLUSTERNO"] - zeroplane_mixture.shape[1], 1 ] )  , init='k-means++', max_iter=100, random_state=0)  # model generation
-        non_zero_rows = np.all( np_vaf != 0, axis = 1 )
-        non_zero_np_vaf = np_vaf [non_zero_rows, : ]
-        kmeans.fit ( non_zero_np_vaf )  
-        membership_kmeans = kmeans.labels_     
+        #print (  "\n", np_vaf[ additional_centroid_index, :].T )
 
-        non_zeroplane_mixture = np.zeros (( NUM_BLOCK, np.max ( [ kwargs["KMEANS_CLUSTERNO"] - zeroplane_mixture.shape[1], 1 ] )), dtype = "float")
-        for j in range( non_zeroplane_mixture.shape[1] ):
-            for i in range ( NUM_BLOCK ):
-                non_zeroplane_mixture[i][j] = round(np.mean(non_zero_np_vaf [membership_kmeans == (j)][:, i] * 2), 3)
-        #print ("새로 돌린 non_zeroplane_mixture : \n{}".format (non_zeroplane_mixture))
+        # Check for non-zero values along axis=0 (columns)
+        non_zero_columns_mixture = np.all(mixture_kmeans != 0, axis=0)
+        # Select columns where all rows are non-zero
+        mixture_kmeans = mixture_kmeans[ : , non_zero_columns_mixture]
 
-        non_zeroplane_mixture = DeleteCentroid (membership_kmeans, non_zeroplane_mixture, **kwargs)
+        #print (  "\n", mixture_kmeans )
 
-        # 둘을 합쳐주기
-        mixture_kmeans = np.hstack(( non_zeroplane_mixture, zeroplane_mixture ))
-        print ("* 합친 mixture_kmeans = \n{}".format(mixture_kmeans))
+        # Concatenate the arrays horizontally
+        mixture_kmeans = np.hstack((mixture_kmeans, np_vaf[ additional_centroid_index, :].T))
         kwargs["KMEANS_CLUSTERNO"] = mixture_kmeans.shape[1]
 
+        print (  "\n", mixture_kmeans, "\nKMEANS_CLUSTERNO = {}".format (kwargs["KMEANS_CLUSTERNO"]) )
 
-
-    else:  # 1D 일때
-        kmeans = KMeans(n_clusters=kwargs["KMEANS_CLUSTERNO"], init='k-means++', max_iter=100,random_state=0)  # model generation
-        kmeans.fit(np_vaf)  
-        membership_kmeans = kmeans.labels_         
-        mixture_kmeans = np.zeros (( NUM_BLOCK, kwargs["KMEANS_CLUSTERNO"]), dtype = "float")
-        for j in range(kwargs["KMEANS_CLUSTERNO"]):
-            for i in range (NUM_BLOCK):
-                mixture_kmeans[i][j] = round(np.mean(np_vaf[membership_kmeans == (j)][:, i] * 2), 3)
-
-        mixture_kmeans = DeleteCentroid (membership_kmeans, mixture_kmeans, **kwargs)
-        kwargs["KMEANS_CLUSTERNO"] = mixture_kmeans.shape[1]
 
 
 
@@ -138,11 +127,6 @@ def initial_kmeans (input_containpos, np_vaf, OUTPUT_FILENAME, **kwargs):
     print ("Iniitial kmeans : ", end = "\t")
     print(" ".join(str(row) for row in mixture_kmeans ))
 
-    tabl = palettable.tableau.Tableau_20.mpl_colors
-    colorlist = [i for i in tabl]
-    plt.figure(figsize=(6, 6))
-    plt.suptitle ("INITIAL_KMEANS", fontsize =  26, fontweight='semibold' )
-    plt.text ( 0.5, 0.95, "KMEANS_CLUSTERNO = {}".format (kwargs["KMEANS_CLUSTERNO"]), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
             
     if NUM_BLOCK == 1:
         sns.kdeplot ( np_vaf [:, 0] * 2, shade = True)
@@ -152,21 +136,20 @@ def initial_kmeans (input_containpos, np_vaf, OUTPUT_FILENAME, **kwargs):
         plt.xlim(0, 1)
         for j in range(kwargs["KMEANS_CLUSTERNO"]):
             plt.axvline ( x = mixture_kmeans[0][j], color = colorlist [j  % 20] ) 
-            plt.text  ( mixture_kmeans[0][j], kde_np_vaf(mixture_kmeans[0][j]) * 1.08, "{}".format( np.round ( mixture_kmeans[0][j] , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
+            plt.text  ( mixture_kmeans[0][j], kde_np_vaf(mixture_kmeans[0][j]) * 1.08, "{}".format( np.round (kde_np_vaf(mixture_kmeans[0][j]) * 1.08 , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
     elif NUM_BLOCK == 2:
         plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
         plt.ylabel("VAF x 2 of the Sample 1", fontdict={"fontsize": 14})
-        plt.xlim(-0.02, 1)
-        plt.ylim(-0.02, 1)
-        #sns.despine(top=True, right=True, left=True, bottom=True)
-
-        plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 30, color = "#EAC696" , alpha = 0.8)
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
         for j in range(kwargs["KMEANS_CLUSTERNO"]):
-            # for k in np.where (membership_kmeans == j)[0]:
-            #     plt.scatter ( x = np_vaf [k, 0] * 2, y = np_vaf [k, 1] * 2, s = 30, color = colorlist[j % 20], alpha = 0.8)
-            plt.scatter ( mixture_kmeans[0][j], mixture_kmeans[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 500, label = "clone " + str(j))  
-            plt.text  ( mixture_kmeans[0][j], mixture_kmeans[1][j], "[{},{}]".format( np.round (mixture_kmeans[0][j] , 2), np.round (mixture_kmeans[1][j] * 0.92, 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
+            for k in np.where (membership_kmeans == j)[0]:
+                plt.scatter ( x = np_vaf [k, 0] * 2, y = np_vaf [k, 1] * 2, s = 30, color = colorlist[j % 20], alpha = 0.8)
+
+            plt.scatter ( mixture_kmeans[0][j], mixture_kmeans[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 200, label = "clone " + str(j))  
+            plt.text  ( mixture_kmeans[0][j], mixture_kmeans[1][j], "[{},{}]".format( np.round (mixture_kmeans[0][j] , 2), np.round (mixture_kmeans[1][j] , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
             
+    plt.text ( 0.5, 0.8, "KMEANS_CLUSTERNO = {}".format (kwargs["KMEANS_CLUSTERNO"]), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
     plt.savefig ( OUTPUT_FILENAME )
         
     return mixture_kmeans, kwargs
@@ -192,10 +175,7 @@ def set_initial_parameter(np_vaf, mixture_kmeans, OUTPUT_FILENAME, **kwargs):
     else:  # ,  The other half of the cases : pick kwargs["NUM_CLONE"] 
         initial_mixture = mixture_kmeans [:, random.sample (range( kwargs["KMEANS_CLUSTERNO"]), kwargs["NUM_CLONE"]  )]
     
-    if np.any(initial_mixture < 0) == True:   # If at leaast one negative values are, turn it into 0
-        initial_mixture[:, -1][initial_mixture[:, -1] < 0] = 0
     
-
     import palettable
     tabl = palettable.tableau.Tableau_20.mpl_colors
     colorlist = [i for i in tabl]
@@ -212,16 +192,15 @@ def set_initial_parameter(np_vaf, mixture_kmeans, OUTPUT_FILENAME, **kwargs):
             plt.axvline ( x = initial_mixture[0][j], color = colorlist [j  % 20] ) 
             plt.text  ( initial_mixture[0][j], kde_np_vaf(initial_mixture[0][j]) * 1.08, "{}".format( np.round (kde_np_vaf(initial_mixture[0][j]) * 1.08 , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
     elif kwargs["NUM_BLOCK"] == 2:
-        plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 30, color =  "#EAC696", alpha = 0.8)
+        plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 30, alpha = 0.8)
         plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
         plt.ylabel("VAF x 2 of the Sample 1", fontdict={"fontsize": 14})
-        plt.xlim(-0.02, 1)
-        plt.ylim(-0.02, 1)
-        #sns.despine(top=True, right=True, left=True, bottom=True)
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
     
         for j in range( initial_mixture.shape[1] ):
-            plt.scatter (initial_mixture[0][j], initial_mixture[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 500, label = "clone " + str(j)) 
-            plt.text  ( initial_mixture[0][j], initial_mixture[1][j], "[{},{}]".format( np.round (initial_mixture[0][j] , 2), np.round (initial_mixture[1][j] * 0.92 , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
+            plt.scatter (initial_mixture[0][j], initial_mixture[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 300, label = "clone " + str(j)) 
+            plt.text  ( initial_mixture[0][j], initial_mixture[1][j], "[{},{}]".format( np.round (initial_mixture[0][j] , 2), np.round (initial_mixture[1][j] , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
         plt.legend()
         
     plt.savefig ( OUTPUT_FILENAME )
