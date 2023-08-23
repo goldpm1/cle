@@ -18,6 +18,8 @@ def makedf ( **kwargs ):
 
     input_containpos ["cha1"] = "exclusive"  # monoclone이면 exclusive, 둘 이상의 clone이 합쳐진거면 parent
     input_containpos ["cha2"] = "space"       # 축 상에 있으면 axis, 공간 상에 있으면 space
+
+
     kwargs["samplename_dict_CharacterToNum"] = {}
     kwargs["samplename_dict_NumToCharacter"] = {}
     kwargs["NUM_MUTATION"] = input_containpos.shape[0]
@@ -95,6 +97,9 @@ def makedf ( **kwargs ):
                 print (df[row][col], row, col)
 
 
+    if kwargs["AXIS_RATIO"] == -1:
+        kwargs["AXIS_RATIO"]  = round ( len(input_containpos [ input_containpos ["cha2"] == "axis" ]) / kwargs["NUM_MUTATION"], 2 )
+
 
 
     # 일단 기존 data에서 answer별로 count가 얼마나 되는지 출력하기
@@ -155,7 +160,7 @@ def makedf ( **kwargs ):
 
 
 
-    print ("FP_RATIO : {}\tFP_USEALL :{}\tDEPTH_CUTOFF : {}".format (kwargs["FP_RATIO"], kwargs["FP_USEALL"], kwargs["DEPTH_CUTOFF"]))
+    print ("\tFP_RATIO : {}\tAXIS_RATIO :{}\tDEPTH_CUTOFF : {}".format (kwargs["FP_RATIO"], kwargs["AXIS_RATIO"], kwargs["DEPTH_CUTOFF"]))
 
     try:
         p = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "axis" in input_containpos.loc[i,"cha2"] ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]
@@ -210,7 +215,7 @@ def RANDOM_PICK_fun(**kwargs):
         CHILD_SPACE_index = list(set(CHILD_index) - set(AXIS_index))      # CHILD 이면서 SPACE에 위치해 있는 것들
         CHILD_AXIS_index = list(set(CHILD_index) & set(AXIS_index))       # CHILD 이면서  AXIS에 위치해 있는 것들
         
-        print ( "len (CHILD_index) : {}\tlen (CHILD_SPACE_index) : {}".format (len (CHILD_index), len (CHILD_SPACE_index)))
+        print ( "\tlen (CHILD_index) : {}\tlen (CHILD_SPACE_index) : {}".format (len (CHILD_index), len (CHILD_SPACE_index)))
         
         if (kwargs["FP_USEALL"] == "True"):        # kwargs["FP"] == True면 full로 뽑는다
             FP_randomsample = FP_index
@@ -247,8 +252,6 @@ def RANDOM_PICK_fun(**kwargs):
             return False, kwargs
 
 
-        print ( "RANDOM_PICK = {}\tFP_randomsample = {}\tPARENT_randomsample = {}\tCHILD_AXIS_randomsample = {}".format ( kwargs["RANDOM_PICK"], len(FP_randomsample), len(PARENT_randomsample), len (CHILD_AXIS_randomsample) ) )
-
         try:
             CHILD_SPACE_randomsample = random.sample(CHILD_SPACE_index, kwargs["RANDOM_PICK"] - (len(FP_randomsample) + len(PARENT_randomsample) + len(CHILD_AXIS_randomsample)))  
         except:
@@ -256,7 +259,7 @@ def RANDOM_PICK_fun(**kwargs):
             return False, kwargs
         
 
-        print ("\n조정 후\n\tFP 개수 : {}\tPARENT 개수 : {}\tCHILD_SPACE 개수 : {}\tCHILD_AXIS 개수 : {}".format(len(FP_randomsample), len (PARENT_randomsample), len (CHILD_SPACE_randomsample), len (CHILD_AXIS_randomsample)))
+        print ("\n조정 후\n\tFP : {}\tPARENT : {}\tCHILD_SPACE : {}\tCHILD_AXIS : {}".format(len(FP_randomsample), len (PARENT_randomsample), len (CHILD_SPACE_randomsample), len (CHILD_AXIS_randomsample)))
 
         random_index = sorted( FP_randomsample + PARENT_randomsample + CHILD_SPACE_randomsample + CHILD_AXIS_randomsample )             # 다 합치면 RADOM_PICK 개수가 되겠지
 

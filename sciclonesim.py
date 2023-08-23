@@ -51,8 +51,7 @@ def main (INPUT_SCICLONE_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answer, 
             x_mean = np.mean (b[b["cluster"] == j + min_membership_sciclone]["block0"])
             mixture_sciclone[:, j ] = [x_mean * 2]
 
-
-    print (mixture_sciclone)
+            
 
     # 채점하기
     if kwargs["SCORING"] == True:

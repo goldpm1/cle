@@ -182,6 +182,8 @@ if __name__ == "__main__":
         for i, tool in enumerate( toollist ):            
             score, Yindex, ARI, NUM_CLONE_answer, runningtime, f1score = 0, 0, 0, 0, 0, 0
 
+            print (  kwargs["INPUT_DIR"] + "/" + str(j) + "/result/" + tool + ".results.txt"  )
+
             if os.path.exists( kwargs["INPUT_DIR"] + "/" + str(j) + "/result/" + tool + ".results.txt" ) == True:
                 inputdf = pd.read_csv ( kwargs["INPUT_DIR"] + "/" + str(j) + "/result/" + tool + ".results.txt", sep = "\t", header = None)
 

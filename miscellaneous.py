@@ -1,6 +1,3 @@
-from turtle import color
-
-
 def np_vaf_extract(df):
     import numpy as np
 
@@ -16,6 +13,62 @@ def np_vaf_extract(df):
                 np_vaf[row][col] = round (df[row][col]["alt"] / df[row][col]["depth"] , 3)
 
     return np_vaf
+
+def iszerocolumn (step, **kwargs):
+    import numpy as np 
+
+    for j in range ( kwargs ["NUM_CLONE_ITER"] ) :
+        if  np.array_equal (step.mixture[: , j],  np.zeros ( kwargs["NUM_BLOCK"]) )  == True :
+            #print ("\t\tEmpty clone found.\t{}".format (  step.mixture  ))
+            return True
+    return False
+
+##################################################################################################################################################################################################################################################
+
+def checkall (step, **kwargs):
+    import numpy as np
+
+    if type (step) == type ([]):     # from isparent.py
+        sum_mixture = step
+
+    else:  # from Mstep.py
+        sum_mixture = np.zeros ( kwargs["NUM_BLOCK"], dtype = "float")
+        for i in range (kwargs["NUM_BLOCK"]):
+            for j in range (kwargs ["NUM_CLONE_ITER"]):
+                if j in step.makeone_index:
+                    sum_mixture[i] += step.mixture[i][j]
+
+
+    if kwargs["STEP_TOTAL"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1):       # 이때는 좀 널널하게 잡는다. 그래도 안되면 중간에 stop하게 시킴
+        if kwargs["MAKEONE_STRICT"] == 1:
+            makeone_standard = np.array ( [ [0.84, 1.15], [0.84, 1.15] ],dtype = float)
+        elif kwargs["MAKEONE_STRICT"] == 2:
+            makeone_standard = np.array ( [ [0.77, 1.3], [0.77, 1.3] ],dtype = float)
+    else:   # 이때는 조금 더 빡빡하게 잡음
+        if kwargs["MAKEONE_STRICT"] == 1:    # SimData, CellData
+            makeone_standard = np.array ( [ [0.93, 1.1], [0.93, 1.1] ],dtype = float)  # 1st: 1D,  2nd : 2D, 3D
+        elif kwargs["MAKEONE_STRICT"] == 2:   # BioData
+            makeone_standard = np.array ( [ [0.89, 1.20], [0.88, 1.25] ],dtype = float)  # 1st: 1D,  2nd : 2D, 3D
+
+
+    if type (step) != type ([]):  # from Mstep.py
+        if len(step.makeone_index) == 1:  # If monoclonal, set extremely lenient condition (due to the homologous variant contam).
+            makeone_standard = np.array ( [ [0.7, 1.3], [0.7, 1.3] ],dtype = float)  # 1st: 1D,  2nd : 2D, 3D
+
+
+    if kwargs["NUM_BLOCK"] == 1:      # 1D
+        if (sum_mixture[0] < makeone_standard[0][0]) | (sum_mixture[0] > makeone_standard[0][1]):
+            return False, sum_mixture
+        else:
+            return True, sum_mixture
+    else:
+        for i in range( kwargs["NUM_BLOCK"] ):  
+            if (sum_mixture[i] < makeone_standard[1][0]) | (sum_mixture[i] > makeone_standard[1][1]): 
+                return False, sum_mixture
+        return True, sum_mixture
+    
+
+
 
 ##################################################################################################################################################################################################################################################
 
@@ -45,13 +98,14 @@ def DeleteCentroid (membership_kmeans, mixture_kmeans, **kwargs):
 
 
 
-def initial_kmeans (input_containpos, np_vaf, OUTPUT_FILENAME, **kwargs):
+def initial_kmeans (input_containpos, df, np_vaf, np_BQ, OUTPUT_FILENAME, **kwargs):
     import numpy as np
     import matplotlib.pyplot as plt
     from sklearn.cluster import KMeans
-    import palettable, itertools, random,re 
+    import palettable, itertools, random, re, math, copy, subprocess
     import seaborn as sns
     from scipy.stats import kde
+    import clementrec
 
     NUM_BLOCK = np_vaf.shape[1]
     NUM_MUTATION = np_vaf.shape[0]
@@ -62,59 +116,93 @@ def initial_kmeans (input_containpos, np_vaf, OUTPUT_FILENAME, **kwargs):
     if kwargs["NUM_BLOCK"] >= 2:
         combi =  itertools.chain(*map(lambda x: itertools.combinations( list (range (kwargs["NUM_BLOCK"])), x), range(1, len( list (range (  kwargs["NUM_BLOCK"])) ) )))
 
-        np_vaf = np_vaf[:, 0:kwargs["NUM_BLOCK"]]
+        #np_vaf = np_vaf[:, 0:kwargs["NUM_BLOCK"]]
 
-        additional_centroid_index = []
+        # 빈 mixture 만들어주기
+        mixture_kmeans = np.zeros ( (kwargs["NUM_BLOCK"], 0) , dtype = "float") 
 
-        for subset in combi:    # 0인 평면
-            subset_list = list (subset)
+        # 축 혹은 평면에서 K means 돌리기
+        for subset in combi:    # 0인 평면 (3D) 혹은 축 (3D, 2D)
+            subdim = list (subset)       # [0,]  [1,]  [2,] [ 0, 1] [ 0, 2] [1, 2]
             
             index_interest = set ( range (len(np_vaf)))
-            for zero_dim in subset_list:   # 그 평면 혹은 축에 있는 index만 고름
+            for zero_dim in subdim:   # 그 평면 혹은 축에 있는 index만 고름
                 index_interest = index_interest & set ( np.where ( np_vaf[: , zero_dim] == 0 )[0] )
                 index_interest = sorted ( list (index_interest))
 
-            nonzero_dim = set (range (kwargs["NUM_BLOCK"])) - set(subset_list)
+            nonzero_dim = sorted(list ( set (range (kwargs["NUM_BLOCK"])) - set(subdim) ))
 
+
+            index_interest_nonzero =  np.where ( np.all ( np_vaf[: , nonzero_dim] != 0, axis = 1 )  ) [0]    # 완전 그 축상은 아니어도 되지만, 0이면 빼는 것
+
+            # 최대 몇 개 뽑을지 결정하기
             tt = []
             for i in nonzero_dim : 
                 t = round ( np.mean (  np_vaf[ index_interest , i]) , 2)
-                tt.append (  int ( 0.5 / t  )  )   # 그 축에서 몇 개까지의 clone이 가능할 것인가
-
-            print ( "\nZero plane = {}\tnum_mutation on the plane = {}\ttt = {}".format (subset_list, len ( index_interest), tt ))
+                tt.append (  math.ceil ( 0.5 / t  )  )   # 그 축에서 몇 개까지의 clone이 가능할 것인가 (올림하자)
             max_t = np.max(tt)
             select_t = np.min ( [max_t, int ( len(index_interest) / kwargs["MIN_CLUSTER_SIZE"]) ] )   # 한 clustert당 이만큼은 들어가야 하니..
+            print ( "\n\n\nsubdim = {}\tnonzero_dim = {}\tnum_mutation on the plane = {}\tnum_mut not exclusive on the plane = {}\tmean VAF*2 = {} -> select_t = {}".format (subdim, nonzero_dim, len ( index_interest), len(index_interest_nonzero), t * 2, select_t ))
 
-            # 그 평면에서 select_t 개만큼 뽑아서 random으로 뽑아줌
-            random.seed(kwargs["RANDOM_SEED"])
-            index_interest_diploid = [i for i in index_interest if  ( bool(re.search(r'X|Y', input_containpos.iloc[i]["pos"])) == False  ) ]    # diploid 만 뽑음. Sex는 불안저앻서 안된다\
-            # index_interest_diploid = [i for i in index_interest if bool(re.search(r'X|Y', input_containpos.loc[i, "pos"])) == False]
-            # index_interest_diploid = [i for i in index_interest if bool(re.search(r'X|Y', input_containpos.iloc[i, index_of_pos_column])) == False]
-            sampling_index_interest =  sorted ( random.sample (index_interest_diploid, select_t)  ) 
-            additional_centroid_index += sampling_index_interest
-            #print ("new_point = {}".format( np_vaf[sampling_index_interest , :] ))
 
-        zeroplane_mixture =  np_vaf[ additional_centroid_index, :].T * 2
-        #print ("Zeroplane_mixture : \n{}".format (zeroplane_mixture))
-        
+            # zero plane만 따로 뽑아서 CLEMENT를 recursive하게 돌려주기
+            kwargs_transfer = copy.deepcopy ( kwargs ) 
+            #kwargs_transfer["NUM_CLONE_TRIAL_END"] = np.min ([ select_t, kwargs["NUM_CLONE_TRIAL_END"] ] ) 
+            kwargs_transfer["NUM_CLONE_TRIAL_START"] = np.min ([select_t, 2])
+            kwargs_transfer["NUM_CLONE_TRIAL_END"] = np.min ([select_t, 4])
+            kwargs_transfer["FP_RATIO"] = 0
+            kwargs_transfer["NUM_PARENT"] = 0
+            kwargs_transfer["NUM_BLOCK"] = len(nonzero_dim)
+            kwargs_transfer["TRIAL_NO"] = 3
+            kwargs_transfer["VERBOSE"] = 1
+            input_containpos = input_containpos.reset_index(drop = True) 
+            
+
+            # 정사영 내린 것만 보기 위해 dimension selection
+            NUM_CLONE_recursive, mixture_recursive = clementrec.recursive  ( input_containpos = input_containpos , 
+                                                    df = [ [row[col] for col in nonzero_dim] for row in df  ],
+                                                    np_vaf = np_vaf[:,  nonzero_dim ],
+                                                    np_BQ = np_BQ[:, nonzero_dim ],
+                                                    subdim  = subdim, nonzero_dim = nonzero_dim, 
+                                                    index_interest = index_interest, index_interest_nonzero = index_interest_nonzero,
+                                                    kwargs = kwargs_transfer)
+    
+
+            # 원래 차원으로 회복시키고 mixture를 합쳐주기
+            mixture_subdim = np.zeros ( (kwargs["NUM_BLOCK"], NUM_CLONE_recursive) , dtype = "float") 
+            j = 0
+            for i in range ( kwargs["NUM_BLOCK"]) :
+                if i in nonzero_dim:
+                    mixture_subdim[ i, : ] = mixture_recursive [ j , :]
+                    j = j + 1
+            
+            #print ("\tmixture_subdim = {}".format ( mixture_subdim ))
+            mixture_kmeans = np.hstack(( mixture_kmeans, mixture_subdim )) 
+            #print ("\tmixture_kmeans = {}".format ( mixture_kmeans ))
+
+            # 흔적 지워주기
+            # subprocess.run (["rm -rf " + kwargs["CLEMENT_DIR"] + "/trial/*"  ], shell = True)
+
+            
+
         # 0 없는 평면에서 K means 돌리기
-        kmeans = KMeans(n_clusters = np.max ( [ kwargs["KMEANS_CLUSTERNO"] - zeroplane_mixture.shape[1], 1 ] )  , init='k-means++', max_iter=100, random_state=0)  # model generation
-        non_zero_rows = np.all( np_vaf != 0, axis = 1 )
+        kmeans = KMeans(n_clusters = np.max ( [ kwargs["KMEANS_CLUSTERNO"] - mixture_kmeans.shape[1], 1 ] )  , init='k-means++', max_iter=100, random_state=0)  # model generation
+        non_zero_rows = np.all( np_vaf != 0, axis = 1 )  # 아예 space
         non_zero_np_vaf = np_vaf [non_zero_rows, : ]
         kmeans.fit ( non_zero_np_vaf )  
         membership_kmeans = kmeans.labels_     
 
-        non_zeroplane_mixture = np.zeros (( NUM_BLOCK, np.max ( [ kwargs["KMEANS_CLUSTERNO"] - zeroplane_mixture.shape[1], 1 ] )), dtype = "float")
-        for j in range( non_zeroplane_mixture.shape[1] ):
-            for i in range ( NUM_BLOCK ):
-                non_zeroplane_mixture[i][j] = round(np.mean(non_zero_np_vaf [membership_kmeans == (j)][:, i] * 2), 3)
+        non_zeroplane_mixture = kmeans.cluster_centers_.T * 2
+        non_zeroplane_mixture = DeleteCentroid (membership_kmeans, non_zeroplane_mixture, **kwargs)
+        mixture_kmeans = np.hstack(( mixture_kmeans, non_zeroplane_mixture ))    
+
         #print ("새로 돌린 non_zeroplane_mixture : \n{}".format (non_zeroplane_mixture))
 
-        non_zeroplane_mixture = DeleteCentroid (membership_kmeans, non_zeroplane_mixture, **kwargs)
+        #mixture_kmeans = np.array ( [ [0,   0,   0.06, 0.13, 0.11, 0.74, 0.08, 0.91],    [0.06, 0.19, 0,  0,   0.2,  0.68, 0.07, 0.86] ] )
+        #mixture_kmeans = np.array ( [[0,   0,   0,   0.07, 0.13, 0.73, 0.12, 0.95, 0.12], [0.1,  0.23, 0.67, 0,   0,   0.15, 0.71, 0.15, 0.52]] )
+
 
         # 둘을 합쳐주기
-        mixture_kmeans = np.hstack(( non_zeroplane_mixture, zeroplane_mixture ))
-        print ("* 합친 mixture_kmeans = \n{}".format(mixture_kmeans))
         kwargs["KMEANS_CLUSTERNO"] = mixture_kmeans.shape[1]
 
 
@@ -135,14 +223,14 @@ def initial_kmeans (input_containpos, np_vaf, OUTPUT_FILENAME, **kwargs):
 
     ############################################################################
 
-    print ("Iniitial kmeans : ", end = "\t")
-    print(" ".join(str(row) for row in mixture_kmeans ))
+    if kwargs["VERBOSE"] >= 1:
+        print ("\n► All starting points (by K means)" )
+        print("\n".join(str(np.round(row, 2)) for row in mixture_kmeans ))
 
     tabl = palettable.tableau.Tableau_20.mpl_colors
+    Gr_10 = palettable.scientific.sequential.GrayC_20.mpl_colors
     colorlist = [i for i in tabl]
     plt.figure(figsize=(6, 6))
-    plt.suptitle ("INITIAL_KMEANS", fontsize =  26, fontweight='semibold' )
-    plt.text ( 0.5, 0.95, "KMEANS_CLUSTERNO = {}".format (kwargs["KMEANS_CLUSTERNO"]), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
             
     if NUM_BLOCK == 1:
         sns.kdeplot ( np_vaf [:, 0] * 2, shade = True)
@@ -155,49 +243,83 @@ def initial_kmeans (input_containpos, np_vaf, OUTPUT_FILENAME, **kwargs):
             plt.text  ( mixture_kmeans[0][j], kde_np_vaf(mixture_kmeans[0][j]) * 1.08, "{}".format( np.round ( mixture_kmeans[0][j] , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
     elif NUM_BLOCK == 2:
         plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
-        plt.ylabel("VAF x 2 of the Sample 1", fontdict={"fontsize": 14})
+        plt.ylabel("VAF x 2 of the Sample 2", fontdict={"fontsize": 14})
         plt.xlim(-0.02, 1)
         plt.ylim(-0.02, 1)
-        #sns.despine(top=True, right=True, left=True, bottom=True)
 
-        plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 30, color = "#EAC696" , alpha = 0.8)
+        for k in range ( np_vaf.shape[0] ):
+            plt.scatter ( x = np_vaf [k, 0] * 2, y = np_vaf [k, 1] * 2, s = 30, color = "#EAC696" , alpha = 0.8)
+        plt.scatter ( x = 0, y = 0, s = 30, color = Gr_10[10] , alpha = 0.8)
+        
         for j in range(kwargs["KMEANS_CLUSTERNO"]):
             # for k in np.where (membership_kmeans == j)[0]:
             #     plt.scatter ( x = np_vaf [k, 0] * 2, y = np_vaf [k, 1] * 2, s = 30, color = colorlist[j % 20], alpha = 0.8)
             plt.scatter ( mixture_kmeans[0][j], mixture_kmeans[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 500, label = "clone " + str(j))  
-            plt.text  ( mixture_kmeans[0][j], mixture_kmeans[1][j], "[{},{}]".format( np.round (mixture_kmeans[0][j] , 2), np.round (mixture_kmeans[1][j] * 0.92, 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
+            plt.text  ( mixture_kmeans[0][j], mixture_kmeans[1][j] -0.04, "[{},{}]".format( np.round (mixture_kmeans[0][j] , 2), np.round (mixture_kmeans[1][j], 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
             
+    
+    y_min, y_max = plt.ylim()
+    plt.suptitle ("INITIAL_KMEANS", fontsize =  26, fontweight='semibold' )
+    plt.text ( 0.5, y_max - 0.05 * (y_max - y_min), "KMEANS_CLUSTERNO = {}".format (kwargs["KMEANS_CLUSTERNO"]), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
+    plt.text ( 0.5, y_max - 0.1 * (y_max - y_min), "AXIS_RATIO = {}".format (kwargs["AXIS_RATIO"]), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
     plt.savefig ( OUTPUT_FILENAME )
         
     return mixture_kmeans, kwargs
 
 
-def set_initial_parameter(np_vaf, mixture_kmeans, OUTPUT_FILENAME, **kwargs):  
+
+
+def set_initial_parameter(np_vaf, mixture_kmeans, OUTPUT_FILENAME, step, **kwargs):  
     import random
     import numpy as np
     import matplotlib.pyplot as plt
     import seaborn as sns
     from scipy.stats import kde
     
-    random.seed ( kwargs["TRIAL"])
-    initial_mixture = np.zeros((kwargs["NUM_BLOCK"], kwargs["NUM_CLONE"]), dtype="float")
+    random.seed ( kwargs["TRIAL"] )
+    #random.seed ( 7 )
+    initial_mixture = np.zeros((kwargs["NUM_BLOCK"], kwargs["NUM_CLONE_ITER"]), dtype="float")
 
     
-    if kwargs["TRIAL"] % 2 == 0:  # Half of the cases :  pick kwargs["NUM_CLONE"] - 1
-        if kwargs["NUM_CLONE"]  >= 2:
-            initial_mixture = mixture_kmeans [:, random.sample (range( kwargs["KMEANS_CLUSTERNO"]), kwargs["NUM_CLONE"] - 1)]
+    if kwargs["TRIAL"] % 2 == 1:  # Half of the cases (1, 3, 5, ...) :  pick kwargs["NUM_CLONE"] - 1
+        if kwargs["NUM_CLONE_ITER"]  >= 2:
+            initial_mixture = mixture_kmeans [:, random.sample (range( kwargs["KMEANS_CLUSTERNO"]), kwargs["NUM_CLONE_ITER"] - 1)]
             initial_mixture = np.concatenate((initial_mixture, np.array (1 - np.sum(initial_mixture, axis=1)).reshape(-1, 1) ), axis=1) 
-        elif kwargs["NUM_CLONE"]  == 1:
+        elif kwargs["NUM_CLONE_ITER"]  == 1:
             initial_mixture = mixture_kmeans [:, random.sample (range( kwargs["KMEANS_CLUSTERNO"]), 1 )]
-    else:  # ,  The other half of the cases : pick kwargs["NUM_CLONE"] 
-        initial_mixture = mixture_kmeans [:, random.sample (range( kwargs["KMEANS_CLUSTERNO"]), kwargs["NUM_CLONE"]  )]
+    else:  # ,  The other half of the cases : pick kwargs["NUM_CLONE_ITER"] 
+        initial_mixture = mixture_kmeans [:, random.sample (range( kwargs["KMEANS_CLUSTERNO"]), kwargs["NUM_CLONE_ITER"]  )]
     
-    if np.any(initial_mixture < 0) == True:   # If at leaast one negative values are, turn it into 0
-        initial_mixture[:, -1][initial_mixture[:, -1] < 0] = 0
+    if np.any(initial_mixture < 0) == True:   # If at least one negative values are, turn it into 0
+        if kwargs["NUM_BLOCK"] == 1:
+            initial_mixture[:, -1][initial_mixture[:, -1] < 0] = 0.01        # 0? 0.01
+        else:
+            initial_mixture[:, -1][initial_mixture[:, -1] < 0] = 0        # 0? 0.01
     
+    # Use lexsort to sort the array by the third row, then the second row, and finally the first row
+    sorted_indices = np.lexsort(tuple(initial_mixture))
+    # Use the sorted indices to rearrange the original array
+    initial_mixture = initial_mixture[:, sorted_indices]
+
+    #################  fp_index & tn_index  ###############################################
+    step.mixture  = np.hstack(( initial_mixture,  np.zeros( (kwargs["NUM_BLOCK"], 1),  dtype = "float")  ))    
+    step.fp_index = kwargs["NUM_CLONE_ITER"]
+    kwargs["NUM_CLONE"] = kwargs["NUM_CLONE_ITER"] + 1
+
+    #print ("\t Initial mixture : {}".format (step.mixture) )
+
+    for j in range ( initial_mixture.shape[1] ):
+        if ( np.all( initial_mixture[:, j] != 0) == False ) :  # 하나라도 0이 있다면
+            step.tn_index.append (j)
+    #########################################################################################
+
+    if kwargs["VERBOSE"] >= 1:
+        print ("\t\tinitial_parameter : {}".format( np.round(initial_mixture, 2).flatten() ) )
+        
 
     import palettable
     tabl = palettable.tableau.Tableau_20.mpl_colors
+    Gr_10 = palettable.scientific.sequential.GrayC_20.mpl_colors
     colorlist = [i for i in tabl]
     plt.figure(figsize=(6, 6))
     plt.suptitle ("Step 0. Initial Selection", fontsize = 20)
@@ -205,28 +327,34 @@ def set_initial_parameter(np_vaf, mixture_kmeans, OUTPUT_FILENAME, **kwargs):
     if kwargs["NUM_BLOCK"] == 1:
         sns.kdeplot ( np_vaf [:, 0] * 2, shade = True)
         kde_np_vaf = kde.gaussian_kde(np_vaf[:, 0] * 2)
-        plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
+        #plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
         plt.ylabel("Density", fontdict={"fontsize": 14})
         plt.xlim(0, 1)
-        for j in range( initial_mixture.shape[1] ):
-            plt.axvline ( x = initial_mixture[0][j], color = colorlist [j  % 20] ) 
-            plt.text  ( initial_mixture[0][j], kde_np_vaf(initial_mixture[0][j]) * 1.08, "{}".format( np.round (kde_np_vaf(initial_mixture[0][j]) * 1.08 , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
+        for j in range( step.mixture.shape[1] ):
+            plt.axvline ( x = step.mixture[0][j], color = colorlist [j  % 20] ) 
+            plt.text  ( step.mixture[0][j], kde_np_vaf(step.mixture[0][j]) * 1.08, "{}".format( np.round (step.mixture[0][j] , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
     elif kwargs["NUM_BLOCK"] == 2:
         plt.scatter ( x = np_vaf [:, 0] * 2, y = np_vaf [:, 1] * 2, s = 30, color =  "#EAC696", alpha = 0.8)
-        plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
-        plt.ylabel("VAF x 2 of the Sample 1", fontdict={"fontsize": 14})
+        #plt.xlabel("VAF x 2 of the Sample 1",  fontdict={"fontsize": 14})
+        #plt.ylabel("VAF x 2 of the Sample 1", fontdict={"fontsize": 14})
         plt.xlim(-0.02, 1)
         plt.ylim(-0.02, 1)
         #sns.despine(top=True, right=True, left=True, bottom=True)
     
-        for j in range( initial_mixture.shape[1] ):
-            plt.scatter (initial_mixture[0][j], initial_mixture[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 500, label = "clone " + str(j)) 
-            plt.text  ( initial_mixture[0][j], initial_mixture[1][j], "[{},{}]".format( np.round (initial_mixture[0][j] , 2), np.round (initial_mixture[1][j] * 0.92 , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
+        for j in range( step.mixture.shape[1] ):
+            if j == step.mixture.shape[1] - 1:  # FP
+                plt.scatter (step.mixture[0][j], step.mixture[1][j], marker = '*', color = Gr_10[10], edgecolor = "black", s = 500, label = "clone " + str(j)) 
+            else:
+                plt.scatter (step.mixture[0][j], step.mixture[1][j], marker = '*', color = colorlist[j % 20], edgecolor = "black", s = 500, label = "clone " + str(j)) 
+                
+            #print ( "({},{})".format ( step.mixture[0][j], step.mixture[1][j] ))
+            plt.text  ( step.mixture[0][j], step.mixture[1][j] -0.04, "[{},{}]".format( np.round (step.mixture[0][j] , 2), np.round (step.mixture[1][j]  , 2)), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"}  )
         plt.legend()
         
     plt.savefig ( OUTPUT_FILENAME )
 
-    return initial_mixture
+
+    return step, kwargs
 
 ##################################################################################################################################################################################################################################################
 
@@ -252,6 +380,7 @@ def kmeans_best (np_vaf, **kwargs ):
         kmeans.fit(np_vaf) 
         
         membership = kmeans.labels_    
+        #mixture = kmeans.cluster_centers_.T * 2
         mixture = np.zeros (( NUM_BLOCK, n_clusters ), dtype = "float")
         for j in range( n_clusters ):
             for i in range (NUM_BLOCK):
@@ -319,29 +448,55 @@ def kmeans_best (np_vaf, **kwargs ):
     ##################################################################################################################################################################################################################################################
 
 
+def normalize ( cluster, i ):
+    import copy
+    import numpy as np
+
+    NUM_BLOCK = cluster.mixture_record[i].shape[0]
+    NUM_CLONE = cluster.mixture_record[i].shape[1]
+
+    makeone_index = copy.deepcopy ( cluster.makeone_index_record[i] )
+    cluster_normalized_mixture = copy.deepcopy ( cluster.mixture_record[i]  )
+
+    for i in range(NUM_BLOCK):     # Normalization 
+        sum = 0
+        for j in range(NUM_CLONE):
+            if j in makeone_index :   
+                sum = sum + cluster_normalized_mixture[i][j]
+        cluster_normalized_mixture[i] = np.round( cluster_normalized_mixture[i] / sum, 2) if sum != 0 else 0   # If sum = 0, let mixture = 0
+    
+    return cluster_normalized_mixture
+
+
 
 def movedcolumn ( cluster_hard, cluster_soft, i ):
     import scipy.spatial
-    import math
+    import math, copy
     import numpy as np
+
+    #print ( cluster_hard.mixture_record[i] )
 
     if cluster_hard.mixture_record[i].shape[1] != cluster_soft.mixture_record[i].shape[1]:
         return []
     
     NUM_CLONE = cluster_hard.mixture_record[i].shape[1]
     NUM_BLOCK = cluster_hard.mixture_record[i].shape[0]
-    threshold_dist =  (math.sqrt ( NUM_BLOCK ) * 0.03)
+
+    #   Normalize를 하는게 아무래도 비교가 공평하다
+    cluster_hard_normalized_mixture = normalize ( cluster_hard, i   )
+    cluster_soft_normalized_mixture = normalize ( cluster_soft, i   )
+
+    #print ("cluster_hard.mixture = {}\ncluster_soft.mixture = {}".format ( cluster_hard.mixture_record[i], cluster_soft.mixture_record[i]  ))
+    #print ("cluster_hard_normalized_mixture = {}\ncluster_soft_normalized_mixture = {}".format ( cluster_hard_normalized_mixture, cluster_soft_normalized_mixture  ))
 
     col_list = []
     for j in range ( NUM_CLONE ):
-        #print ( "{} ; {}".format (j,  float(scipy.spatial.distance.euclidean( mixture_hard[ : , j ] , mixture_soft [ : , j ]  )) ) )
-
         # 차원을 고려해줌
-        NUM_BLOCK_EFFECTIVE = np.count_nonzero( cluster_hard.mixture_record[i][ : , j]  != 0)
-        threshold_dist =  (math.sqrt ( NUM_BLOCK_EFFECTIVE ) * 0.03)
+        NUM_BLOCK_EFFECTIVE = np.count_nonzero( cluster_hard_normalized_mixture[ : , j]  != 0)
+        threshold_dist =  (math.sqrt ( NUM_BLOCK_EFFECTIVE ) * 0.05)
+        print ( "j = {}\tNUM_BLOCK_EFFECTIVE = {}\tthreshold_dist = {}\tdistance = {}".format (j, NUM_BLOCK_EFFECTIVE, round(threshold_dist,3), float(scipy.spatial.distance.euclidean( cluster_hard_normalized_mixture [ : , j ] , cluster_soft_normalized_mixture [ : , j ]  ))))
       
-
-        if float(scipy.spatial.distance.euclidean( cluster_hard.mixture_record[i] [ : , j ] , cluster_soft.mixture_record[i] [ : , j ]  )) > threshold_dist:    # 이것보다 더 많이 움직이면 움직였다고 봄
+        if float(scipy.spatial.distance.euclidean( cluster_hard_normalized_mixture [ : , j ] , cluster_soft_normalized_mixture [ : , j ]  )) > threshold_dist:    # 이것보다 더 많이 움직이면 움직였다고 봄
             if (cluster_hard.fp_index_record [i] == j) :       
                 continue
             col_list.append(j)
@@ -354,16 +509,16 @@ def std_movedcolumn ( mixture_matrix , moved_col_list ):
 
     tt =  mixture_matrix [ : , moved_col_list ] 
 
-    # print (tt)
-    # print ( "dimension 고려 없는 std : {}".format (np.std (tt) ))
+    #print ( "dimension 고려 없는 std : {}".format (np.std (tt) ))
 
     weight = np.zeros ( tt.shape[0] )
     std_by_block = np.zeros ( tt.shape[0] )
 
-    for i in range (tt.shape[0]):
-        weight[i] = np.count_nonzero  (tt [i, :] )
+    for i in range ( tt.shape[0 ]):
+        weight[i] = np.count_nonzero  ( tt [i, :] )
         std_by_block[i] = np.std ( tt [i, : ] )
-        
+
+    #print ( "std_by_block = {}\nweight = {}\n".format (std_by_block, weight))   
     #print ( "dimension 고려한 std : {}".format ( round ( np.average (std_by_block, weights = weight), 2)  ))
 
     return ( round ( np.average (std_by_block, weights = weight), 2)  )
@@ -378,26 +533,29 @@ def GoStop(step, **kwargs):
     if kwargs["STEP"] > previous_No:
         for p in range( kwargs["STEP_TOTAL"] - previous_No,  kwargs["STEP_TOTAL"] ):       # Past 5 records
             if np.sum(np.equal(step.membership, step.membership_record[p])) >= int(kwargs["NUM_MUTATION"] * 0.995):
-                print ( "\t\t\t▶ Stop because the membership is nearly the same with #{0} th".format(p) )
+                if kwargs["VERBOSE"] >= 1:
+                    print ( "\t\t\t▶ Stop because the membership is nearly the same with #{0} th".format(p) )
                 return "Stop"
 
             if (np.round(step.mixture, 2) == np.round( step.mixture_record[p] , 2)).all() == True:
-                print ("\t\t\t▶ Stop because the mixture is nearly the same with #{0}".format(p))
+                if kwargs["VERBOSE"] >= 1:
+                    print ("\t\t\t▶ Stop because the mixture is nearly the same with #{0}".format(p))
                 return "Stop"
 
         # Stopping condition
-        i =  step.find_max_likelihood(0, kwargs["STEP"]) 
+        i =  step.find_max_likelihood_step (0, kwargs["STEP"]) 
         if (step.likelihood) < 0.99 * step.likelihood_record [ i ]:
             if step.likelihood < -9999990:
-                if kwargs["VERBOSE"] >= 3:
-                    print ("\t\t\t→Stop due to unavailable to make 1")    
+                if kwargs["VERBOSE"] >= 1:
+                    print ("\t\t\t▶ Stop due to unavailable to make 1")    
+                return "Stop"
             else:
-                if kwargs["VERBOSE"] >= 3:
-                    print ("\t\t\t→ Stop due to failing to increase the likelihood")
-            return "Stop"
+                if kwargs["VERBOSE"] >= 1:
+                    print ("\t\t\t▶ Stop due to failing to increase the likelihood")
+                return "Stop"
     if step.likelihood < -9999990:
-        if kwargs["VERBOSE"] >= 3:
-            print ("\t\t\t→ Stop due to unavailable to make 1")    
+        if kwargs["VERBOSE"] >= 1:
+            print ("\t\t\t▶ Stop due to unavailable to make 1")    
         return "Stop"
 
     return "Go"
@@ -549,26 +707,28 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
     maxmaxmax_NUM_CLONE  = 0
 
     
-    for NUM_CLONE in range (kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] + 1):
-        if  (kwargs["VERBOSE"] >= 1):
-            print ("NUM_CLONE == {}".format(NUM_CLONE))
-            print ("\tincludefp = {} (fp_index = {})\t\t-> {}".format( cluster.includefp_record [NUM_CLONE], cluster.fp_index_record [NUM_CLONE],  NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE])   ))
+    for NUM_CLONE_ITER in range (kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] + 1):
+        NUM_CLONE = NUM_CLONE_ITER if cluster.includefp_record [NUM_CLONE_ITER] == False else NUM_CLONE_ITER + 1
 
-        if (cluster.stepindex_record[NUM_CLONE] == 0) | (cluster.likelihood_record[NUM_CLONE] < -9999990): 
-            Gap_list [NUM_CLONE] = float("-inf")
+        if  (kwargs["VERBOSE"] >= 1):
+            print ("NUM_CLONE_ITER == {}".format(NUM_CLONE_ITER))
+            print ("\tincludefp = {} (fp_index = {})\t\t-> {}".format( cluster.includefp_record [NUM_CLONE_ITER], cluster.fp_index_record [NUM_CLONE_ITER],  NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE_ITER])   ))
+
+        if (cluster.stepindex_record[NUM_CLONE_ITER] == 0) | (cluster.likelihood_record[NUM_CLONE_ITER] < -9999990): 
+            Gap_list [NUM_CLONE_ITER] = float("-inf")
 
         else:
             if maxmaxmax_NUM_CLONE == 0:
-                maxmaxmax_NUM_CLONE = NUM_CLONE
+                maxmaxmax_NUM_CLONE = NUM_CLONE_ITER
                 
-            membership = cluster.membership_record[NUM_CLONE]
-            mixture = cluster.mixture_record[NUM_CLONE]
+            membership = cluster.membership_record[NUM_CLONE_ITER]
+            mixture = cluster.mixture_record[NUM_CLONE_ITER]
 
             #1. Intra cluster variation (Wk)
             Wk = 0
             for k in range(NUM_MUTATION):
                 j = membership [k]
-                if (cluster.includefp_record [NUM_CLONE] == True)  &  (k in cluster.fp_member_index_record [NUM_CLONE] ):   #  Exclude FP from the calculation
+                if (cluster.includefp_record [NUM_CLONE_ITER] == True)  &  (k in cluster.fp_member_index_record [NUM_CLONE_ITER] ):   #  Exclude FP from the calculation
                     continue
                 Wk = Wk + math.pow (  scipy.spatial.distance.euclidean(np_vaf[k] * 2, mixture[:, j]),  2)   # Sum of square 
             Wk = round(math.log10(Wk), 3)
@@ -580,32 +740,36 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
             Wkb_list = []
             for b in range (Input_B):
                 if kwargs ["NUM_BLOCK"] >= 2:
-                    reference_multiply = multiply_npvaf ( NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE]) , NUM_BLOCK , np_vaf, 
-                                                                                        sorted (set( range(0, NUM_MUTATION) ) - set(cluster.fp_member_index_record [NUM_CLONE])) , b )
+                    reference_multiply = multiply_npvaf ( NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE_ITER]) , NUM_BLOCK , np_vaf, 
+                                                                                        sorted (set( range(0, NUM_MUTATION) ) - set(cluster.fp_member_index_record [NUM_CLONE_ITER])) , b )
                 else:
                     reference_multiply = multiply_npvaf ( NUM_MUTATION , NUM_BLOCK , np_vaf, 
                                                                                         sorted (set( range(0, NUM_MUTATION) ))  , b ) 
                 reference_np = reference_multiply
 
 
-                if (kwargs["NUM_BLOCK"] == 1) | (cluster.includefp_record [NUM_CLONE] == False): 
-                    kmeans = KMeans(n_clusters=NUM_CLONE, init = cluster.mixture_record [NUM_CLONE].transpose() , max_iter=3, random_state=0)  
-                else: 
-                    kmeans = KMeans(n_clusters=NUM_CLONE - 1, init = np.delete(cluster.mixture_record [NUM_CLONE].transpose(), cluster.fp_index_record [NUM_CLONE], axis = 0), max_iter=3, random_state=0)  
+                # if (kwargs["NUM_BLOCK"] == 1) | (cluster.includefp_record [NUM_CLONE_ITER] == False): 
+                #     kmeans = KMeans(n_clusters=NUM_CLONE_ITER, init = cluster.mixture_record [NUM_CLONE].transpose() , max_iter=3, random_state=0)  
+                # else:    # FP가 있을 경우
+                #     kmeans = KMeans(n_clusters=NUM_CLONE_ITER, init = np.delete(cluster.mixture_record [NUM_CLONE_ITER].transpose(), cluster.fp_index_record [NUM_CLONE_ITER], axis = 0), max_iter=3, random_state=0)  
 
+                kmeans = KMeans(n_clusters=NUM_CLONE_ITER, 
+                                init = np.delete(cluster.mixture_record [NUM_CLONE_ITER].transpose(), cluster.fp_index_record [NUM_CLONE_ITER], axis = 0), 
+                                max_iter=3, random_state=0)  
                 kmeans.fit(reference_np)  # nparray
                 Wkb_list.append ( round (math.log10(kmeans.inertia_), 3) )
-                drawfigure (reference_np, kmeans.labels_,  kwargs["CLEMENT_DIR"] + "/Kmeans/Kmeans.clone"  +   str (NUM_CLONE) + "." + str(b) + ".jpg", **kwargs)
+                drawfigure (reference_np, kmeans.labels_,  kwargs["CLEMENT_DIR"] + "/Kmeans/Kmeans.clone"  +   str (NUM_CLONE_ITER) + "." + str(b) + ".jpg", **kwargs)
 
-            Gap_list [NUM_CLONE] = round ( np.mean(Wkb_list) - Wk, 3)
-            Std_list [NUM_CLONE] = round ( np.std (Wkb_list), 3)
-            S_list [NUM_CLONE] = round (Std_list[NUM_CLONE] * math.sqrt(1 + Input_B) , 3 )
+            Gap_list [NUM_CLONE_ITER] = round ( np.mean(Wkb_list) - Wk, 3)
+            Std_list [NUM_CLONE_ITER] = round ( np.std (Wkb_list), 3)
+            S_list [NUM_CLONE_ITER] = round (Std_list[NUM_CLONE_ITER] * math.sqrt(1 + Input_B) , 3 )
             
 
-            if (kwargs["VERBOSE"] in ["True", "T"]) | (kwargs["VERBOSE"] >= 1):
-                print ("\tRandom noise (B = {}) : \tmean Wkb = {}\tsdk = {}\tsk (sdk * sqrt ({})) = {}\n\tGap (Wkb - Wk) = {}\n\tPosterior = {}".format (Input_B, round( np.mean(Wkb_list), 3) , Std_list[NUM_CLONE], Input_B + 1, S_list[NUM_CLONE]  ,  Gap_list[NUM_CLONE], round (cluster.likelihood_record[NUM_CLONE]) ))
+            if (kwargs["VERBOSE"] >= 1):
+                #print ("Gap_list : {}\nStd_list : {}\nS_list : {}".format ( Gap_list, Std_list, S_list) )
+                print ("\tRandom noise (B = {}) : \tmean Wkb = {}\tsdk = {}\tsk (sdk * sqrt ({})) = {}\n\tGap (Wkb - Wk) = {}\n\tPosterior = {}".format (Input_B, round( np.mean(Wkb_list), 3) , Std_list[NUM_CLONE_ITER], Input_B + 1, S_list[NUM_CLONE_ITER]  ,  Gap_list[NUM_CLONE_ITER], round (cluster.likelihood_record[NUM_CLONE_ITER]) ))
 
-    if (kwargs["VERBOSE"] in ["True", "T"]) | (kwargs["VERBOSE"] >= 1):
+    if (kwargs["VERBOSE"] >= 1):
         print ("Gap list : {}\nS list : {}\n".format(Gap_list [kwargs["NUM_CLONE_TRIAL_START"] : kwargs["NUM_CLONE_TRIAL_END"] + 1], S_list [kwargs["NUM_CLONE_TRIAL_START"] : kwargs["NUM_CLONE_TRIAL_END"] + 1] ))
 
 
@@ -619,7 +783,8 @@ def decision_gapstatistics (cluster, np_vaf, **kwargs):
     Gap_list = Gap_list_df[0]   # because of 12345
 
     for i in range( len(Gap_list_df) ):
-        print ("Gap statistics method (max Gap): {}th optimal NUM_CLONE = {}".format(i  + 1, Gap_list_df.index[i]  ))
+        if kwargs["VERBOSE"] >= 1:
+            print ("Gap statistics method (max Gap): {}th optimal NUM_CLONE = {}".format(i  + 1, Gap_list_df.index[i]  ))
         Gap_list_index.append ( Gap_list_df.index[i]  )
 
     return Gap_list_index    
@@ -725,7 +890,7 @@ def decision_XieBeni(cluster, np_vaf, **kwargs):
     XieBeni_list = np.zeros (kwargs["NUM_CLONE_TRIAL_END"] + 1, dtype ="float")
 
     for NUM_CLONE in range (kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] + 1):
-        if (kwargs["VERBOSE"] in ["True", "T"]) | (kwargs["VERBOSE"] >= 1):
+        if (kwargs["VERBOSE"] >= 1):
             print ("NUM_CLONE == {}".format(NUM_CLONE))
             print ("\tincludefp = {} (fp_index = {})\t\t-> {}".format( cluster.includefp_record [NUM_CLONE], cluster.fp_index_record [NUM_CLONE],  NUM_MUTATION - len(cluster.fp_member_index_record [NUM_CLONE])   ))
 
@@ -735,7 +900,7 @@ def decision_XieBeni(cluster, np_vaf, **kwargs):
             kwargs ["NUM_CLONE"] = NUM_CLONE
             XieBeni_list[NUM_CLONE] = XieBeni_calcualtor (cluster, np_vaf, **kwargs)
 
-        if (kwargs["VERBOSE"] in ["True", "T"]) | (kwargs["VERBOSE"] >= 1):
+        if (kwargs["VERBOSE"] >= 1):
             print ("\tXie-Beni index : {}".format (XieBeni_list[NUM_CLONE]))
 
 
@@ -745,7 +910,8 @@ def decision_XieBeni(cluster, np_vaf, **kwargs):
     XieBeni_list_index = []
 
     for i in range( len(XieBeni_list_df) ):
-        print ("XieBeni method (min): {}th optimal NUM_CLONE = {}".format(i  + 1, XieBeni_list_df.index[i]  ))
+        if kwargs["VERBOSE"] >= 1:
+            print ("XieBeni method (min): {}th optimal NUM_CLONE = {}".format(i  + 1, XieBeni_list_df.index[i]  ))
         XieBeni_list_index.append ( XieBeni_list_df.index[i]  )
 
     return XieBeni_list_index 
@@ -796,8 +962,8 @@ def decision_max(cluster, np_vaf, **kwargs):
     candidate_df_after = candidate_df_after.reset_index(drop = True)
 
 
-    print ("")
     for i in range( len(candidate_df_after) ):
-        print ("likelihood = {} : {}th optimal NUM_CLONE = {}\tNUM_CHILD = {}".format( round(candidate_df_after["likelihood"].iloc[i], 2) , i  + 1, candidate_df_after["NUM_CLONE"].iloc [i],  candidate_df_after["NUM_CHILD"].iloc [i]  ))
+        if (kwargs["VERBOSE"] >= 1):
+            print ("likelihood = {} : {}th optimal NUM_CLONE = {}\tNUM_CHILD = {}".format( round(candidate_df_after["likelihood"].iloc[i], 2) , i  + 1, candidate_df_after["NUM_CLONE"].iloc [i],  candidate_df_after["NUM_CHILD"].iloc [i]  ))
 
     return list (candidate_df_after ["NUM_CLONE"] )

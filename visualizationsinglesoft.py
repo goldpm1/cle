@@ -11,11 +11,15 @@ import warnings
 warnings.simplefilter (action = 'ignore', category = FutureWarning)
 
 
-def drawfigure_1d(membership, mixture, membership_p_normalize, output_suptitle, output_filename, np_vaf, samplename_dict, includeoutlier, fp_index, makeone_index):
+def drawfigure_1d(membership, mixture, membership_p_normalize, output_suptitle, output_filename, np_vaf, samplename_dict, includeoutlier, fp_index, makeone_index, **kwargs):
+    import matplotlib
+    
     NUM_MUTATION = membership_p_normalize.shape[0]
     NUM_CLONE = membership_p_normalize.shape[1]
     NUM_BLOCK = np_vaf.shape[1]
     
+    matplotlib.rcParams["font.family"] =  kwargs["FONT_FAMILY"]
+    matplotlib.pyplot.style.use("seaborn-white")
     
     vivid_10 = palettable.cartocolors.qualitative.Vivid_10.mpl_colors
     bdo = palettable.lightbartlein.diverging.BlueDarkOrange18_18.mpl_colors
@@ -64,12 +68,16 @@ def drawfigure_1d(membership, mixture, membership_p_normalize, output_suptitle, 
 
 
 
-def drawfigure_2d(membership, mixture, membership_p_normalize,  output_suptitle, output_filename, np_vaf, samplename_dict, includeoutlier , fp_index, makeone_index, dimensionreduction="None"):
+def drawfigure_2d(membership, mixture, membership_p_normalize,  output_suptitle, output_filename, np_vaf, samplename_dict, includeoutlier , fp_index, makeone_index, dimensionreduction="None", **kwargs):
     import matplotlib
 
     NUM_MUTATION = len(membership)
     NUM_CLONE = mixture.shape[1]
     NUM_BLOCK = np_vaf.shape[1]
+
+    matplotlib.rcParams["font.family"] =  kwargs["FONT_FAMILY"]
+    matplotlib.pyplot.style.use("seaborn-white")
+
     
     vivid_10 = palettable.cartocolors.qualitative.Vivid_10.mpl_colors
     bdo = palettable.lightbartlein.diverging.BlueDarkOrange18_18.mpl_colors

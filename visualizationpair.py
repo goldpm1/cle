@@ -130,10 +130,10 @@ def drawfigure_2d(membership_left, mixture_left, membership_right, mixture_right
         ax[1].set_title("{}".format(fig2title) , fontdict = {"fontsize" : 20} )
         ax[0].axis([0,  np.max(np_vaf[:, :]) * 2.1,   0,  np.max(np_vaf[:, :]) * 2.1])
         ax[1].axis([0,  np.max(np_vaf[:, :]) * 2.1,   0,  np.max(np_vaf[:, :]) * 2.1])
-        ax[0].set_xlabel("Mixture ( = VAF x 2) of Sample 1")
-        ax[1].set_xlabel("Mixture ( = VAF x 2) of Sample 1")
-        ax[0].set_ylabel("Mixture ( = VAF x 2) of Sample 2")
-        ax[1].set_ylabel("Mixture ( = VAF x 2) of Sample 2")
+        # ax[0].set_xlabel("Mixture ( = VAF x 2) of Sample 1")
+        # ax[1].set_xlabel("Mixture ( = VAF x 2) of Sample 1")
+        # ax[0].set_ylabel("Mixture ( = VAF x 2) of Sample 2")
+        # ax[1].set_ylabel("Mixture ( = VAF x 2) of Sample 2")
 
     
 
@@ -152,41 +152,50 @@ def drawfigure_2d(membership_left, mixture_left, membership_right, mixture_right
 
     if (dimensionreduction != "SVD") & ( dimensionreduction != "PCA" ):
         #  Left figure : answer
+        x_mean_list, y_mean_list = [], []
         for samplename_left_character in list(np.unique(membership_left)):
-            x_mean = round(np.mean(np_vaf[[x for x in range( len(membership_left)) if membership_left[x] == samplename_left_character]][:, 0] * 2), 3)
-            y_mean = round(np.mean(np_vaf[[x for x in range( len(membership_left)) if membership_left[x] == samplename_left_character]][:, 1] * 2), 3)
+            x_mean = round(np.mean(np_vaf[[x for x in range( len(membership_left)) if membership_left[x] == samplename_left_character]][:, 0] * 2), 2)
+            y_mean = round(np.mean(np_vaf[[x for x in range( len(membership_left)) if membership_left[x] == samplename_left_character]][:, 1] * 2), 2)
+            x_mean_list.append(x_mean)
+            y_mean_list.append(y_mean)
 
             ax[0].text(x_mean, y_mean, "{0}".format( [x_mean, y_mean]), verticalalignment='top', fontdict = {"fontsize": 16, "fontweight" : "bold"})
             i = np.where(score_df["answer"] == samplename_left_character)[0][0] 
             ax[0].scatter(x_mean, y_mean, marker='s', color=colorlist[ i ], edgecolor='black', s=100,
                         label=str(samplename_left_character) + " : " + str(list(membership_left).count(samplename_left_character)))
-            ax[0].legend()
-
+        ax[0].legend()
+        ax[0].text (np.max(np_vaf[:, :]), np.max(np_vaf[:, :]) * 1.95, "sum = [{},{}]".format( round( np.sum ( np.array(x_mean_list) ) , 2) , round( np.sum( np.array(y_mean_list) ), 2)  ) ,  ha = 'center', va = 'top', fontdict = {"fontsize" : 12} )
+                    #set_title("{}\nsum = [{},{}]".format(fig1title, round( np.sum ( np.array(x_mean_list) ) , 2) , round( np.sum( np.array(y_mean_list) ), 2)  ) ,  fontdict = {"fontsize" : 20} )
+        
 
         # Right figure : my dataset
         xx = mixture_right.shape[1] 
+        x_mean_list, y_mean_list = [], []
 
         for sample_index in range(xx): 
             x_mean = mixture_right[0][sample_index]
             y_mean = mixture_right[1][sample_index]
+            x_mean_list.append(x_mean)
+            y_mean_list.append(y_mean)
             ax[1].text(x_mean, y_mean, "{0}".format([x_mean, y_mean]), verticalalignment='top', fontdict = {"fontsize": 16, "fontweight" : "bold"})
             try:
                 i = np.where(score_df["predicted"] == sample_index)[0][0] 
             except:
                 continue
             
+            if (x_mean == 0) & (y_mean == 0):  # FP
+                ax[1].scatter(x_mean, y_mean, marker='s', color= Gr_10[10], edgecolor='black', s=200, label="cluster" + str(sample_index) + " : " + str(list(membership_right).count(sample_index)))            
 
-            if (makeone_index != []) & (makeone_index != None):
+            elif (makeone_index != []) & (makeone_index != None):
                 if sample_index in makeone_index:
-                    matplotlib.pyplot.scatter(x_mean, y_mean, marker='*', color=colorlist[i], edgecolor='black', s=200, label="cluster" + str(sample_index) + " : " + str(list(membership_right).count(sample_index)) )
+                    ax[1].scatter(x_mean, y_mean, marker='*', color=colorlist[i], edgecolor='black', s=200, label="cluster" + str(sample_index) + " : " + str(list(membership_right).count(sample_index)) )
                 else:
-                    matplotlib.pyplot.scatter(x_mean, y_mean, marker='s', color=colorlist[i], edgecolor='black', s=100, label="cluster" + str(sample_index) + " : " + str(list(membership_right).count(sample_index)) )
+                    ax[1].scatter(x_mean, y_mean, marker='s', color=colorlist[i], edgecolor='black', s=100, label="cluster" + str(sample_index) + " : " + str(list(membership_right).count(sample_index)) )
             else:
-                matplotlib.pyplot.scatter(x_mean, y_mean, marker='s', color=colorlist[i], edgecolor='black', s=100, label="cluster" + str(sample_index) + " : " + str(list(membership_right).count(sample_index)) )
-
-
+                ax[1].scatter(x_mean, y_mean, marker='s', color=colorlist[i], edgecolor='black', s=100, label="cluster" + str(sample_index) + " : " + str(list(membership_right).count(sample_index)) )
 
         ax[1].legend()
+        ax[1].text (np.max(np_vaf[:, :]), np.max(np_vaf[:, :]) * 1.95, "sum = [{},{}]".format(round( np.sum ( np.array(x_mean_list) ) , 2) , round( np.sum( np.array(y_mean_list) ), 2)  ) ,  ha = 'center', va = 'top', fontdict = {"fontsize" : 12} )
 
     if output_filename != "NotSave":
         matplotlib.pyplot.savefig(output_filename)

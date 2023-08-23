@@ -115,6 +115,8 @@ if len (INPUT_DIR_LIST) > 15:
     NUM_ROW = 4
 elif len (INPUT_DIR_LIST) > 9:
     NUM_ROW = 3
+else:
+    NUM_ROW = 2
 
 NUM_COL = int (len(INPUT_DIR_LIST) / NUM_ROW) + 1
 fig, ax = matplotlib.pyplot.subplots(nrows = NUM_ROW,  ncols = NUM_COL, figsize = (18,NUM_ROW * 3.5))
@@ -138,6 +140,7 @@ for DIR_index, DIR in enumerate( INPUT_DIR_LIST) :
             score, Yindex, ARI, NUM_CLONE_answer, runningtime, f1score = 0, 0, 0, 0, 0, 0
 
             if os.path.exists( DIR + "/" + str(j) + "/result/" + tool + ".results.txt" ) == True:
+                print ( DIR + "/" + str(j) + "/result/" + tool + ".results.txt" )
                 inputdf = pd.read_csv ( DIR + "/" + str(j) + "/result/" + tool + ".results.txt", sep = "\t", header = None)
 
                 for k in range (inputdf.shape[0]):

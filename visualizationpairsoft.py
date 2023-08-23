@@ -60,10 +60,10 @@ def drawfigure_2d(membership1, sample_dict_rev, membership2, membership2_outside
         ax[1].set_title("MYANSWER_NUM_CLONE : {0} (n = {1})".format(maxmaxmax_NUM_CLONE, len(membership2)))
         ax[0].axis([0,  np.max(np_vaf[:, :]) * 2.1,   0,  np.max(np_vaf[:, :]) * 2.1])
         ax[1].axis([0,  np.max(np_vaf[:, :]) * 2.1,   0,  np.max(np_vaf[:, :]) * 2.1])
-        ax[0].set_xlabel("Feature 1 : VAF x 2 of Block 1")
-        ax[1].set_xlabel("Feature 1 : VAF x 2 of Block 1")
-        ax[0].set_ylabel("Feature 2 : VAF x 2 of Block 2")
-        ax[1].set_ylabel("Feature 2 : VAF x 2 of Block 2")
+        # ax[0].set_xlabel("Feature 1 : VAF x 2 of Block 1")
+        # ax[1].set_xlabel("Feature 1 : VAF x 2 of Block 1")
+        # ax[0].set_ylabel("Feature 2 : VAF x 2 of Block 2")
+        # ax[1].set_ylabel("Feature 2 : VAF x 2 of Block 2")
 
     # 왼쪽 scatter는 그냥 그리면 된다
     ax[0].scatter(np_vaf[:, 0] * 2, np_vaf[:, 1] * 2, alpha=0.6,   color=[colorlist[k] for k in membership1])
