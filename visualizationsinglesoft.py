@@ -40,6 +40,7 @@ def drawfigure_1d(membership, mixture, membership_p_normalize, output_suptitle, 
     plt.suptitle(output_suptitle, fontsize = 20)
     plt.style.use("seaborn-white")
      
+    sum_x = 0
     for sample_index, sample_key in enumerate(samplename_dict):
         sample_value = samplename_dict[sample_key]
         j = sample_index
@@ -53,6 +54,7 @@ def drawfigure_1d(membership, mixture, membership_p_normalize, output_suptitle, 
         if j in makeone_index:
             sns.distplot(pd.DataFrame(np_vaf[:, 0] * 2, columns=["vaf"])["vaf"], hist_kws={"weights": membership_p_normalize[:, j], "linewidth": 1.4, "edgecolor": "black"}, kde_kws={
                          "linewidth": 5, "color": "gray"}, color=colorlist [ sample_value ], kde=False, bins=50, label="cluster {}  (mixture = {})".format(j,   str(round((mixture[0][j]), 2))))
+            sum_x += mixture[0][j]
         else:
             sns.distplot(pd.DataFrame(np_vaf[:, 0] * 2, columns=["vaf"])["vaf"], hist_kws={"weights": membership_p_normalize[:, j], "rwidth": 0.8}, color=colorlist [ sample_value ],
                          kde=False, bins=50, label="cluster {}  (mixture = {})".format(j,  str(round((mixture[0][j]), 2))))
@@ -60,6 +62,7 @@ def drawfigure_1d(membership, mixture, membership_p_normalize, output_suptitle, 
         # sns.distplot(pd.DataFrame(np_vaf[:,0] * 2, columns = ["vaf"])["vaf"], hist_kws = {"weights" : membership_p_normalize[:,j]}, 
         #                     color = colorlist[sample_value], kde = False, bins=50, label = "soft : cluster" + str(sample_key) + " (mixture = " + str(round((mixture[0][j]) , 2)) + ")")
     plt. legend()
+    plt.title("sum = {}".format( round(sum_x, 2) ), fontsize = 12)
 
 
     if output_filename != "NotSave":
@@ -134,6 +137,7 @@ def drawfigure_2d(membership, mixture, membership_p_normalize,  output_suptitle,
             else:   
                 continue
 
+    sum_x, sum_y = 0, 0
     for sample_index, sample_key in enumerate(samplename_dict):
         sample_value = samplename_dict[sample_key]
         
@@ -143,6 +147,8 @@ def drawfigure_2d(membership, mixture, membership_p_normalize,  output_suptitle,
         # mixture 정보를 바탕으로 (얘는 앞부터 순차적으로 해야 하니까 sample_index가 맞다)
         x_mean = round ( mixture[0][sample_index], 2)         # 얘도 2차원으로 차원축소했으니 걱정없다
         y_mean = round ( mixture[1][sample_index], 2)
+        sum_x += x_mean
+        sum_y += y_mean
         #ax.text(x_mean, y_mean, "{0}".format([x_mean, y_mean]), verticalalignment='top', ha = "center")
         ax.scatter(x_mean, y_mean, marker='s', color=colorlist[sample_index], edgecolor='black', linewidth = 2, s=400, alpha = 0.8, label="soft : cluster" + str(sample_index))
 
@@ -155,4 +161,6 @@ def drawfigure_2d(membership, mixture, membership_p_normalize,  output_suptitle,
 
     if output_filename != "NotSave":
         fig.savefig(output_filename)
+
+    matplotlib.pyplot.title("sum = [{}, {}]".format( round(sum_x, 2), round(sum_y, 2) ), fontsize = 12)
     matplotlib.pyplot.show()

@@ -1,3 +1,5 @@
+
+
 import os, glob,re
 
 SCRIPT_DIR = SCRIPT_DIR = os.path.dirname(__file__)
@@ -6,10 +8,11 @@ print (SCRIPT_DIR, "\n")
 
 # python3 /data/project/Alzheimer/YSscript/cle/2.CellData_master_all.py
 
-def M1only(SAMPLENAME, NUM_BLOCK):
+def Mingle_intra(SAMPLENAME, NUM_BLOCK):
     global MRS_set
-    MRS_set = [['M1-2', 'M1-5', 'M1-6', 'M1-7', 'M1-8'] ]
+    
     #MRS_set = [['M1-2', 'M1-5', 'M1-6', 'M1-7', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-8', 'M2-10']]
+    MRS_set = [['M1-2', 'M1-4', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-10'] ]
 
 
     if NUM_BLOCK == 1:
@@ -30,9 +33,10 @@ def M1only(SAMPLENAME, NUM_BLOCK):
 
     return False
 
-def Mingle (SAMPLENAME, NUM_BLOCK):
+def Mingle_inter (SAMPLENAME, NUM_BLOCK):
     global MRS_set
-    MRS_set = [['M1-1', 'M1-3', 'M1-5', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-10'], ['M3-1', 'M3-2', 'M3-4', 'M3-11']]
+    #MRS_set = [['M1-1', 'M1-4', 'M1-5', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-10', 'M2-12'], ['M3-1', 'M3-2', 'M3-4', 'M3-5', 'M3-11']]
+    MRS_set = [['M1-2', 'M1-4', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-10'] ]
 
     if NUM_BLOCK == 1:
         for i in range(len(MRS_set)):
@@ -45,7 +49,7 @@ def Mingle (SAMPLENAME, NUM_BLOCK):
         else:
             return False
     elif NUM_BLOCK == 3:
-        if (SAMPLENAME.split("_")[0] in MRS_set[0]) &  (SAMPLENAME.split("_")[1] in MRS_set[1]) &   (SAMPLENAME.split("_")[2] in MRS_set[2]):
+        if (SAMPLENAME.split("_")[0] in MRS_set[0]) &  (SAMPLENAME.split("_")[1] in MRS_set[1]) &   (SAMPLENAME.split("_")[2] in MRS_set[1]):
             return True
         else:
             return False
@@ -54,23 +58,20 @@ def Mingle (SAMPLENAME, NUM_BLOCK):
 if __name__ == "__main__":
     kwargs = {}
     
-    NUM_BLOCK_LIST = [1]             # 1, 2, 3
+    NUM_BLOCK_LIST = [ 3  ]             # 1, 2, 3
     NUM_MUTATION_LIST = [500]    # 500, 100
-    DEPTH_MEAN_LIST = [125]       # 125, 30
-    NUM_PARENT_LIST = [  0 ]       # 0 , 1
-    FP_RATIO_LIST = [0.0 ]        # 0.0, 0.1
-    AXIS_RATIO_LIST = [-1 ]        # -1, 0.0, 0.2
-    BENCHMARK_LIST = [0, 3]; kwargs["BENCHMARK_START"] = BENCHMARK_LIST[0];  kwargs["BENCHMARK_END"] = BENCHMARK_LIST[1]
+    DEPTH_MEAN_LIST = [250, 125, 30]       # 125, 30
+    NUM_PARENT_LIST = [ 0 ]       # 0 , 1
+    FP_RATIO_LIST = [ 0.0  ]        # 0.0, 0.1
+    AXIS_RATIO_LIST = [ -1 ]        # -1, 0.0, 0.2
+    BENCHMARK_LIST = [0, 2]; kwargs["BENCHMARK_START"] = BENCHMARK_LIST[0];  kwargs["BENCHMARK_END"] = BENCHMARK_LIST[1]
 
     kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] = 2, 7
-    kwargs["MAXIMUM_NUM_PARENT"] = 0
     kwargs["PARENT_RATIO"] = 0
-    kwargs["TRIAL_NO"] = 8
-    kwargs["MAKEONE_STRICT"] = 1
-    kwargs["VERBOSE"] = 1
     kwargs["FP_USEALL"] = "False"
     kwargs["SCORING"] = "True"
     kwargs["MODE"] = "Both"
+    kwargs["VERBOSE"] = 1
 
     
 
@@ -80,20 +81,27 @@ if __name__ == "__main__":
         kwargs["NUM_BLOCK"] = NUM_BLOCK
         for NUM_MUTATION in NUM_MUTATION_LIST:
             kwargs["NUM_MUTATION"] = NUM_MUTATION
+            kwargs["MIN_CLUSTER_SIZE"] = 15 if NUM_MUTATION > 100 else 5
             for DEPTH_MEAN in DEPTH_MEAN_LIST:
                 kwargs["DEPTH_MEAN"] = DEPTH_MEAN
-                kwargs["DEPTH_CUTOFF"] = 30 if DEPTH_MEAN >= 100 else 10
-                kwargs["MIN_CLUSTER_SIZE"] = 15 if DEPTH_MEAN >= 100 else 10
+                kwargs["DEPTH_CUTOFF"] = 30 if DEPTH_MEAN > 100 else 10
+                kwargs["MAKEONE_STRICT"] = 1 if DEPTH_MEAN > 100 else 2
                 for NUM_PARENT in NUM_PARENT_LIST:
-                    kwargs["NUM_PARENT"] = NUM_PARENT
+                    kwargs["NUM_PARENT"] =  kwargs["MAXIMUM_NUM_PARENT"] = NUM_PARENT
                     for FP_RATIO in FP_RATIO_LIST:
                         kwargs["FP_RATIO"] = FP_RATIO
                         AXIS_RATIO_LIST_TEMP = [-1] if NUM_BLOCK == 1 else AXIS_RATIO_LIST      # 1D에서는 AXIS의 개념이 딱히 없다
-                        kwargs["NUM_CLONE_TRIAL_END"] = 5 if NUM_BLOCK == 1 else 7
-                        kwargs["KMEANS_CLUSTERNO"] = 8 if NUM_BLOCK == 1 else 9
+                        if NUM_BLOCK == 1:
+                            kwargs["KMEANS_CLUSTERNO"] = 6
+                            kwargs["NUM_CLONE_TRIAL_END"] = 5
+                            kwargs["TRIAL_NO"] = 5
+                        if NUM_BLOCK >= 2:
+                            kwargs["KMEANS_CLUSTERNO"] = 7 + NUM_PARENT
+                            kwargs["NUM_CLONE_TRIAL_END"] = 7
+                            kwargs["TRIAL_NO"] = 12
                         for AXIS_RATIO in AXIS_RATIO_LIST_TEMP:
                             kwargs["AXIS_RATIO"] = AXIS_RATIO
-                            print("\n======================\t2.CellData_{}D/n{}_{}x/parent_{}/fp_{}/axis_{}\t===============================".format( kwargs["NUM_BLOCK"], kwargs["NUM_MUTATION"], kwargs["DEPTH_MEAN"], kwargs["NUM_PARENT"], kwargs["FP_RATIO"], kwargs["AXIS_RATIO"] ))
+                            #print("\n======================\t2.CellData_{}D/n{}_{}x/parent_{}/fp_{}/axis_{}\t===============================".format( kwargs["NUM_BLOCK"], kwargs["NUM_MUTATION"], kwargs["DEPTH_MEAN"], kwargs["NUM_PARENT"], kwargs["FP_RATIO"], kwargs["AXIS_RATIO"] ))
 
                             DIR = "/data/project/Alzheimer/CLEMENT/01.INPUT_TSV/2.CellData/CellData_" +  str(kwargs["NUM_BLOCK"]) + "D/" + str(kwargs["DEPTH_MEAN"]) + "x"
                             DIR_LIST = sorted (  glob.glob(DIR + "/*.txt") ) 
@@ -104,14 +112,14 @@ if __name__ == "__main__":
                                 SAMPLENAME = INPUT_TSV.split("/")[-1].split("_input.txt") [0]     # 'M1-5_M1-8_input'
                                 kwargs["SAMPLENAME"] = SAMPLENAME
 
-                                if Mingle(SAMPLENAME, kwargs["NUM_BLOCK"]) == True:
-                                    print("# n = {},  {}".format(n + 1, SAMPLENAME, NUM_PARENT))
-
+                                if (Mingle_inter(SAMPLENAME, kwargs["NUM_BLOCK"]) == True) | (Mingle_intra(SAMPLENAME, kwargs["NUM_BLOCK"]) == True):
+                                #if (Mingle_inter(SAMPLENAME, kwargs["NUM_BLOCK"]) == True) 
+                                    #print("# n = {},  {}".format(n + 1, SAMPLENAME, NUM_PARENT))
 
                                     # 1. EM 돌리기 
                                     hold_j = []
                                     for ii in range(kwargs["BENCHMARK_START"], kwargs["BENCHMARK_END"] + 1):
-                                        #print("\fp_{}/axis_{}/{}/ii = {}".format( kwargs["FP_RATIO"], kwargs["AXIS_RATIO"], kwargs["SAMPLENAME"], ii ))
+                                        print("\fp_{}/axis_{}/{}/ii = {}".format( kwargs["FP_RATIO"], kwargs["AXIS_RATIO"], kwargs["SAMPLENAME"], ii ))
 
                                         kwargs["NPVAF_DIR"] = "/data/project/Alzheimer/CLEMENT/02.npvaf/2.CellData/CellData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/" + SAMPLENAME + "/" + str(ii) 
                                         kwargs["COMBINED_OUTPUT_DIR"] = "/data/project/Alzheimer/CLEMENT/03.combinedoutput/2.CellData/CellData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/" + SAMPLENAME + "/" + str(ii) 
@@ -161,7 +169,7 @@ if __name__ == "__main__":
                                                                     "--INPUT_DIR", str(INPUT_DIR) , 
                                                                     "--SAMPLENAME", str(SAMPLENAME), 
                                                                     "--CONDITIONNAME", str(CONDITIONNAME), 
-                                                                    "--BENCHMARK_START", str( kwargs["BENCHMARK_START"]), 
+                                                                    "--BENCHMARK_START",  str(0),   #str( kwargs["BENCHMARK_START"]), 
                                                                     "--BENCHMARK_END", str( kwargs["BENCHMARK_END"]), 
                                                                     "--OUTPUT_JPG", str(INPUT_DIR) + "/bm.jpg"
                                                                     "--OUTPUT_TTEST", str(INPUT_DIR) + "/ttest.txt" ])
@@ -173,25 +181,27 @@ if __name__ == "__main__":
 
                             #3. 큰 단위에서의 benchmark visualization
                             INPUT_DIR = "/".join(kwargs["COMBINED_OUTPUT_DIR"].split("/")[ : -1])
-                            OUTPUT_FILENAME = INPUT_DIR + "/" + str(kwargs["NUM_MUTATION"]) + "_" + str(kwargs["NUM_PARENT"]) + "_" + str(kwargs["FP_RATIO"]) + "_" + str(kwargs["AXIS_RATIO"]) + "_total.jpg"
                             logPath = "/data/project/Alzheimer/YSscript/cle/log/2.CellData/CellData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/BM"
                             os.system("rm -rf " + logPath)
                             os.system("mkdir -p " + logPath)
                             
                             INPUT_DIR = "/".join(kwargs["COMBINED_OUTPUT_DIR"].split("/")[ : -2])
-                            CONDITIONNAME = "n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO)
+                            CONDITIONNAME = "CellData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO)
 
                             command = " ".join(  ["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
-                                                "-N", "BM_CellData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + str(SAMPLENAME),
+                                                "-N", "BM_CellData_" + str(NUM_BLOCK) + "D_" + CONDITIONNAME.replace("/", "_"),
                                                 "-hold_jid",  str(",".join(hold_jj)), " ",
                                                 SCRIPT_DIR + "/2.CellData_pipe3_benchmark.sh",
                                                                     "--SCRIPT_DIR", str(SCRIPT_DIR), 
                                                                     "--INPUT_DIR", str(INPUT_DIR) , 
-                                                                    "--SAMPLENAME", str(SAMPLENAME), 
                                                                     "--CONDITIONNAME", str(CONDITIONNAME), 
-                                                                    "--BENCHMARK_START", str( kwargs["BENCHMARK_START"]), 
+                                                                    "--BENCHMARK_START", str(0),  # str( kwargs["BENCHMARK_START"]), 
                                                                     "--BENCHMARK_END", str( kwargs["BENCHMARK_END"]), 
-                                                                    "--OUTPUT_JPG", str(INPUT_DIR) + "/BM.jpg"]  )
+                                                                    "--OUTPUT_MS_JPG", str(INPUT_DIR) + "/BM_MS.jpg", 
+                                                                    "--OUTPUT_EC_JPG", str(INPUT_DIR) + "/BM_EC.jpg",
+                                                                    "--OUTPUT_FINAL_JPG", str(INPUT_DIR) + "/BM_FINAL.jpg",
+                                                                    "--OUTPUT_FINAL_TABLE", str(INPUT_DIR) + "/BM_FINAL.tsv"
+                                                                      ]  )
                             
                             os.system(command)
                             n += 1

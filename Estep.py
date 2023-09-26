@@ -35,11 +35,14 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
 
     check = 0
 
+
     if kwargs["DEBUG"] == True:
         #debug_k = np.where(  ( (np_vaf[:, 0] > 0.3 ) &  (np_vaf[:, 0] < 0.5 ) & ( np_vaf[:, 1] < 0.3 ) )  )[0]
-        debug_k = [81]
+        debug_k = [1]
         if (k in debug_k):
-            print ("\t\t\tk = {}".format(k))
+            print ("\t\t\tk = {}\tNUM_CLONE = {}, NUM_BLOCK = {}, df = [{},{}]".format(k, kwargs["NUM_CLONE"], kwargs["NUM_BLOCK"], len(df), len(df[0]), mixture))
+    else:
+        debug_k = []
 
 
     for j in range(kwargs["NUM_CLONE"]): 
@@ -48,22 +51,23 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
 
             if alt_obs == 0:    # TN or FN?   (합치면 1이 되어야 한다))
                 if mixture [i][j] == 0 :  # TN
-                    p = p_abs =  math.log10 ( kwargs ["TN_CONFIDENTIALITY"] )
+                    p = p_abs =  math.log10 ( kwargs ["TN_CONFIDENTIALITY"] )            # nearly 0
 
                 else: # FN
-                    p1 = 1 - kwargs ["TN_CONFIDENTIALITY"]
+                    p1 = math.log10 ( 1 - kwargs ["TN_CONFIDENTIALITY"] )
 
                     depth_calc, alt_calc, depth_obs, alt_obs, a, b = expected_calculator (  i, j, k, mixture, df, input_containpos, **kwargs )
                     try:
                         p2_numerator = scipy.stats.betabinom.pmf(alt_obs, depth_obs, a+1, b+1)   # 분자
-                        #p2_numerator = scipy.spatial.distance.euclidean(  np.array ( [alt_calc/ depth_calc] )  ,  np.array ( [alt_obs/ depth_obs] ) )
+                        #p2_numerator = scipy.spatial.distance.euclidean ( np_vaf[k] * 2 ,  np.array ( mixture [: , j] ) )
+                        
                         p2_denominator = 0   # 분모
                         for whole_j in range(kwargs["NUM_CLONE"]): 
                             if (whole_j != step.fp_index):
                                 depth_calc, alt_calc, depth_obs, alt_obs, a, b = expected_calculator (  i, whole_j, k, mixture, df, input_containpos, **kwargs )
                                 try:
                                     p2_denominator += scipy.stats.betabinom.pmf( alt_obs, depth_obs, a+1, b+1 )
-                                    #p2_denominator += scipy.spatial.distance.euclidean(  np.array ( [alt_calc/ depth_calc] )  ,  np.array ( [alt_obs/ depth_obs] ) )
+                                    #p2_denominator += scipy.spatial.distance.euclidean(  np_vaf[k] * 2  ,  np.array ( mixture [:, whole_j] ) )
                                 except:
                                     p2_denominator += 0
                         p2 = p2_numerator / p2_denominator
@@ -78,7 +82,12 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
                     try:
                         p = p1 + math.log10 ( p2 )
                     except:
-                        p = p1 - 400
+                        p = -400
+
+                # if(kwargs ["DEBUG"] == True ) :
+                #     if  ( k in debug_k)  :            
+                #         np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
+                #         print ( "\t\t\t\t\tj = {}\ti = {}\tp = {}".format( j, i,  round(p, 2 )) )
 
 
             else:   # TP or FP?
@@ -98,14 +107,14 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
 
                     try:
                         p2_numerator = scipy.stats.betabinom.pmf(alt_obs, depth_obs, a+1, b+1)   # 분자
-                        #p2_numerator = scipy.spatial.distance.euclidean(  np.array ( [alt_calc/ depth_calc] )  ,  np.array ([ alt_obs/ depth_obs] ) )
+                        #p2_numerator = scipy.spatial.distance.euclidean ( np_vaf[k] * 2 ,  np.array ( mixture [: , j] ) )
                         p2_denominator = 0   # 분모
                         for whole_j in range(kwargs["NUM_CLONE"]): 
                             if (whole_j != step.fp_index):
                                 depth_calc, alt_calc, depth_obs, alt_obs, a, b = expected_calculator (  i, whole_j, k, mixture, df, input_containpos, **kwargs )
                                 try:
                                     p2_denominator += scipy.stats.betabinom.pmf( alt_obs, depth_obs, a+1, b+1 )
-                                    #p2_denominator += scipy.spatial.distance.euclidean(  np.array ([alt_calc/ depth_calc] )  ,  np.array ([alt_obs/ depth_obs]) )
+                                    #p2_denominator += scipy.spatial.distance.euclidean(  np_vaf[k] * 2  ,  np.array ( mixture [:, whole_j] ) )
                                 except:
                                     p2_denominator += 0
                         
@@ -125,6 +134,13 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
                     except:
                         p = p1 - 400
 
+
+                # if(kwargs ["DEBUG"] == True ) :
+                #     if  ( k in debug_k)  :            
+                #         np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
+                #         print ( "\t\t\t\t\tj = {}\ti = {}\tp = {}".format( j, i,  round(p, 2 )) )
+
+
             prob[j] += p
             prob_abs[j] += p_abs
 
@@ -140,6 +156,9 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
 
     # if(kwargs ["DEBUG"] == True ) :
     #     if  ( k in debug_k)  :
+    #         print ("prob = {}".format (prob))
+    #         np.set_printoptions(suppress=False)   
+    #         print ( "\t\t\t\t\tk = {} ({})\tmax_clone = {}\tprob = {}\tprob_abs = {}\tmax_prob_abs = {}".format( k,  np.round( np_vaf[k] * 2, 2 ) , max_clone, np.round ( np.power (10, prob) , 3) , np.round ( np.power (10, prob_abs) , 3) , round ( prob_abs[max_clone], 3)  ))
     #         np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
     #         print ( "\t\t\t\t\tk = {} ({})\tmax_clone = {}\tprob = {}\tprob_abs = {}\tmax_prob_abs = {}".format( k,  np.round( np_vaf[k] * 2, 2 ) , max_clone, np.round ( np.power (10, prob) , 3) , np.round ( np.power (10, prob_abs) , 3) , round ( prob_abs[max_clone], 3)  ))
 
@@ -149,6 +168,9 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
 
     elif kwargs["OPTION"] in ["Soft", "soft"]:
         weight = np.power (10, prob_abs)   # prob? prob_abs?
+        if  ( k in debug_k)  :
+            np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
+            print (weight )
         new_likelihood = round(np.average(prob_abs, weights = weight), 3)       # Likelihood in Soft clustering
 
 
@@ -185,9 +207,13 @@ def main (input_containpos, df, np_vaf, np_BQ, step, **kwargs):
     if  step.fp_index in set(step.membership):   # FP를 선택한 variant가 하나라도 있어야 비로소 includefp = True로 변경
         step.includefp = True
         step.fp_member_index = list(np.where(step.membership == step.fp_index)[0])
+    else:
+        step.includefp = False
+        step.fp_member_index = []
+
 
     if (kwargs["VERBOSE"] >= 1):
-        print ("\t\t\tEstep.py : set(step.membership) = {}\tcounts = {}\tfp_index = {}\tstep.likelihood = {}".format ( set(step.membership), np.unique(step.membership  , return_counts=True)[1], step.fp_index, round(step.likelihood)) )
+        print ("\t\t\tEstep.py : set(step.membership) = {}\tcounts = {}\tfp_index = {}\tincludefp = {}\tstep.likelihood = {}".format ( set(step.membership), np.unique(step.membership  , return_counts=True)[1], step.fp_index, step.includefp, round(step.likelihood)) )
 
 
     # membership_p : extermely low value if the variant is  fp

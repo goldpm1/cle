@@ -27,13 +27,12 @@ def Other_tissues (SCRIPT_DIR, DIR ) :
         DONOR, TISSUE, SAMPLE = inputdf.iloc[k]["DONOR"], inputdf.iloc[k]["TISSUE"], inputdf.iloc[k]["SAMPLE"]
         INPUT_TSV = "/".join(["/data/project/Alzheimer/EM_cluster/EM_input/Moore_2_sample", DONOR, TISSUE, SAMPLE+"_input.txt"])
 
-        if TISSUE not in ["adrenal_gland_zona_glomerulosa", "visceral_fat", "bronchus_epithelium"]:
-            continue
-        
+        # if TISSUE not in ["adrenal_gland_zona_glomerulosa", "visceral_fat", "bronchus_epithelium"]:
+        #     continue
 
         kwargs = {"INPUT_TSV" : INPUT_TSV,  "MODE" : "Both",  "NUM_CLONE_TRIAL_START" : 1, "NUM_CLONE_TRIAL_END" : 5, 
-                        "TRIAL_NO" : 5, "DEPTH_CUTOFF" : 10,  "KMEANS_CLUSTERNO" : 6, "MIN_CLUSTER_SIZE" : 10,  "MAKEONE_STRICT" :  2,
-                        "RANDOM_PICK" : 0, "AXIS_RATIO":0.4, "PARENT_RATIO": 0, "NUM_PARENT" : 0,  "FP_RATIO":0,  "FP_USEALL" : "False", 
+                        "TRIAL_NO" : 5, "DEPTH_CUTOFF" : 10,  "KMEANS_CLUSTERNO" : 6, "MIN_CLUSTER_SIZE" : 10,  "MAKEONE_STRICT" :  3,
+                        "RANDOM_PICK" : 0, "AXIS_RATIO": -1, "PARENT_RATIO": 0, "NUM_PARENT" : 0,  "FP_RATIO":0,  "FP_USEALL" : "False", 
                         "RANDOM_SEED" : 0, "SAMPLENAME" : "", "BENCHMARK_NO" : 0, 
                         "NPVAF_DIR" : "", "SIMPLE_KMEANS_DIR" : "", "CLEMENT_DIR" : "", "SCICLONE_DIR" : "", "PYCLONEVI_DIR" : "",  "COMBINED_OUTPUT_DIR" : "",
                         "SCORING" : False,  "MAXIMUM_NUM_PARENT" : 1, "VERBOSE" : 1 }
@@ -110,15 +109,15 @@ def adrenal_gland_continuous ( SCRIPT_DIR, DIR  ):
 
 
 
-        for AG_TISSUE in AG_TISSUE_LIST:            
+        for AG_TISSUE in AG_TISSUE_LIST:            # fasciculata_L1_glomerulosa_L1
             if "reticularis" in AG_TISSUE:
                 continue
 
             INPUT_TSV = DIR + "/" + DONOR + "/adrenal_gland_zona/" + AG_TISSUE + "_input.txt"
 
             kwargs = {"INPUT_TSV" : INPUT_TSV,  "MODE" : "Both",  "NUM_CLONE_TRIAL_START" : 1, "NUM_CLONE_TRIAL_END" : 7, 
-                    "TRIAL_NO" : 10, "DEPTH_CUTOFF" : 10,  "KMEANS_CLUSTERNO" : 8, "MIN_CLUSTER_SIZE" : 10,  "MAKEONE_STRICT" :  2,
-                    "RANDOM_PICK" : 0, "AXIS_RATIO":0.4, "PARENT_RATIO": 0, "NUM_PARENT" : 0,  "FP_RATIO":0,  "FP_USEALL" : "False", 
+                    "TRIAL_NO" : 10, "DEPTH_CUTOFF" : 10,  "KMEANS_CLUSTERNO" : 8, "MIN_CLUSTER_SIZE" : 5,  "MAKEONE_STRICT" :  3,
+                    "RANDOM_PICK" : 0, "AXIS_RATIO": -1, "PARENT_RATIO": 0, "NUM_PARENT" : 0,  "FP_RATIO":0,  "FP_USEALL" : "False", 
                     "RANDOM_SEED" : 0, "SAMPLENAME" : "", "BENCHMARK_NO" : 0, 
                     "NPVAF_DIR" : "", "SIMPLE_KMEANS_DIR" : "", "CLEMENT_DIR" : "", "SCICLONE_DIR" : "", "PYCLONEVI_DIR" : "",  "COMBINED_OUTPUT_DIR" : "",
                     "SCORING" : False,  "MAXIMUM_NUM_PARENT" : 1, "VERBOSE" : 1 }
@@ -166,6 +165,28 @@ def adrenal_gland_continuous ( SCRIPT_DIR, DIR  ):
             #print (command)
             os.system (command)
             n = n + 1
+            
+            
+            #2. MatrixFormation + SigProfiler
+            logPath = "/data/project/Alzheimer/YSscript/cle/log/3.BioData/Moore_1D/" + TISSUE + "/" + DONOR + "-" + SAMPLENAME
+            os.system ("rm -rf " + logPath)
+            os.system ("mkdir -p " + logPath)
+
+            kwargs["OUTPUT_DIR"] = kwargs["COMBINED_OUTPUT_DIR"] + "/SigProfiler"
+            os.system ("rm -rf " + kwargs["OUTPUT_DIR"])
+            os.system ("rm -rf " + kwargs["OUTPUT_DIR"] + "MatrixGenerator")
+            os.system ("mkdir -p " + kwargs["OUTPUT_DIR"])
+            command = " ".join(["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
+                            "-N", "Sig_AG_" + AG_TISSUE,
+                            "-hold_jid",  str( hold_j ), 
+                            SCRIPT_DIR + "/3.BioData_pipe1_Signature.sh",
+                            "--SCRIPT_DIR", str(SCRIPT_DIR), 
+                            "--DECISION_MEMBERSHIP_PATH", kwargs["COMBINED_OUTPUT_DIR"] + "/result/CLEMENT_decision.membership.txt" , 
+                            "--NPVAF_PATH", kwargs["NPVAF_DIR"] + "/npvaf.txt", 
+                            "--DONOR", DONOR,
+                            "--TISSUE", TISSUE,
+                            "--OUTPUT_DIR", str( kwargs["OUTPUT_DIR"] ) ])
+            os.system (command)
 
 
 

@@ -20,7 +20,7 @@ if __name__ == "__main__":
                                     exome=False,
                                     genome_build="GRCh37", 
                                     signature_database=None,
-                                    exclude_signature_subgroups= [ 'remove_Colibactin_signatures', 'remove_Unknown_signatures'  ],   #  'remove_Unknown_signatures'
+                                    exclude_signature_subgroups = [ 'Colibactin_signatures', 'Unknown_signatures', 'APOBEC_signatures', 'HR_deficiency_signatures' , 'MMR_deficiency_signatures',   'BER_deficiency_signatures'],   #  'remove' 가 붙은건 cnvpytor, 없는건 master
                                     export_probabilities=False,
                                     export_probabilities_per_mutation=False, 
                                     make_plots=True,
@@ -45,3 +45,5 @@ if __name__ == "__main__":
 
 #/opt/Yonsei/python/3.8.1/lib/python3.8/site-packages/SigProfilerAssignment/decomposition.py
 #/home/goldpm1/miniconda3/envs/cnvpytor/lib/python3.7/site-packages/SigProfilerAssignment/decomposition.py
+
+#'Unknown_signatures' :{'SBS':['8','12','16', '17a','17b','19','23','28','33','34','37','39','40','41', '89','91','93','94'], 'DBS':[], 'ID':[]} 

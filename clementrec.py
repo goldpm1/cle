@@ -11,14 +11,11 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
     if kwargs["VERBOSE"] >= 1:
         print("\n\n--- step #1.  data extracation from the answer set")
 
-
     input_containpos_new = input_containpos.loc [ index_interest_nonzero ]
     df_new = [[None] * kwargs["NUM_BLOCK"] for i in range( len(index_interest_nonzero) )]
-    i = 0
     for row in range ( len(index_interest_nonzero )):
         for col in range ( kwargs["NUM_BLOCK"] ):
-            df_new[row][col] = df[ index_interest_nonzero[i] ][col]
-            i += 1
+            df_new[row][col] = df[ index_interest_nonzero[ row ] ][col]
     np_vaf_new = np_vaf [index_interest_nonzero, :]
     np_BQ_new =  np_BQ [index_interest_nonzero, :]
 
@@ -27,16 +24,17 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
     NUM_BLOCK = kwargs["NUM_BLOCK"]
 
 
-    print("\tNUM_BLOCK = {}".format(NUM_BLOCK))
-    print("\tRANDOM_PICK = {}".format(kwargs["RANDOM_PICK"]))
-    print ("\tMIN_CLUSTER_SIZE = {}".format (kwargs["MIN_CLUSTER_SIZE"]))
-    print ("\tnp_vaf = {}".format(np_vaf.shape))
+    if kwargs["VERBOSE"] >= 1:
+        print("\tNUM_BLOCK = {}".format(NUM_BLOCK))
+        print("\tRANDOM_PICK = {}".format(kwargs["RANDOM_PICK"]))
+        print ("\tMIN_CLUSTER_SIZE = {}".format (kwargs["MIN_CLUSTER_SIZE"]))
+        print ("\tnp_vaf_new = {}".format(np_vaf_new.shape))
     
 
     START_TIME = datetime.datetime.now()
 
     if kwargs["VERBOSE"] >= 1:
-        print ("\n\n\n\n --- step #2. initial_kmeans ")
+        print ("\n\n --- step #2. initial_kmeans ")
     mixture_kmeans, kwargs = miscellaneous.initial_kmeans (input_containpos_new, df_new, np_vaf_new, np_BQ_new, kwargs["CLEMENT_DIR"] + "/trial/0.inqitial_kmeans." + kwargs["IMAGE_FORMAT"], **kwargs)
 
     cluster_hard = Bunch.Bunch2(**kwargs)
@@ -66,7 +64,8 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
         #kwargs["DEBUG"]  = True
 
         if cluster_hard.likelihood_record[ NUM_CLONE ] !=  float("-inf"):
-            print("\n\n\tSequential Soft clustering (TRIAL_NO = {}, HARD_STEP = {})".format ( cluster_hard.trialindex_record[ NUM_CLONE ], cluster_hard.stepindex_record [ NUM_CLONE ] ))
+            if kwargs["VERBOSE"] >= 1:
+                print("\n\n\tSequential Soft clustering (TRIAL_NO = {}, HARD_STEP = {})".format ( cluster_hard.trialindex_record[ NUM_CLONE ], cluster_hard.stepindex_record [ NUM_CLONE ] ))
             step_soft = Bunch.Bunch1(kwargs["NUM_MUTATION"] , NUM_BLOCK, NUM_CLONE, cluster_hard.stepindex_record [ NUM_CLONE ] + kwargs["STEP_NO"])
             step_soft.copy (cluster_hard, 0, NUM_CLONE)  # 0번 step에 cluster_hard를 복사한다
 
@@ -75,26 +74,31 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
                 kwargs["STEP"], kwargs["TRIAL"] = step_index, cluster_hard.trialindex_record[ NUM_CLONE ]
                 kwargs["STEP_TOTAL"] = step_index + cluster_hard.stepindex_record [ NUM_CLONE ] - 1
                 
-                print("\t\tStep #{} ( = TOTAL Step #{})".format(kwargs["STEP"], kwargs["STEP_TOTAL"]) )
+                if kwargs["VERBOSE"] >= 1:
+                    print("\t\tStep #{} ( = TOTAL Step #{})".format(kwargs["STEP"], kwargs["STEP_TOTAL"]) )
 
-                step_soft = Estep.main(input_containpos, df, np_vaf, np_BQ, step_soft, **kwargs)                   # 주어진 mixture 내에서 새 membership 정하기
+                step_soft = Estep.main(input_containpos_new, df_new, np_vaf_new, np_BQ_new, step_soft, **kwargs)                   # 주어진 mixture 내에서 새 membership 정하기
                 #print ( "\t\t\tEstep.py : {}\tmakeone_index : {}".format( np.unique(step_soft.membership  , return_counts=True), step_soft.makeone_index ) )
-                step_soft = Mstep.main(input_containpos, df, np_vaf, np_BQ, step_soft, "Soft", **kwargs)     # 새 memberhsip에서 새 mixture구하기
-                print("\t\t\tMstep.py : makeone_index : {}\tfp_index : {}\ttn_index : {}".format( step_soft.makeone_index, step_soft.fp_index, step_soft.tn_index  ))
+                step_soft = Mstep.main(input_containpos_new, df_new, np_vaf_new, np_BQ_new, step_soft, "Soft", **kwargs)     # 새 memberhsip에서 새 mixture구하기
+                if kwargs["VERBOSE"] >= 1:
+                    print("\t\t\tMstep.py : makeone_index : {}\tfp_index : {}\ttn_index : {}".format( step_soft.makeone_index, step_soft.fp_index, step_soft.tn_index  ))
 
                 if step_soft.makeone_index == []:   # if failed  (첫 3개는 웬만하면 봐주려고 하지만, 그래도 잘 안될 때)
-                    print ("\t\t\t\t→ checkall == False라서 종료\t{}".format(step_soft.mixture))
+                    if kwargs["VERBOSE"] >= 1:
+                        print ("\t\t\t\t→ checkall == False라서 종료\t{}".format(step_soft.mixture))
                     break
 
-                step_soft.acc(step_soft.mixture, step_soft.membership, step_soft.likelihood, step_soft.membership_p, step_soft.membership_p_normalize, step_soft.makeone_index, step_soft.tn_index,  step_soft.fp_index, step_index + 1, step_soft.fp_member_index, step_soft.includefp, step_soft.fp_involuntary, step_soft.makeone_prenormalization, step_index, step_index)
+                step_soft.acc(step_soft.mixture, step_soft.membership, step_soft.likelihood, step_soft.membership_p, step_soft.membership_p_normalize, step_soft.makeone_index, step_soft.tn_index,  step_soft.fp_index, step_index + 1, step_soft.fp_member_index, step_soft.includefp, step_soft.fp_involuntary, step_soft.checkall_strict, step_soft.checkall_lenient, step_index, step_index)
 
                 if (miscellaneous.GoStop(step_soft, **kwargs) == "Stop")  :
                     break
                 if ( miscellaneous.iszerocolumn (step_soft, **kwargs) == True) :
-                    print ("\t\t\t\t→ 빈 mixture가 있어서 종료\t{}".format(step_soft.mixture))
+                    if kwargs["VERBOSE"] >= 1:
+                        print ("\t\t\t\t→ 빈 mixture가 있어서 종료\t{}".format(step_soft.mixture))
                     break
                 if ( len ( set (step_soft.membership) ) < kwargs["NUM_CLONE_ITER"] ) :
-                    print ("\t\t\t\t→ 빈 clone이 있어서 종료")
+                    if kwargs["VERBOSE"] >= 1:
+                        print ("\t\t\t\t→ 빈 clone이 있어서 종료")
                     break
 
 
@@ -103,9 +107,11 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
 
             # soft clustering에서 아예 답을 못 찾을 경우
             if i == 0:
-                print ("\t\t\t1번째 soft step부터 망해서 이번 clone은 망함")
+                if kwargs["VERBOSE"] >= 1:
+                    print ("\t\t\t1번째 soft step부터 망해서 이번 clone은 망함")
             elif  (step_soft.likelihood_record [i]  <= -9999999) :
-                print ("\t\t\t모든 step에서 망해서 (-9999999) 이번 clone은 망함")
+                if kwargs["VERBOSE"] >= 1:
+                    print ("\t\t\t모든 step에서 망해서 (-9999999) 이번 clone은 망함")
 
             else:  # 대부분의경우:  Soft clustering에서 답을 찾은 경우
                 if kwargs["VERBOSE"] >= 1:
@@ -115,7 +121,8 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
 
 
         else:   # hard clustering에서 아예 답을 못 찾은 경우
-            print ("Hard clustering에서조차 모두 망해서 이번 clone은 더 돌리기 싫다")
+            if kwargs["VERBOSE"] >= 1:
+                print ("Hard clustering에서조차 모두 망해서 이번 clone은 더 돌리기 싫다")
 
 
 
@@ -129,18 +136,18 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
         print ("\n\n★★★ Gap Statistics method (Hard clustering)\n")
 
 
-    NUM_CLONE_hard = miscellaneous.decision_gapstatistics (cluster_hard, np_vaf, **kwargs)
+    NUM_CLONE_hard = miscellaneous.decision_gapstatistics (cluster_hard, np_vaf_new, **kwargs)
 
     if kwargs["MODE"] in ["Soft", "Both"]:
         if NUM_BLOCK >= 1:
             if kwargs["VERBOSE"] >= 1:
                 print ("\n\n\n★★★ XieBeni index method (2D, 3D Soft clustering)\n")
-            NUM_CLONE_soft = miscellaneous.decision_XieBeni (cluster_soft, np_vaf, **kwargs)
+            NUM_CLONE_soft = miscellaneous.decision_XieBeni (cluster_soft, np_vaf_new, **kwargs)
 
         if NUM_BLOCK == 1:
             if kwargs["VERBOSE"] >= 1:
                 print ("\n\n\n★★★ Max likelihood method (1D Soft clustering)\n")
-            NUM_CLONE_soft = miscellaneous.decision_max (cluster_soft, np_vaf, **kwargs)
+            NUM_CLONE_soft = miscellaneous.decision_max (cluster_soft, np_vaf_new, **kwargs)
 
 
 
@@ -153,38 +160,50 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
     DECISION = "hard_1st"
     i, priority = 0, "1st"
 
-    if kwargs["NUM_BLOCK"] == 1:       # 그냥 무조건 soft를 신뢰하는게 어떨까?
-        DECISION = "soft_1st"
-        soft_std = float("inf")
-        print ( "DECISION : {}\nhard_mixture : {}\n\tsoft_mixture : {}".format( DECISION, cluster_hard.mixture_record [NUM_CLONE_hard[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]] ))
-        with open ( kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt"  , "w", encoding = "utf8") as output_file:
-            print ( "DECISION : {}\nhard_mixture : {}\n\tsoft_mixture : {}".format( DECISION, cluster_hard.mixture_record [NUM_CLONE_hard[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]] ), file = output_file)
-        print ("\n\tNUM_CLONE_soft (by order) : {}\n".format(NUM_CLONE_soft))
+    if kwargs["NUM_BLOCK"] == 1:       # 1D에서는 웬만하면 soft를 신뢰하는게 어떨까?
+        if cluster_soft.mixture_record [ NUM_CLONE_soft[0] ] != []:
+            DECISION = "soft_1st"
+            soft_std = float("inf")
+        else:
+            DECISION = "hard_1st"
 
-    else:
-        print ("\n\tNUM_CLONE_hard (by order) : {}\n".format(NUM_CLONE_hard))
+        if kwargs["VERBOSE"] >= 1:
+            print ( "DECISION : {}\nhard_mixture : {}\nsoft_mixture : {}".format( DECISION, cluster_hard.mixture_record [NUM_CLONE_hard[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]] ))
+            with open ( kwargs["CLEMENT_DIR"]+ "/result/CLEMENT_decision.evidence.txt"  , "w", encoding = "utf8") as output_file:
+                print ( "DECISION : {}\nhard_mixture : {}\n\tsoft_mixture : {}".format( DECISION, cluster_hard.mixture_record [NUM_CLONE_hard[i]], cluster_soft.mixture_record [NUM_CLONE_soft[i]] ), file = output_file)
+            print ("\nNUM_CLONE_soft (by order) : {}\n".format(NUM_CLONE_soft))
 
-        moved_col_list = miscellaneous.movedcolumn ( cluster_hard, cluster_soft,  NUM_CLONE_hard[i]  )
+    else:  # 2D, 3D에서는 moved column을 본다
+        if kwargs["VERBOSE"] >= 1:
+            print ("\nNUM_CLONE_hard (by order) : {}\n".format(NUM_CLONE_hard))
 
-        if len (moved_col_list) == 0:
+        if cluster_soft.mixture_record [ NUM_CLONE_soft[0] ] == []:   # Soft가 다 망했을 경우
+            soft_std = float("inf")
             DECSION  = "hard_1st"
-            hard_std = soft_std = -1
-        else: # Most of the cases
-            hard_std = miscellaneous.std_movedcolumn ( cluster_hard.mixture_record [ NUM_CLONE_hard[i] ] , moved_col_list )
-            if ( cluster_soft.mixture_record [NUM_CLONE_hard[i]] == []): 
-                soft_std = float("inf")
-            else:
-                soft_std = miscellaneous.std_movedcolumn ( cluster_soft.mixture_record [ NUM_CLONE_hard[i] ] , moved_col_list )
-                if  ( ( soft_std / hard_std )<  kwargs["DECISION_STANDARD"]):
-                    DECISION = "soft_1st"
-                else:
-                    DECISION = "hard_1st"
 
-                print ( "Moved column : {}".format(moved_col_list) )
-                print ( "Hard (n = {}) : std = {}\tstep = {}\nhard_mixture = {}\n".format( cluster_hard.mixture_record [NUM_CLONE_hard[i]].shape[1],  round( hard_std, 3) ,  cluster_hard.stepindex_record [ NUM_CLONE_hard[i] ],  cluster_hard.mixture_record [ NUM_CLONE_hard[i] ]   )   )
-                print ( "Soft (n = {}) : std = {}\tstep = {}\nhard_mixture = {}".format( cluster_soft.mixture_record [NUM_CLONE_hard[i]].shape[1],  round( soft_std, 3) ,  cluster_soft.stepindex_record [ NUM_CLONE_hard[i] ],  cluster_soft.mixture_record [ NUM_CLONE_hard[i] ]   )   )
-                print ( "ratio : {}".format ( round(soft_std, 3) / round(hard_std, 3) ) )
-                print ("\nsoft 선택 기준 :  < {}\nDECISION\t{}".format( round (kwargs["DECISION_STANDARD"], 2) , DECISION)  )
+        else: # Most of the cases
+            moved_col_list = miscellaneous.movedcolumn ( cluster_hard, cluster_soft,  NUM_CLONE_hard[i]  )
+
+            if len (moved_col_list) == 0:
+                DECSION  = "hard_1st"
+                hard_std = soft_std = float("inf")
+            else: # Most of the cases
+                hard_std = miscellaneous.std_movedcolumn ( cluster_hard.mixture_record [ NUM_CLONE_hard[i] ] , moved_col_list )
+                if ( cluster_soft.mixture_record [NUM_CLONE_hard[i]] == []): 
+                    soft_std = float("inf")
+                else:
+                    soft_std = miscellaneous.std_movedcolumn ( cluster_soft.mixture_record [ NUM_CLONE_hard[i] ] , moved_col_list )
+                    if  ( ( soft_std / hard_std )<  kwargs["DECISION_STANDARD"]):
+                        DECISION = "soft_1st"
+                    else:
+                        DECISION = "hard_1st"
+
+                    if kwargs["VERBOSE"] >= 1:
+                        print ( "Moved column : {}".format(moved_col_list) )
+                        print ( "Hard (n = {}) : std = {}\tstep = {}\nhard_mixture = {}\n".format( cluster_hard.mixture_record [NUM_CLONE_hard[i]].shape[1],  round( hard_std, 3) ,  cluster_hard.stepindex_record [ NUM_CLONE_hard[i] ],  cluster_hard.mixture_record [ NUM_CLONE_hard[i] ]   )   )
+                        print ( "Soft (n = {}) : std = {}\tstep = {}\nhard_mixture = {}".format( cluster_soft.mixture_record [NUM_CLONE_hard[i]].shape[1],  round( soft_std, 3) ,  cluster_soft.stepindex_record [ NUM_CLONE_hard[i] ],  cluster_soft.mixture_record [ NUM_CLONE_hard[i] ]   )   )
+                        print ( "ratio : {}".format ( round(soft_std, 3) / round(hard_std, 3) ) )
+                        print ("\nsoft 선택 기준 :  < {}\nDECISION\t{}".format( round (kwargs["DECISION_STANDARD"], 2) , DECISION)  )
 
 
     if DECISION == "hard_1st":
@@ -193,12 +212,16 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
     elif DECISION == "soft_1st":
         NUM_CLONE_recursive =  NUM_CLONE_soft[0]
         mixture_recursive = cluster_soft.mixture_record [ NUM_CLONE_soft[0]  ]
-    
 
 
-    ########### E step을 한번 더 돌아보고, membership이 없는 centroid는 빼 준다 (mixture 복구는 돌아가서)
-    print ("\tDECISION = {}".format(DECISION))
-    print ("\t(before) mixture_recursive = {}\t{}".format (mixture_recursive, mixture_recursive.shape))
+    if np.all(mixture_recursive == 0) == True:     # 전체가 (0,0)이면 무시하고 바로 return
+        return 0, mixture_recursive
+
+
+    ########### 정사영을 내리지 말고 E step을 한번 더 돌아보고, membership이 없는 centroid는 빼 준다 (mixture 복구는 돌아가서)
+    #if kwargs["VERBOSE"] >= 1:
+    print ("\nDECISION = {}".format(DECISION))
+    print ("\t(before) mixture_recursive = {}\tshape = {}".format ( ", ".join(str(np.round(row, 2)) for row in mixture_recursive ) , mixture_recursive.shape))
 
 
     kwargs["NUM_MUTATION"] = len(index_interest)
@@ -209,11 +232,9 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
     kwargs["STEP"] = 0
 
     df_extract = [[None] * kwargs["NUM_BLOCK"] for i in range( len(index_interest) )]
-    i = 0
     for row in range ( len(index_interest) ):
         for col in range ( kwargs["NUM_BLOCK"] ):
-            df_extract[row][col] = df[ index_interest[i] ][col]
-            i += 1
+            df_extract[row][col] = df[ index_interest[row] ][col]
 
     step_final = Estep.main( input_containpos = input_containpos.iloc [index_interest].reset_index(drop = True),
                                              df = df_extract,
@@ -231,6 +252,6 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
     NUM_CLONE_recursive = step_final.mixture.shape[1]
 
     #print ( values_with_count_more_than_MIN_CLUSTER_SIZE )
-    print ( "\t(after) mixture_recursive = {}".format (  step_final.mixture  ) )
+    print ( "\t(after) mixture_recursive = {}".format (  ", ".join(str(np.round(row, 2)) for row in step_final.mixture  ) ) )
 
     return NUM_CLONE_recursive, step_final.mixture

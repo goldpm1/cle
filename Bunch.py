@@ -7,6 +7,9 @@ class Bunch1:        # step_hard, step_soft, trial_hard, trial_soft
     def __init__(self, NUM_MUTATION, NUM_BLOCK, NUM_CLONE, K):
         self.mixture = np.zeros ( (NUM_BLOCK, NUM_CLONE + 1), dtype = "float")
         self.mixture_record = np.zeros ( (K, NUM_BLOCK, NUM_CLONE + 1) , dtype = "float")
+        self.initial_randomsample = []
+        self.initial_randomsample_record = [[]] * K
+        self.initial_sampling = True
         self.membership = np.zeros ( (NUM_MUTATION), dtype = "int")
         self.membership_record = np.zeros ( (K, NUM_MUTATION), dtype = "int")
         self.membership_p = np.zeros ( (NUM_MUTATION, NUM_CLONE + 1) , dtype = "float")
@@ -31,11 +34,13 @@ class Bunch1:        # step_hard, step_soft, trial_hard, trial_soft
         self.fp_involuntary_record = np.array ( [False] * (K))
         self.tn_index = []
         self.tn_index_record =  [[]] * K
-        self.makeone_prenormalization = True
-        self.makeone_prenormalization_record = np.zeros (K , dtype = "bool")
+        self.checkall_strict = True
+        self.checkall_strict_record = np.zeros (K , dtype = "bool")
+        self.checkall_lenient = True
+        self.checkall_lenient_record = np.zeros (K , dtype = "bool")
         self.less_than_min_cluster_size = False
 
-    def acc (self, mixture, membership, likelihood, membership_p, membership_p_normalize, makeone_index, tn_index, fp_index, step_index, fp_member_index, includefp, fp_involuntary, makeone_prenormalization, max_step_index, K):
+    def acc (self, mixture, membership, likelihood, membership_p, membership_p_normalize, makeone_index, tn_index, fp_index, step_index, fp_member_index, includefp, fp_involuntary, checkall_strict, checkall_lenient, max_step_index, K):
         self.mixture_record [K]= copy.deepcopy ( mixture )
         self.membership_record [K] = copy.deepcopy ( membership ) 
         self.likelihood_record [K] = likelihood
@@ -54,52 +59,53 @@ class Bunch1:        # step_hard, step_soft, trial_hard, trial_soft
         self.includefp_record [K] = includefp
         self.fp_involuntary  = fp_involuntary 
         self.fp_involuntary_record [K] = fp_involuntary 
-        self.makeone_prenormalization = makeone_prenormalization
-        self.makeone_prenormalization_record [K] = makeone_prenormalization
+        self.checkall_strict = checkall_strict
+        self.checkall_strict_record [K] = checkall_strict
+        self.checkall_lenient = checkall_lenient
+        self.checkall_lenient_record [K] = checkall_lenient
 
 
-    def find_max_likelihood_fp_voluntary (self, start, end):
-        if start > end:
-            return -1
-        if start == end:
-            return start
-        
-        max, max_index = -9999999, -1
-        for i in range (start, end + 1):
-            if self.fp_involuntary_record[i] == False:   
-                if self.makeone_prenormalization_record[i] == True:
-                    if self.likelihood_record [i] > max:
-                        max = self.likelihood_record [i]
-                        max_index = i
-        
-        if max == -9999999:
-            return -1
-        return max_index
-        
     def find_max_likelihood_step (self, start, end):
         if start > end:
-            return -1
+            return -1, False
         
         max, max_index = -9999999, -1
         for i in range (start, end + 1):
-            if self.makeone_prenormalization_record[i] in [ True , False ]:   # Qualified step only
+            if self.likelihood_record [i] > max:
+                max = self.likelihood_record [i]
+                max_index = i
+        
+        if max == -9999999:
+            return -1, False
+        
+        return max_index, self.checkall_strict_record [max_index]
+    
+
+    def find_max_likelihood_trial (self, start, end):
+        max, max_index = -9999999, -1
+        for i in range (start, end):
+            if self.checkall_strict_record[i] == True:   # Qualified trial only
                 if self.likelihood_record [i] > max:
                     max = self.likelihood_record [i]
                     max_index = i
+        if max_index != -1 : 
+            return max_index, True
         
-        if max == -9999999:
-            return -1
-        return max_index
-    
-    def find_max_likelihood_trial (self, start, end):
-        try:
-            i = np.argmax(self.likelihood_record [ start : end + 1 ]) + start
-            return i
-        except:
-            return -1
+        else:   # If there isn't qualifed trial
+            max, max_index = -9999999, -1
+            for i in range (start, end ):
+                if self.likelihood_record [i] > max:
+                    max = self.likelihood_record [i]
+                    max_index = i
+            if max_index != -1:
+                return max_index, False
+            else:          # 아예 모든게 -inf, -inf, -inf일때
+                return -1, False
+            
+            
             
 
-    def copy (self, other, self_i, other_j):  # cluster_hard, cluster_soft
+    def copy (self, other, self_i, other_j):  # step_soft <- cluster_hard
         self.mixture = copy.deepcopy ( other.mixture_record [ other_j ] )
         self.mixture_record [self_i] = copy.deepcopy ( other.mixture_record[other_j] )
         self.membership = copy.deepcopy ( other.membership_record [ other_j ] )
@@ -122,6 +128,10 @@ class Bunch1:        # step_hard, step_soft, trial_hard, trial_soft
         self.fp_involuntary =  other.fp_involuntary_record [other_j ]
         self.fp_involuntary_record [self_i] = other.fp_involuntary_record [other_j ]
         self.max_step_index_record[self_i] = other.max_step_index_record[other_j ]
+        self.checkall_strict = other.checkall_strict_record[other_j]
+        self.checkall_strict_record[self_i] = other.checkall_strict_record[other_j]
+
+
         
 
 
@@ -137,6 +147,7 @@ class Bunch2:
         self.stepindex_record = np.array ([0] * (kwargs["NUM_CLONE_TRIAL_END"] + 1))
         self.trialindex_record = np.array ([-1] * (kwargs["NUM_CLONE_TRIAL_END"] + 1))
         self.makeone_index_record = [[]] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
+        self.checkall_strict_record = [False] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
         self.fp_index_record = np.array ([-1] * (kwargs["NUM_CLONE_TRIAL_END"] + 1))
         self.includefp_record = [False] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
         self.fp_involuntary_record = [False] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
@@ -181,6 +192,7 @@ class Bunch2:
         other.membership_p_record [other_j ] = copy.deepcopy  ( self.membership_p_record [ self_i ] )
         #other.membership_p_normalize_record [other_j ] = self.membership_p_normalize_record [ self_i ] 
         other.makeone_index_record [ other_j ] = copy.deepcopy  ( self.makeone_index_record [ self_i ]  )
+        other.checkall_strict_record [ other_j ] = copy.deepcopy  ( self.checkall_strict_record [ self_i ]  )
         other.tn_index_record [ other_j ] = copy.deepcopy  ( self.tn_index_record [ self_i ]  )
         other.fp_index = self.fp_index_record [ self_i ]
         other.fp_index_record [ other_j ] = copy.deepcopy  ( self.fp_index_record [ self_i ]  )
@@ -191,3 +203,4 @@ class Bunch2:
         other.fp_involuntary_record [ other_j ] = self.fp_involuntary_record [ self_i ]
         other.fp_member_index = copy.deepcopy  ( self.fp_member_index_record [ self_i ] )
         other.fp_member_index_record [ other_j ] = copy.deepcopy  ( self.fp_member_index_record [ self_i ] )
+        other.checkall_strict_record [ other_j ] = self.checkall_strict_record [self_i]

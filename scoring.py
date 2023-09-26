@@ -26,6 +26,47 @@ def Sorting(membership):
     return membership_sort
 
 
+def SoftScoring (membership_answer_character, membership_answer_numerical, cluster_soft, NUM_CLONE):
+    ANSWER_NUM_CLONE = int(np.max(membership_answer_numerical) + 1)    # 정답set 의 clone
+    NUM_MUTATION = cluster_soft.membership_p_normalize_record [ NUM_CLONE ].shape[0]
+    # mixture 는 NUM_CLONE + 1 (FP 포함)
+
+    # Soft clustering에서 나온 Clone No >  ANSWER_NUM_CLONE일 때
+    if NUM_CLONE  >= ANSWER_NUM_CLONE:      # 이러면 answer membership을 뒤섞어보면 된다
+        max_index_dict, max_score = {}, -1
+        
+        for tt in list(itertools.permutations( list(range(0, NUM_CLONE)),  ANSWER_NUM_CLONE ) ):
+            index_dict = {}    # answer -> CLEMENT
+            for i in range(0, np.max(membership_answer_numerical) + 1 ):
+                index_dict[i] = tt[i]
+
+            # answer membership을 돌려보기
+            temp = []
+            for i in range( len(membership_answer_numerical) ):
+                temp.append(index_dict[membership_answer_numerical[i]])
+
+            # maxmaxmax_membership과의 일치도 확인
+            sum = 0
+            for k in range( NUM_MUTATION ):
+                sum += cluster_soft.membership_p_normalize_record  [NUM_CLONE] [k] [temp [k]]
+
+            if sum > max_score:
+                max_score = sum
+                max_temp = temp
+                max_index_dict = index_dict
+                print ( "index_dict = {}\tmax_score = {}".format (index_dict, max_score))
+
+
+        sample_dict_PtoA = {}   # 
+        sample_dict_AtoP = {}   # 변환표 (R)
+        for i in range( len(max_temp)):
+            sample_dict_PtoA [max_temp[i]] = membership_answer_character[i]   # {3: 'MRC5_het', 4: 'FP', 0: 'V3_het', 1: 'V5_het', 2: 'V1_het'}
+            sample_dict_AtoP [membership_answer_character[i]] = max_temp[i]
+
+
+
+
+
 def Scoring(membership_answer_character, membership_answer_numerical, my_membership, fp_index, parent_index, **kwargs):
     global ANSWER_NUM_CLONE
     max_score = 0
@@ -37,6 +78,7 @@ def Scoring(membership_answer_character, membership_answer_numerical, my_members
         FP_MATCH = True
     elif ("FP" in membership_answer_character) & (fp_index == -1):  # FP가 있는데 제대로 designate 하지 못했을 경우
         FP_MATCH = False
+
 
     # Celldata의 경우
     
@@ -131,7 +173,7 @@ def Scoring(membership_answer_character, membership_answer_numerical, my_members
             sample_dict_PtoA[ key  ] = answer_char
             sample_dict_AtoP[ answer_char ] = key
             
-        #print ("sample_dict_PtoA = {}\nsample_dict_AtoP = {}".format(sample_dict_PtoA, sample_dict_AtoP))
+    #print ("sample_dict_PtoA = {}\nsample_dict_AtoP = {}".format(sample_dict_PtoA, sample_dict_AtoP))
         
 
     return max_score, sample_dict_PtoA, sample_dict_AtoP

@@ -89,7 +89,7 @@ def Appropriate_Phylogeny_Verification (PhyAcc, subset_list, j2, j3, step, **kwa
             #print ("\t\t\t\t\tp = {}, child_list = {}, sum_mixture_child = {}".format ( round(p, 2), child_list, sum_mixture_child))
 
     if kwargs["VERBOSE"] >= 3:
-        print ("\t\t\t\t→ j3 = {}, Phy.child_list = {}, Phy.sum_mixture_child = {}, Phy.j3_mixture[:,j3] = {}, Phy.p = {}".format ( j3, Phy.child_list, Phy.sum_mixture_child, step.mixture[:,j3], round (Phy.p, 2) ) )
+        print ("\t\t\t\t\t\t→ j3 = {}, Phy.child_list = {}, Phy.sum_mixture_child = {}, Phy.j3_mixture[:,j3] = {}, Phy.p = {}".format ( j3, Phy.child_list, Phy.sum_mixture_child, step.mixture[:,j3], round (Phy.p, 2) ) )
     
                 
     Threshold = -3 - NUM_BLOCK
@@ -120,10 +120,9 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
         subset_list_acc, subset_mixture_acc, sum_mixture_acc = comb.comball(   list(set(membership) - set([step.fp_index])), mixture)   # 모든 덧셈 조합을 구하기
     elif step.includefp == False:
         subset_list_acc, subset_mixture_acc, sum_mixture_acc = comb.comball(  list(set(membership))[:], mixture)   # 모든 덧셈 조합을 구하기
-    
 
     if kwargs["NUM_CLONE_ITER"] == 1:   # 이상하게 NUM_CLONE == 1일 때에는 comb.comball이 작동하지 않는다
-        if miscellaneous.checkall (step, **kwargs) [0] == False :
+        if miscellaneous.checkall ( np.sum(step.mixture, axis = 1).tolist(), "lenient", **kwargs) [0] == False :
             step.makeone_index = []
             p_list = []
             return p_list, step      # 그 어떤 makeone도 만들지 못해서 그냥 넘긴다
@@ -134,18 +133,17 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
 
     p_max = float("-inf")
     p_list, j2_list = [], []
-    second_circumstance_j2 = []
-    second_circumstance_fp_index = np.zeros(len(subset_mixture_acc), dtype="int")
-    fourth_circumstance_j2 = []
     
         
     # 여러 조합을 돈다 
-    for j2 in range(len(subset_mixture_acc)):
+    for j2 in range(len(subset_mixture_acc)):        # j2 : 번호, subset_list = [1, 3, 4]
         subset_list, subset_mixture, sum_mixture = subset_list_acc[ j2 ], subset_mixture_acc[ j2 ], sum_mixture_acc[ j2 ]
         PhyAcc = PhylogenyObjectAcc()
 
-        if miscellaneous.checkall(sum_mixture, **kwargs) [0] == False:         # 한 block이라도 1에 걸맞지 않은 게 있으면 False를 return함
-            #print ("\t\t\t\t(isparent.py)  makeone clone의 sum of mixture의 이상으로 기각 ({})".format( np.array(sum_mixture).flatten() ))
+        condition = "lenient" if kwargs ["STEP_TOTAL"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1) else "strict"
+        if miscellaneous.checkall(sum_mixture, condition, **kwargs) [0] == False:   
+            if kwargs["VERBOSE"] >= 4:
+                print ("\t\t\t\t(isparent.py)  makeone clone의 sum of mixture의 이상으로 기각 ({})".format( np.array(sum_mixture).flatten() ))
             continue
 
         p = 0
@@ -185,12 +183,12 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
                     SMALLER_ind.append(j3)
 
                 if j3gtj4_cnt >= 2:       # j3가 2개 이상의  j4 (child clone) 보다 클 때 -> parent의 가능성이 있다
-                    if (kwargs["VERBOSE"] >= 4) & ( len(PhyAcc.p_record) == 0):
-                        print ("\t\t\tj2 = {}, subset_list = {}".format(j2, subset_list))
+                    if (kwargs["VERBOSE"] >= 3) & ( len(PhyAcc.p_record) == 0):
+                        print ("\t\t\t\t\tj2 = {}, subset_list = {}".format(j2, subset_list))
                     Phy = Appropriate_Phylogeny_Verification (PhyAcc, subset_list, j2, j3, step, **kwargs)
                     if Phy.appropriate == False:
                         if kwargs["VERBOSE"] >= 3:
-                            print ("\t\t\t\t\t→ Phylogeny 확률이 너무 안좋다. 따라서 이 j2는 withdrawl".format(j3))
+                            print ("\t\t\t\t\t\t\t→ Phylogeny 확률이 너무 안좋다. 따라서 이 j2는 withdrawl".format(j3))
                         break
                     else:
                         PhyAcc.acc (Phy)
@@ -202,8 +200,8 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
                 continue
 
             if len( PhyAcc.j3_record )  > kwargs["MAXIMUM_NUM_PARENT"]:      # len( PhyAcc.j3_record ) = parent의 숫자
-                if kwargs["VERBOSE"] >= 4:
-                    print ( "\t\t\t\t→ possible_parent_num ( {} ) > MAXIMUM_NUM_PARENT ( {})".format ( len( PhyAcc.j3_record ), kwargs["MAXIMUM_NUM_PARENT"]))
+                if kwargs["VERBOSE"] >= 3:
+                    print ( "\t\t\t\t\t\t→ possible_parent_num ( {} ) > MAXIMUM_NUM_PARENT ( {})".format ( len( PhyAcc.j3_record ), kwargs["MAXIMUM_NUM_PARENT"]))
                 continue
             
             # 1D일 경우에는 parent clone의 존재를 인정하지 말자
@@ -213,7 +211,7 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
                 continue
             
             if kwargs["VERBOSE"] >= 4:
-                print ( "\t\tisparent.py : subset_list = {}\tpossible_parent_index = {}\tISSMALLER_CNT = {}\tstep.includefp = {}".format (subset_list, possible_parent_index, ISSMALLER_cnt, step.includefp) )
+                print ( "\t\t\t\t\t\tisparent.py : subset_list = {}\tpossible_parent_index = {}\tISSMALLER_CNT = {}\tstep.includefp = {}".format (subset_list, possible_parent_index, ISSMALLER_cnt, step.includefp) )
 
 
 
@@ -240,7 +238,7 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
 
                     if len(tt) < 2:         # 나머지 clone은 2개 이상의 child 조합으로 만들어지는 parent여야 한다. 그게 만족 안하면 이 조합이 오류임을 알 수 있다
                         if kwargs["VERBOSE"] >= 4:
-                            print ("\t\t\t\t→ {} 가 2개 이상의 child clone의 합으로 만들어지지지 않아서 이 j2는 아예 기각".format(j3  ))
+                            print ("\t\t\t\t\t\t→ {} 가 2개 이상의 child clone의 합으로 만들어지지지 않아서 이 j2는 아예 기각".format(j3  ))
                         check = 1
                         break
 
@@ -251,7 +249,7 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
                     else:    # 기존 fp가 없었다면 3번상황
                         p_list.append([p, j2, 3 ])    # makeone_p, j2 (subset_list), 3번상황, p_Phylogeny
 
-                    if kwargs["VERBOSE"] >= 4:
+                    if kwargs["VERBOSE"] >= 3:
                         if len( PhyAcc.j3_record ) != 0:
                             print ("\t\t\t\t→ parent : {}, PhyAcc.p_record = {}, sum_mixture = {}, p = {}".format( PhyAcc.j3_record, PhyAcc.p_record, sum_mixture , round (p, 2) ))
                         else:
@@ -262,13 +260,12 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
         return p_list, step      # 그 어떤 makeone도 만들지 못해서 그냥 넘긴다
 
     
-
     p_list = np.array(p_list).transpose()
     p_list = p_list[:, p_list[0].argsort()]  # p_list[0]  (확률)을 기준으로  p_list (나머지 row) 를 다 sort 해버리자
     p_list = np.flip(p_list, 1)
     
 
-    if kwargs["VERBOSE"] >= 4:
+    if kwargs["VERBOSE"] >= 3:
         for i in range (0, p_list.shape[1]):
             j2 = int(p_list[1, i])
             print ("\t\t\t∇ {}nd place : subset_list_acc [j2] = {}\tsum_mixture_acc [j2] = {}\t{}th cirumstance\tp = {}".format ( i + 1 , subset_list_acc [ j2  ], sum_mixture_acc [ j2  ], int (p_list[2, i]) , round( p_list[0, i], 2)  ))
@@ -278,10 +275,10 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
 
     
     if ( p_list[2, optimal] == 3):     # optimal : 0 or 1   ← 웬만하면 best인 0을 고르겠지만...
-        if kwargs["VERBOSE"] >= 4:
+        if kwargs["VERBOSE"] >= 3:
             print ("\t\t\t3번상황 발생 (그동안 FP clone 없었는데, 나머지들로 makeone 잘 할 경우) → fp_index = {}".format ( step.fp_index) )
     elif ( p_list[2, optimal] == 4):
-        if kwargs["VERBOSE"] >= 4:
+        if kwargs["VERBOSE"] >= 3:
             print ("\t\t\t4번상황 발생 (그동안 FP clone 있었는데, 나머지들로 makeone 잘 할 경우) → fp_index = {}".format (step.fp_index) )
     step.fp_involuntary = False
     step.makeone_index = subset_list_acc[optimal_j2]

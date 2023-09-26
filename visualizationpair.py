@@ -146,7 +146,10 @@ def drawfigure_2d(membership_left, mixture_left, membership_right, mixture_right
             print ("What happened in visualizationpair.py?\n", membership_left[k], score_df)
     for k in range(len(membership_right)):
         i = np.where(score_df["predicted"] == membership_right[k])[0][0] 
-        ax[1].scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, alpha=1, color=[colorlist[ i ]])
+        if (includeoutlier == True) & (membership_right[k] == mixture_right.shape[1] - 1):   #FP
+            ax[1].scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, alpha=1, color= Gr_10[10])
+        else:    
+            ax[1].scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, alpha=1, color=[colorlist[ i ]])
 
 
 

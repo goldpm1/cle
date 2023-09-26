@@ -16,31 +16,45 @@ def GenerateMatrix (Moore_VCF, Clone_no, **kwargs):
     SigProfMatrix["alt"] = Moore_VCF["alt"]
     SigProfMatrix["Type"] = "SOMATIC"
 
-    pd.DataFrame(SigProfMatrix).to_csv( kwargs["OUTPUT_PATH"], index=False, header = True,  sep="\t")
+    SigProfMatrix = SigProfMatrix.drop_duplicates()
+
+    SigProfMatrix.to_csv( kwargs["OUTPUT_PATH"], index=False, header = True,  sep="\t")
+    print ("clone {} : {}".format (Clone_no, SigProfMatrix.shape) )
+
 
 
 def extract (Moore_VCF, **kwargs):
     import numpy as np
     import pandas as pd
 
+    pos_whole = []
+
     # Clone number 대로  mutation_id를 뽑아주기
     with open( kwargs ["DECISION_MEMBERSHIP_PATH"], "r") as input_file:
         membership = np.array( [int(line.strip()) for line in input_file] )
-        npvaf = pd.read_csv ( kwargs ["NPVAF_PATH"], sep = "\t")
-        for Clone_no in sorted(np.unique ( membership) ) :
-            npvaf_Clone_no =  npvaf.iloc [np.where(membership == Clone_no)[0] ]
-            pos_Clone_no =  list ( npvaf_Clone_no.iloc[:, 0] )
 
-            Moore_VCF_Clone_no = Moore_VCF [Moore_VCF['pos'].isin( pos_Clone_no ) == True]
-            print ("clone {} : {}".format (Clone_no, Moore_VCF_Clone_no.shape) )
-            
-            kwargs["OUTPUT_PATH"] = kwargs["OUTPUT_DIR"] + "/clone{}.txt".format(Clone_no)
-            GenerateMatrix (Moore_VCF_Clone_no, "clone" + str(Clone_no), **kwargs)
+    npvaf = pd.read_csv ( kwargs ["NPVAF_PATH"], sep = "\t")
+
+    for Clone_no in sorted( np.unique ( membership) ) :
+        npvaf_Clone_no =  npvaf.iloc [np.where(membership == Clone_no)[0] ]
+        pos_Clone_no =  list ( npvaf_Clone_no.iloc[:, 0] )
+        pos_whole += pos_Clone_no
+
+        Moore_VCF_Clone_no = Moore_VCF [Moore_VCF['pos'].isin( pos_Clone_no ) == True]
+        
+        kwargs["OUTPUT_PATH"] = kwargs["OUTPUT_DIR"] + "/clone{}.txt".format(Clone_no)
+        GenerateMatrix (Moore_VCF_Clone_no, Clone_no, **kwargs)
+
+    # # whole
+    # kwargs["OUTPUT_PATH"] = kwargs["OUTPUT_DIR"] + "/whole.txt"
+    # GenerateMatrix ( Moore_VCF [Moore_VCF['pos'].isin( list ( npvaf.iloc[:, 0] ) ) == True] , "whole", **kwargs)
+    # print ("whole : {}".format ( Moore_VCF [Moore_VCF['pos'].isin( list ( npvaf.iloc[:, 0] ) ) == True].shape) )
 
     # whole
     kwargs["OUTPUT_PATH"] = kwargs["OUTPUT_DIR"] + "/whole.txt"
-    GenerateMatrix ( Moore_VCF [Moore_VCF['pos'].isin( list ( npvaf.iloc[:, 0] ) ) == True] , "whole", **kwargs)
-    print ("whole : {}".format ( Moore_VCF [Moore_VCF['pos'].isin( list ( npvaf.iloc[:, 0] ) ) == True].shape) )
+    Moore_VCF_whole = Moore_VCF[Moore_VCF['pos'].isin( pos_whole ) == True]
+    GenerateMatrix (Moore_VCF_whole, "whole", **kwargs)
+
 
 
 
@@ -65,13 +79,27 @@ if __name__ == "__main__":
     kwargs["TISSUE"] = args.TISSUE
     kwargs["OUTPUT_DIR"] = args.OUTPUT_DIR
 
-
+    print ("DONOR = {}\tTISSUE = {}\tOUTPUT_DIR = {}".format (kwargs["DONOR"], kwargs["TISSUE"], kwargs["OUTPUT_DIR"]))
 
     Moore_VCF = pd.read_csv("/data/project/Alzheimer/CLEMENT/resource/paper/whole_info.txt", sep = "\t")
-    Moore_VCF = Moore_VCF [ (Moore_VCF ["DonorID"] == kwargs["DONOR"] ) & (Moore_VCF["Tissue"] == kwargs["TISSUE"])]
-    Moore_VCF = Moore_VCF.drop_duplicates(['Start'], keep = 'first')
-    Moore_VCF = Moore_VCF.reset_index(drop = True)
-    print (Moore_VCF.shape)
+
+    # filter_row = []
+    # if ("fasciculata" in kwargs["TISSUE"]) :
+    #     Moore_VCF = Moore_VCF [  (Moore_VCF['Sample'].str.contains( kwargs["TISSUE"].split("fasciculata_")[1] )) & (Moore_VCF[ "Tissue" ] == 'adrenal_gland_zona_fasciculata') ]
+    # elif ("glomerulosa" in kwargs["TISSUE"]):
+    #     Moore_VCF = Moore_VCF [  (Moore_VCF['Sample'].str.contains( kwargs["TISSUE"].split("glomerulosa_")[1] )) & (Moore_VCF[ "Tissue" ] == 'adrenal_gland_zona_glomerulosa') ]
+    # elif ("reticularis" in kwargs["TISSUE"]):
+    #     Moore_VCF = Moore_VCF [  (Moore_VCF['Sample'].str.contains( kwargs["TISSUE"].split("reticularis_")[1] )) & (Moore_VCF[ "Tissue" ] == 'adrenal_gland_zona_reticularis') ]
+    # else:
+    #     Moore_VCF = Moore_VCF [ (Moore_VCF ["DonorID"] == kwargs["DONOR"] ) & (Moore_VCF["Tissue"] == kwargs["TISSUE"]) ]
+
+    
+    # Moore_VCF = Moore_VCF [filter_row]
+    # Moore_VCF = Moore_VCF.drop_duplicates(['Start'], keep = 'first')
+    # Moore_VCF = Moore_VCF.reset_index(drop = True)
+    # print (Moore_VCF.shape)
+
+    
 
     # column을 소문자로 바꾸기
     Moore_VCF.rename(columns=lambda x: x.lower(), inplace=True)

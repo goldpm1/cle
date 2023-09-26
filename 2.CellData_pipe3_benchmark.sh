@@ -3,7 +3,7 @@
 #$ -S /bin/bash
 
 
-if ! options=$(getopt -o h --long SCRIPT_DIR:,INPUT_DIR:,SAMPLENAME:,CONDITIONNAME:,BENCHMARK_START:,BENCHMARK_END:,OUTPUT_JPG:, -- "$@")
+if ! options=$(getopt -o h --long SCRIPT_DIR:,INPUT_DIR:,CONDITIONNAME:,BENCHMARK_START:,BENCHMARK_END:,OUTPUT_MS_JPG:,OUTPUT_EC_JPG:,OUTPUT_FINAL_JPG:,OUTPUT_FINAL_TABLE:, -- "$@")
 then
     echo "ERROR: invalid options"
     exit 1
@@ -22,9 +22,6 @@ while true; do
         --INPUT_DIR)
             INPUT_DIR=$2
         shift 2 ;;
-        --SAMPLENAME)
-            SAMPLENAME=$2
-        shift 2 ;;
         --CONDITIONNAME)
             CONDITIONNAME=$2
         shift 2 ;;
@@ -34,8 +31,17 @@ while true; do
         --BENCHMARK_END)
             BENCHMARK_END=$2
         shift 2 ;;
-        --OUTPUT_JPG)
-            OUTPUT_JPG=$2
+        --OUTPUT_MS_JPG)
+            OUTPUT_MS_JPG=$2
+        shift 2 ;;
+        --OUTPUT_EC_JPG)
+            OUTPUT_EC_JPG=$2
+        shift 2 ;;
+        --OUTPUT_FINAL_JPG)
+            OUTPUT_FINAL_JPG=$2
+        shift 2 ;;
+        --OUTPUT_FINAL_TABLE)
+            OUTPUT_FINAL_TABLE=$2
         shift 2 ;;
         --)
             shift
@@ -45,20 +51,24 @@ done
 
 echo -e  python3 ${SCRIPT_DIR}"/2.CellData_pipe3_benchmark.py" \
  --INPUT_DIR ${INPUT_DIR} \
- --SAMPLENAME ${SAMPLENAME} \
  --CONDITIONNAME ${CONDITIONNAME} \
  --BENCHMARK_START ${BENCHMARK_START} \
  --BENCHMARK_END ${BENCHMARK_END} \
- --OUTPUT_JPG ${OUTPUT_JPG} 
+ --OUTPUT_MS_JPG ${OUTPUT_MS_JPG} \
+ --OUTPUT_EC_JPG ${OUTPUT_EC_JPG} \
+ --OUTPUT_FINAL_JPG ${OUTPUT_FINAL_JPG} \
+ --OUTPUT_FINAL_TABLE ${OUTPUT_FINAL_TABLE}
 
 
 python3 ${SCRIPT_DIR}"/2.CellData_pipe3_benchmark.py" \
  --INPUT_DIR ${INPUT_DIR} \
- --SAMPLENAME ${SAMPLENAME} \
  --CONDITIONNAME ${CONDITIONNAME} \
  --BENCHMARK_START ${BENCHMARK_START} \
  --BENCHMARK_END ${BENCHMARK_END} \
- --OUTPUT_JPG ${OUTPUT_JPG} 
+ --OUTPUT_MS_JPG ${OUTPUT_MS_JPG} \
+ --OUTPUT_EC_JPG ${OUTPUT_EC_JPG} \
+ --OUTPUT_FINAL_JPG ${OUTPUT_FINAL_JPG} \
+ --OUTPUT_FINAL_TABLE ${OUTPUT_FINAL_TABLE}
 
 
  ###########$ -l h=!('compute15'|compute16')

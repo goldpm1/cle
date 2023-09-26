@@ -3,6 +3,7 @@ class simpleKmeansObject:
         self.likelihood_record = [[]] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
         self.mixture_record = [[]] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
         self.membership_record = [[]] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
+        self.ARI_record = [[]] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
         self.elbow_K = kwargs["NUM_CLONE_TRIAL_END"]
         self.silhouette_K = kwargs["NUM_CLONE_TRIAL_END"]
         self.gap_K = kwargs["NUM_CLONE_TRIAL_END"]
@@ -11,6 +12,8 @@ class simpleKmeansObject:
         import numpy as np
         i = np.argmax(self.likelihood_record [ start : end + 1]) + start
         return i
+
+
 
 
 
@@ -156,16 +159,27 @@ def clustering (np_vaf, **kwargs):
 
 
 
+    # ARI_pyclonevi = result.ARI ( np.array ( [ membership_answer_numerical [i] for i in membership_answer_numerical_nofp_index  ] ) , 
+    #                                                 np.array ( [ membership_pyclonevi [i] for i in membership_answer_numerical_nofp_index] ) )
 
-def scoring (membership_answer, membership_answer_numerical, simpleK, **kwargs):
-    import scoring
+def scoring (membership_answer, membership_answer_numerical, membership_answer_numerical_nofp_index , simpleK, **kwargs):
+    import scoring, result
+    import numpy as np
 
     simpleK.elbow_K_score, sample_dict_PtoA, sample_dict_AtoP  = scoring.Scoring ( membership_answer, membership_answer_numerical,
                                                                                                                                             simpleK.membership_record [simpleK.elbow_K], -1 , [] ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
+    simpleK.elbow_K_ARI = result.ARI ( np.array ( [ membership_answer_numerical [i] for i in membership_answer_numerical_nofp_index  ] ) , 
+                                                                np.array ( [ simpleK.membership_record [simpleK.elbow_K] [i] for i in membership_answer_numerical_nofp_index] ) )
+    
     simpleK.silhouette_K_score, sample_dict_PtoA, sample_dict_AtoP  = scoring.Scoring ( membership_answer, membership_answer_numerical,
                                                                                                                                             simpleK.membership_record [simpleK.silhouette_K], -1 , [] ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
+    simpleK.silhouette_K_ARI = result.ARI ( np.array ( [ membership_answer_numerical [i] for i in membership_answer_numerical_nofp_index  ] ) , 
+                                                                    np.array ( [ simpleK.membership_record [simpleK.silhouette_K][i] for i in membership_answer_numerical_nofp_index] ) )
+    
     simpleK.gap_K_score, sample_dict_PtoA, sample_dict_AtoP  = scoring.Scoring ( membership_answer, membership_answer_numerical,
                                                                                                                                             simpleK.membership_record [simpleK.gap_K], -1 , [] ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
+    simpleK.gap_K_ARI = result.ARI ( np.array ( [ membership_answer_numerical [i] for i in membership_answer_numerical_nofp_index  ] ) , 
+                                                            np.array ( [ simpleK.membership_record [simpleK.gap_K][i] for i in membership_answer_numerical_nofp_index] ) )
 
     return simpleK
 
@@ -288,8 +302,8 @@ def save (simpleK, elapsed_time, **kwargs):
 
 
     with open (kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_elbow.results.txt", "w", encoding = "utf8") as output_file:
-        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nrunningtime\t{}".
-            format( simpleK.elbow_K, simpleK.elbow_K, simpleK.elbow_K_score, kwargs["NUM_MUTATION"], elapsed_time), file = output_file) 
+        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nARI\t{}\nrunningtime\t{}".
+            format( simpleK.elbow_K, simpleK.elbow_K, simpleK.elbow_K_score, kwargs["NUM_MUTATION"], simpleK.elbow_K_ARI, elapsed_time), file = output_file) 
     subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_elbow.results.txt  "  + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/simpleK_elbow.results.txt"], shell = True)
 
     pd.DataFrame(simpleK.membership_record [simpleK.elbow_K]).to_csv(kwargs["SIMPLE_KMEANS_DIR"] + "/simpleK_elbow.membership.txt", index=False, header=False,  sep="\t")
@@ -299,8 +313,8 @@ def save (simpleK, elapsed_time, **kwargs):
 
 
     with open (kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_silhouette.results.txt", "w", encoding = "utf8") as output_file:
-        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nrunningtime\t{}".
-            format( simpleK.silhouette_K, simpleK.silhouette_K, simpleK.silhouette_K_score, kwargs["NUM_MUTATION"], elapsed_time), file = output_file) 
+        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nARI\t{}\nrunningtime\t{}".
+            format( simpleK.silhouette_K, simpleK.silhouette_K, simpleK.silhouette_K_score, kwargs["NUM_MUTATION"], simpleK.silhouette_K_ARI,  elapsed_time), file = output_file) 
     subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_silhouette.results.txt  "  + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/simpleK_silhouette.results.txt"], shell = True)
 
     pd.DataFrame(simpleK.membership_record [simpleK.silhouette_K]).to_csv(kwargs["SIMPLE_KMEANS_DIR"] + "/simpleK_silhouette.membership.txt", index=False, header=False,  sep="\t")
@@ -310,8 +324,8 @@ def save (simpleK, elapsed_time, **kwargs):
 
 
     with open (kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_gap.results.txt", "w", encoding = "utf8") as output_file:
-        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nrunningtime\t{}".
-            format( simpleK.gap_K, simpleK.gap_K, simpleK.gap_K_score, kwargs["NUM_MUTATION"], elapsed_time), file = output_file)
+        print ("NUM_CLONE\t{}\nNUM_CHILD\t{}\nscore\t{}/{}\nARI\t{}\nrunningtime\t{}".
+            format( simpleK.gap_K, simpleK.gap_K, simpleK.gap_K_score, kwargs["NUM_MUTATION"], simpleK.gap_K_ARI, elapsed_time), file = output_file)
     subprocess.run (["cp " + kwargs["SIMPLE_KMEANS_DIR"] + "/result/simpleK_gap.results.txt  "  + kwargs["COMBINED_OUTPUT_DIR"]  + "/result/simpleK_gap.results.txt"], shell = True)        
 
     pd.DataFrame(simpleK.membership_record [simpleK.gap_K]).to_csv(kwargs["SIMPLE_KMEANS_DIR"] + "/simpleK_gap.membership.txt", index=False, header=False,  sep="\t")

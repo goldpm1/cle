@@ -99,14 +99,17 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
             ax[2].scatter ( x = j, y = i, s = value_count_dict[i] * 80, color = tabl[j])
 
     # 사각형 그리기
-    if "M1" in kwargs["SAMPLENAME"]:
-        NUM_CLONE_answer = 3
-    if "M2" in kwargs["SAMPLENAME"]:
-        NUM_CLONE_answer = 4
-    if "M3" in kwargs["SAMPLENAME"]:
-        NUM_CLONE_answer = 4
+    if "clone" in kwargs["SAMPLENAME"]:   # simData
+        NUM_CLONE_ans = int ( kwargs["SAMPLENAME"].split("_")[-1] )
 
-    rect = matplotlib.patches.Rectangle((-0.5, NUM_CLONE_answer - 0.5),                                # 사각형 꼭지점의 시작위치
+    else:
+        if "_" not in kwargs["SAMPLENAME"]:
+            NUM_CLONE_ans = 3 if  "M1" in kwargs["SAMPLENAME"] else 4
+        elif kwargs["SAMPLENAME"].count("_") == 1:  # "M1-1_M2-2"
+            NUM_CLONE_ans = 5
+        NUM_CLONE_ans += int (kwargs["CONDITIONNAME"].split("/")[-3].split("_")[-1])
+
+    rect = matplotlib.patches.Rectangle((-0.5, NUM_CLONE_ans - 0.5),                                # 사각형 꼭지점의 시작위치
                                                     ax[2].get_xlim()[1] - ax[2].get_xlim()[0] + 0.5, 1,        # x 길이, y 길이
                                                     linewidth=0.5, edgecolor='red', facecolor='black', alpha=0.3)
     ax[2].add_patch(rect)

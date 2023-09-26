@@ -45,15 +45,16 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
 
         if step.makeone_index == []:   # if failed  (첫 3개는 웬만하면 봐주려고 하지만, 그래도 잘 안될 때)
             step.likelihood = step.likelihood_record[kwargs["STEP"]] = -9999999
-            step.makeone_prenormalization = False
+            step.checkall_lenient =  step.checkall_strict = False
             if kwargs["VERBOSE"] >= 1:
-                print ("\t\t\tMstep.py : Unable to make 1  ({})".format ( step.mixture.flatten() ) )
+                print ("\t\t\tMstep.py : Unable to make 1  ({})".format ( "\t".join(str(np.round(row, 2)) for row in step.mixture )   ) )
 
         else:    # most of the cases
+            step.checkall_lenient, sum_mixture =  miscellaneous.checkall (step, "lenient", **kwargs) 
+            step.checkall_strict, sum_mixture =  miscellaneous.checkall (step, "strict", **kwargs) 
             if kwargs["STEP"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1):
-                step.makeone_prenormalization, sum_mixture =  miscellaneous.checkall (step, **kwargs) 
                 if kwargs["VERBOSE"] >= 1:
-                    print ("\t\t\tMstep.py : checkall (lenient) = {}".format(step.makeone_prenormalization), end = "\t") 
+                    print ("\t\t\tMstep.py : checkall (lenient) = {}, checkall (strict) = {}".format(step.checkall_lenient, step.checkall_strict), end = "\t") 
                     print( "(sum = {})".format  ( " ".join(str( np.round(row, 2) ) for row in sum_mixture )) )
 
                 for i in range(NUM_BLOCK):     # Normalization 
@@ -65,16 +66,17 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
 
             else:
                 if kwargs["VERBOSE"] >= 1:
-                    step.makeone_prenormalization, sum_mixture =  miscellaneous.checkall (step, **kwargs) 
-                    print ("\t\t\tMstep.py : checkall (strict) = {}".format(step.makeone_prenormalization), end = "\t") 
+                    print ("\t\t\tMstep.py : checkall (strict) = {}".format(step.checkall_strict), end = "\t") 
                     print( "(sum = {})".format  ( " ".join(str( np.round(row, 2) ) for row in sum_mixture )) )
 
                                 
         
         if (kwargs["NUM_BLOCK"] == 1):
             visualizationeachstep.drawfigure_1d_hard(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], **kwargs)
-        if (kwargs["NUM_BLOCK"] >= 2):
+        elif (kwargs["NUM_BLOCK"] == 2):
             visualizationeachstep.drawfigure_2d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], **kwargs)
+        elif (kwargs["NUM_BLOCK"] >= 2):
+            visualizationeachstep.drawfigure_3d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], **kwargs)
     ###############################################################################
 
     ################################ SOFT CLUSTERING ##############################
@@ -101,7 +103,7 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
                                 sum_depth = sum_depth + df[ind][i]["depth"]
                                 sum_alt = sum_alt + df[ind][i]["alt"]
                     
-                    step.mixture[i][j] = round((sum_alt * 2) / sum_depth, 2) if sum_depth != 0 else 0
+                    step.mixture[i][j] = round((sum_alt * 2) / sum_depth, 2) if sum_depth != 0 else 0 
 
             elif j in step.makeone_index:  
                 for i in range(NUM_BLOCK):   # Calculate the weighted mean
@@ -124,16 +126,16 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
         if NUM_CLONE == 1:
             step.mixture = np.array([[1.0]] * kwargs["NUM_BLOCK"])
 
-        p_list, step = isparent.makeone(input_containpos, df, np_vaf, np_BQ, step, **kwargs)
+        p_list, step = isparent.makeone(input_containpos, df, np_vaf, np_BQ, step, **kwargs)     # 첫 3개는 lenient로, 그 다음은 strict로 거른다
 
         if step.makeone_index == []:   # if failed  (첫 3개는 웬만하면 봐주려고 하지만, 그래도 잘 안될 때)
             step.likelihood = step.likelihood_record[kwargs["STEP"]] = -9999999
-            step.makeone_prenormalization = False
+            step.checkall_lenient = step.checkall_strict = False
             if kwargs["VERBOSE"] >= 1:
                 print ("\t\t\tMstep.py : Unable to make 1  ({})".format ( step.mixture.flatten() ) )
 
-        else:    # most of the cases            
-            print ("\t\t\tMstep.py : checkall (lenient) = {}".format(step.makeone_prenormalization), end = "\t") 
+        else:    # if succeedeed
+            print ("\t\t\tMstep.py : checkall (lenient) = {}".format(step.checkall_lenient), end = "\t") 
             print( "( {})".format  (  step.mixture.flatten()  ) )
 
             if kwargs["STEP_TOTAL"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1):     # Normalization 꼭 해줄 필요가 없다.  정말 앞부분일 때에만 해준다
@@ -161,6 +163,8 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
             visualizationeachstep.drawfigure_1d_soft(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(soft)." + kwargs["IMAGE_FORMAT"], **kwargs)
         if (kwargs["NUM_BLOCK"] == 2):
             visualizationeachstep.drawfigure_2d_soft(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(soft)." + kwargs["IMAGE_FORMAT"], **kwargs)
+        if (kwargs["NUM_BLOCK"] == 3):
+            visualizationeachstep.drawfigure_3d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], **kwargs)
 
     #############################################################################
 
