@@ -1,6 +1,6 @@
 
 
-import os, glob,re
+import os, glob,re, random
 
 SCRIPT_DIR = SCRIPT_DIR = os.path.dirname(__file__)
 print (SCRIPT_DIR, "\n")
@@ -12,16 +12,13 @@ def Mingle_intra(SAMPLENAME, NUM_BLOCK):
     global MRS_set
     
     #MRS_set = [['M1-2', 'M1-5', 'M1-6', 'M1-7', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-8', 'M2-10']]
-    MRS_set = [['M1-2', 'M1-4', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-10'] ]
+    MRS_set = [['M1-2', 'M1-4', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-8'] ]
 
 
     if NUM_BLOCK == 1:
         for i in range(len(MRS_set)):
             if (SAMPLENAME.split("_")[0] in MRS_set[i]): 
                 return True
-        # if 'M3' in SAMPLENAME.split("_")[0]:   # M1, M2를 다 돌려보자
-        #     return False
-        # return True
     elif NUM_BLOCK == 2:
         for i in range(len(MRS_set)):
             if (SAMPLENAME.split("_")[0] in MRS_set[i]) & (SAMPLENAME.split("_")[1] in MRS_set[i]):
@@ -36,7 +33,7 @@ def Mingle_intra(SAMPLENAME, NUM_BLOCK):
 def Mingle_inter (SAMPLENAME, NUM_BLOCK):
     global MRS_set
     #MRS_set = [['M1-1', 'M1-4', 'M1-5', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-10', 'M2-12'], ['M3-1', 'M3-2', 'M3-4', 'M3-5', 'M3-11']]
-    MRS_set = [['M1-2', 'M1-4', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-10'] ]
+    MRS_set = [['M1-2', 'M1-4', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-8'] ]
 
     if NUM_BLOCK == 1:
         for i in range(len(MRS_set)):
@@ -49,7 +46,9 @@ def Mingle_inter (SAMPLENAME, NUM_BLOCK):
         else:
             return False
     elif NUM_BLOCK == 3:
-        if (SAMPLENAME.split("_")[0] in MRS_set[0]) &  (SAMPLENAME.split("_")[1] in MRS_set[1]) &   (SAMPLENAME.split("_")[2] in MRS_set[1]):
+        if (SAMPLENAME.split("_")[0] in MRS_set[0]) &  (SAMPLENAME.split("_")[1] in MRS_set[0]) &   (SAMPLENAME.split("_")[2] in MRS_set[1]):
+            return True
+        elif (SAMPLENAME.split("_")[0] in MRS_set[0]) &  (SAMPLENAME.split("_")[1] in MRS_set[1]) &   (SAMPLENAME.split("_")[2] in MRS_set[1]):
             return True
         else:
             return False
@@ -58,13 +57,13 @@ def Mingle_inter (SAMPLENAME, NUM_BLOCK):
 if __name__ == "__main__":
     kwargs = {}
     
-    NUM_BLOCK_LIST = [ 3  ]             # 1, 2, 3
-    NUM_MUTATION_LIST = [500]    # 500, 100
-    DEPTH_MEAN_LIST = [250, 125, 30]       # 125, 30
-    NUM_PARENT_LIST = [ 0 ]       # 0 , 1
-    FP_RATIO_LIST = [ 0.0  ]        # 0.0, 0.1
+    NUM_BLOCK_LIST = [ 1  ]             # 1, 2, 3
+    NUM_MUTATION_LIST = [ 500 ]    # 1000, 500, 100
+    DEPTH_MEAN_LIST = [ 250, 125, 30 ]       # 250, 125, 30
+    NUM_PARENT_LIST = [ 0, 1 ]       # 0 , 1
+    FP_RATIO_LIST = [ 0.0, 0.1  ]        # 0.0, 0.1
     AXIS_RATIO_LIST = [ -1 ]        # -1, 0.0, 0.2
-    BENCHMARK_LIST = [0, 2]; kwargs["BENCHMARK_START"] = BENCHMARK_LIST[0];  kwargs["BENCHMARK_END"] = BENCHMARK_LIST[1]
+    BENCHMARK_LIST = [0, 3]; kwargs["BENCHMARK_START"] = BENCHMARK_LIST[0];  kwargs["BENCHMARK_END"] = BENCHMARK_LIST[1]
 
     kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] = 2, 7
     kwargs["PARENT_RATIO"] = 0
@@ -73,7 +72,6 @@ if __name__ == "__main__":
     kwargs["MODE"] = "Both"
     kwargs["VERBOSE"] = 1
 
-    
 
     n = 0
 
@@ -81,7 +79,7 @@ if __name__ == "__main__":
         kwargs["NUM_BLOCK"] = NUM_BLOCK
         for NUM_MUTATION in NUM_MUTATION_LIST:
             kwargs["NUM_MUTATION"] = NUM_MUTATION
-            kwargs["MIN_CLUSTER_SIZE"] = 15 if NUM_MUTATION > 100 else 5
+            kwargs["MIN_CLUSTER_SIZE"] = int (NUM_MUTATION / 33)
             for DEPTH_MEAN in DEPTH_MEAN_LIST:
                 kwargs["DEPTH_MEAN"] = DEPTH_MEAN
                 kwargs["DEPTH_CUTOFF"] = 30 if DEPTH_MEAN > 100 else 10
@@ -95,10 +93,14 @@ if __name__ == "__main__":
                             kwargs["KMEANS_CLUSTERNO"] = 6
                             kwargs["NUM_CLONE_TRIAL_END"] = 5
                             kwargs["TRIAL_NO"] = 5
-                        if NUM_BLOCK >= 2:
+                        if NUM_BLOCK == 2:
                             kwargs["KMEANS_CLUSTERNO"] = 7 + NUM_PARENT
                             kwargs["NUM_CLONE_TRIAL_END"] = 7
                             kwargs["TRIAL_NO"] = 12
+                        if NUM_BLOCK == 3:
+                            kwargs["KMEANS_CLUSTERNO"] = 7 + NUM_PARENT
+                            kwargs["NUM_CLONE_TRIAL_END"] = 7
+                            kwargs["TRIAL_NO"] = 15
                         for AXIS_RATIO in AXIS_RATIO_LIST_TEMP:
                             kwargs["AXIS_RATIO"] = AXIS_RATIO
                             #print("\n======================\t2.CellData_{}D/n{}_{}x/parent_{}/fp_{}/axis_{}\t===============================".format( kwargs["NUM_BLOCK"], kwargs["NUM_MUTATION"], kwargs["DEPTH_MEAN"], kwargs["NUM_PARENT"], kwargs["FP_RATIO"], kwargs["AXIS_RATIO"] ))
@@ -112,6 +114,9 @@ if __name__ == "__main__":
                                 SAMPLENAME = INPUT_TSV.split("/")[-1].split("_input.txt") [0]     # 'M1-5_M1-8_input'
                                 kwargs["SAMPLENAME"] = SAMPLENAME
 
+                                # if SAMPLENAME.split("_")[1] != "M1-8":
+                                #     continue
+
                                 if (Mingle_inter(SAMPLENAME, kwargs["NUM_BLOCK"]) == True) | (Mingle_intra(SAMPLENAME, kwargs["NUM_BLOCK"]) == True):
                                 #if (Mingle_inter(SAMPLENAME, kwargs["NUM_BLOCK"]) == True) 
                                     #print("# n = {},  {}".format(n + 1, SAMPLENAME, NUM_PARENT))
@@ -119,7 +124,7 @@ if __name__ == "__main__":
                                     # 1. EM 돌리기 
                                     hold_j = []
                                     for ii in range(kwargs["BENCHMARK_START"], kwargs["BENCHMARK_END"] + 1):
-                                        print("\fp_{}/axis_{}/{}/ii = {}".format( kwargs["FP_RATIO"], kwargs["AXIS_RATIO"], kwargs["SAMPLENAME"], ii ))
+                                        #print("fp_{}/axis_{}/{}/ii = {}".format( kwargs["FP_RATIO"], kwargs["AXIS_RATIO"], kwargs["SAMPLENAME"], ii ))
 
                                         kwargs["NPVAF_DIR"] = "/data/project/Alzheimer/CLEMENT/02.npvaf/2.CellData/CellData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/" + SAMPLENAME + "/" + str(ii) 
                                         kwargs["COMBINED_OUTPUT_DIR"] = "/data/project/Alzheimer/CLEMENT/03.combinedoutput/2.CellData/CellData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/parent_" + str(NUM_PARENT) + "/fp_" + str(FP_RATIO) + "/axis_" + str(AXIS_RATIO) + "/" + SAMPLENAME + "/" + str(ii) 
@@ -141,8 +146,10 @@ if __name__ == "__main__":
                                         os.system("mkdir -p " + logPath)
 
                                         hold_j.append( "CellData_EM_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + SAMPLENAME + "_" + str(ii)  )
+                                        COMPUTE_RANDOM = "cpu.q@compute" + str( random.choice ( list ( range (1,14) ) + list ( range (16, 19) ) ) ).zfill(2)
                                         command = " ".join(["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
                                                                         "-N", "CellData_EM_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + SAMPLENAME + "_" + str(ii) ,
+                                                                        #"-q", COMPUTE_RANDOM,
                                                                         SCRIPT_DIR + "/2.CellData_pipe1_CLEMENT_bm.sh",
                                                                         str(SCRIPT_DIR), str(INPUT_TSV),  str(kwargs["MODE"]),  str(kwargs["NUM_CLONE_TRIAL_START"]),  str( kwargs["NUM_CLONE_TRIAL_END"]),  
                                                                         str(kwargs["NUM_MUTATION"]), str(kwargs["AXIS_RATIO"]),  str(kwargs["PARENT_RATIO"]),  str( kwargs["NUM_PARENT"]),  str(kwargs["FP_RATIO"]),  str(kwargs["FP_USEALL"]),
@@ -164,6 +171,7 @@ if __name__ == "__main__":
                                     command = " ".join(["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
                                                                     "-N", "bm_CellData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_parent_" + str(NUM_PARENT) + "_fp_" + str(FP_RATIO) + "_axis_" + str(AXIS_RATIO) + "_" + str(SAMPLENAME),
                                                                     "-hold_jid",  str(",".join(hold_j)), 
+                                                                    #"-q", COMPUTE_RANDOM,
                                                                     SCRIPT_DIR + "/2.CellData_pipe2_benchmark.sh",
                                                                     "--SCRIPT_DIR", str(SCRIPT_DIR), 
                                                                     "--INPUT_DIR", str(INPUT_DIR) , 
@@ -174,6 +182,7 @@ if __name__ == "__main__":
                                                                     "--OUTPUT_JPG", str(INPUT_DIR) + "/bm.jpg"
                                                                     "--OUTPUT_TTEST", str(INPUT_DIR) + "/ttest.txt" ])
                                     os.system(command)
+                                    print ("")
                                     n += 1
 
             
@@ -191,6 +200,7 @@ if __name__ == "__main__":
                             command = " ".join(  ["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
                                                 "-N", "BM_CellData_" + str(NUM_BLOCK) + "D_" + CONDITIONNAME.replace("/", "_"),
                                                 "-hold_jid",  str(",".join(hold_jj)), " ",
+                                                #"-q", COMPUTE_RANDOM,
                                                 SCRIPT_DIR + "/2.CellData_pipe3_benchmark.sh",
                                                                     "--SCRIPT_DIR", str(SCRIPT_DIR), 
                                                                     "--INPUT_DIR", str(INPUT_DIR) , 
@@ -204,6 +214,7 @@ if __name__ == "__main__":
                                                                       ]  )
                             
                             os.system(command)
+                            print ("\n\n")
                             n += 1
 
 

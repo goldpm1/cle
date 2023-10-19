@@ -6,7 +6,7 @@ import math
 import Estep
 
 
-def greaterall(a, b, boole):
+def greaterall(a, b, boole, **kwargs):
     if boole == "<":
         for i in range(len(a)):
             if a[i] > b[i]:
@@ -15,7 +15,11 @@ def greaterall(a, b, boole):
     if boole == ">":
         for i in range(len(a)):
             if a[i] < b[i]:
-                return False
+                if kwargs ["NUM_BLOCK"] == 3:
+                    if a[i] != 0:           # 231011 ( for 3D )
+                        return False
+                else:
+                    return False
         return True
 
 
@@ -72,13 +76,20 @@ def Appropriate_Phylogeny_Verification (PhyAcc, subset_list, j2, j3, step, **kwa
 
         # Beta binomial을 바탕으로 계산하기
         p = 0
+        #print ("child_list = {}".format(child_list))
         for i in range (kwargs["NUM_BLOCK"]):
+            if kwargs ["NUM_BLOCK"] == 3:
+                if step.mixture [i][j3] == 0:
+                    continue
+
             depth = 1000
             a = int(sum_mixture_child[i] * 1000 / 2) 
             b = depth - a
             target_a = int (step.mixture[i][j3] * 1000/ 2)
             try:
                 p = p + math.log10(scipy.stats.betabinom.pmf(target_a, depth, a + 1, b+1))
+        
+                #print ( "\tNUM_BLOCK = {}\ttarget_a = {}\ta = {}\tdepth = {}\tp = {}".format (i, target_a, a, depth,  p))
             except:
                 p = p - 400
 
@@ -140,7 +151,7 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
         subset_list, subset_mixture, sum_mixture = subset_list_acc[ j2 ], subset_mixture_acc[ j2 ], sum_mixture_acc[ j2 ]
         PhyAcc = PhylogenyObjectAcc()
 
-        condition = "lenient" if kwargs ["STEP_TOTAL"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1) else "strict"
+        condition = "lenient" if ( ( kwargs ["STEP_TOTAL"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1) ) | ( kwargs ["STEP"] <= 1 ) ) else "strict"      # Soft clustering의 첫 번쨰는 봐 주기 위함. Soft clustering 첫 번째에서는 sum of mixture 가 갑자기 확 뛰는 경우가 생김
         if miscellaneous.checkall(sum_mixture, condition, **kwargs) [0] == False:   
             if kwargs["VERBOSE"] >= 4:
                 print ("\t\t\t\t(isparent.py)  makeone clone의 sum of mixture의 이상으로 기각 ({})".format( np.array(sum_mixture).flatten() ))
@@ -172,13 +183,15 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
                 j3_lt_j4_cnt = 0
                 j3gtj4_cnt = 0
                 for j4 in subset_list:  # 선정된 makeone 후보          나머지 clone중에 child clone보다 작으면 안됨.  그러나 딱 1개만 있고 그게 FP clone이면 용서해준다
-                    if greaterall(mixture[:, j3], mixture[:, j4], "<") == True:
+                    if greaterall(mixture[:, j3], mixture[:, j4], "<", **kwargs) == True:
                         j3_lt_j4_cnt = j3_lt_j4_cnt + 1
-                    if greaterall(mixture[:, j3], mixture[:, j4], ">") == True:                        # Parent clone이 있는지 알아보기
+                    if greaterall(mixture[:, j3], mixture[:, j4], ">", **kwargs) == True:                        # Parent clone이 있는지 알아보기
                         j3gtj4_cnt = j3gtj4_cnt + 1
 
+                #print ("j3 = {}\tj3_lt_j4_cnt = {}\tj3gtj4_cnt = {}".format (mixture[:, j3], j3_lt_j4_cnt, j3gtj4_cnt))
+
                 # 명색이 parent 후보인데, 1개라도 makeone 후보 (child 후보)들 보다 작다는게 말이 안됨.  다만 FP clone이 있을 경우에는 다르다
-                if j3_lt_j4_cnt >= 1:     # 1개라도 makeone 후보들보다 작은 경우 -> 이런 j3 (SAMLLER_ind)가 딱 1개이고 그게 FP clone이면 용서해준다
+                if j3_lt_j4_cnt >= 1:     # 1개라도 makeone 후보들보다 모든 차원에서 작은 경우 -> 이런 j3 (SAMLLER_ind)가 딱 1개이고 그게 FP clone이면 용서해준다
                     ISSMALLER_cnt = ISSMALLER_cnt + 1
                     SMALLER_ind.append(j3)
 
@@ -233,7 +246,7 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
                 for j3 in possible_parent_index: # j3: 나머지 clone (fp cluster를 빼고) 을 돈다
                     tt = []
                     for j4 in subset_list:   # j4: makeone clone (putative child clone)을 돈다
-                        if greaterall(mixture[:, j3], mixture[:, j4], ">") == True:
+                        if greaterall(mixture[:, j3], mixture[:, j4], ">", **kwargs ) == True:
                             tt.append(mixture[:, j4])
 
                     if len(tt) < 2:         # 나머지 clone은 2개 이상의 child 조합으로 만들어지는 parent여야 한다. 그게 만족 안하면 이 조합이 오류임을 알 수 있다
@@ -257,7 +270,7 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
 
     if p_list == []:
         step.makeone_index = []
-        return p_list, step      # 그 어떤 makeone도 만들지 못해서 그냥 넘긴다
+        return p_list, step     # 그 어떤 makeone도 만들지 못해서 그냥 넘긴다
 
     
     p_list = np.array(p_list).transpose()

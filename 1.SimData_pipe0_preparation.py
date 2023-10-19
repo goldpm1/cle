@@ -10,7 +10,7 @@ from random import *
 # python3  1.SimData_pipe0_preparation.py --NUM_CLONE 4 --NUM_BLOCK 2 --NUM_MUTATION 500 --FP_RATIO 0.1
 def TN_prior_cal(x):
     from scipy.special import expit
-    return (1 - expit( 100*x - 5)) * 0.15
+    return (1 - expit( 200*x - 5)) * 0.15
 
 def fp_sampling ( **kwargs ):
     import random 
@@ -85,7 +85,9 @@ def dirichlet_sampling ( trial, **kwargs ):
             num_zero = int ( np.random.uniform (0, math.ceil (NUM_CLONE_ACTIVE / 2) ) ) if NUM_BLOCK >= 2 else 0      # 맘에 안들면 무조건 0으로 하면 됨
             if NUM_BLOCK == 1:         # 1차원에서는 0을 빼주자
                 num_zero = 0
-            li = np.array( [0] * num_zero +  list ( np.round ( np.random.uniform (0, 100, NUM_CLONE_ACTIVE - num_zero) ) ) )    # 0 ~100 중에 j - num_zero 개를 뽑음
+            num_zero = 0
+            #li = np.array( [0] * num_zero +  list ( np.round ( np.random.uniform (1, 100, NUM_CLONE_ACTIVE - num_zero) ) ) )    # 0 ~100 중에 j - num_zero 개를 뽑음
+            li = np.array(  list ( np.round ( np.random.uniform (1, 100, NUM_CLONE_ACTIVE - num_zero) ) ) )    # 0 ~100 중에 j - num_zero 개를 뽑음
         elif kwargs["SimData"] == "lump":
             num_zero = int ( np.random.uniform (0, math.ceil (NUM_CLONE_ACTIVE / 3) ) ) if NUM_BLOCK >= 2 else 0      # 맘에 안들면 무조건 0으로 하면 됨. 좀더 확률을 낮추자
             if NUM_BLOCK == 1:         # 1차원에서는 0을 빼주자
@@ -97,6 +99,18 @@ def dirichlet_sampling ( trial, **kwargs ):
         li = np.round (li)
         random.shuffle (li)       # 섞어주자
         for j in range (NUM_CLONE_ACTIVE):      # 기준값(li)에서 binomial로 난수 추출
+            if kwargs["SimData"] == "decoy":
+                if li[j] < 25:
+                    p = 0.3
+                elif li[j] < 40:
+                    p = 0.4
+                elif li[j]  < 70:
+                    p = 0.5
+                else:
+                    p = 0.6
+            elif kwargs["SimData"] == "lump":
+                p = 0.5
+
             li_2[j] = np.random.binomial  ( li[j], 0.5 )
         li_2 = np.array (li_2)
         print ("\tli = {}\n\tli_2 = {}\n".format (li, li_2))
@@ -104,7 +118,7 @@ def dirichlet_sampling ( trial, **kwargs ):
                 
         #2. Dirichlet sampling 수행
         s = np.zeros ( (int (NUM_MUTATION * ( 1 - kwargs["FP_RATIO"] )),  NUM_CLONE_ACTIVE), dtype = "float" )
-        ss = np.random.dirichlet ( [k for k in li_2 if k != 0] , int (NUM_MUTATION * ( 1 - kwargs["FP_RATIO"] )) )    # li_2가 인 것은 뺴고 수행
+        ss = np.random.dirichlet ( [k for k in li_2 if k != 0] , int (NUM_MUTATION * ( 1 - kwargs["FP_RATIO"] )) )    # li_2가 0인 것은 뺴고 수행
         jj = 0
         for j in range( s.shape[1] ):       # 0때문에 발생한 k * 3  -> k * 4로 늘려주기
             if li_2[j] != 0:
@@ -199,7 +213,8 @@ def printresult():
         for i in range (0, NUM_BLOCK):
             print ( np_vaf[k][i] , end = "\t", file = output_file_npvaf)
             #print (df[k][i]["depth"], ".", df[k][i]["ref"], ".", df[k][i]["alt"], sep = "", end = "\t", file = output_file_npvaf)
-        print ( "{} {}".format(df[k][i]["membership_answer"], membership[k]), file = output_file_npvaf)
+        #print ( "{} {}".format(df[k][i]["membership_answer"], membership[k]), file = output_file_npvaf)
+        print ( "{}".format(df[k][i]["membership_answer"]), file = output_file_npvaf)
     output_file_npvaf.close()
 
     # print df (INPUT_TSV)

@@ -6,7 +6,8 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
 
     pd.options.mode.chained_assignment = None
 
-    print("\n--- recursive CLEMENT started")
+    print( "\n--- recursive CLEMENT started" )
+    print( "\t\tindex_interest = {}\tindex_interest_nonzero = {}".format (len(index_interest), len(index_interest_nonzero)) )
 
     if kwargs["VERBOSE"] >= 1:
         print("\n\n--- step #1.  data extracation from the answer set")
@@ -215,10 +216,19 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
 
 
     if np.all(mixture_recursive == 0) == True:     # 전체가 (0,0)이면 무시하고 바로 return
-        return 0, mixture_recursive
+        #return 0, mixture_recursive  # 전체가 (0,0)이면 무시하고 바로 return
+        from sklearn.cluster import KMeans
+        kmeans = KMeans(n_clusters = kwargs["NUM_CLONE_TRIAL_END"]   , init='k-means++', max_iter=100, random_state=0)  # model generation
+        kmeans.fit ( np_vaf_new )  
+        membership_kmeans = kmeans.labels_     
+        mixture_recursive = kmeans.cluster_centers_.T * 2   
+        # 맨 뒤에 FP (0도 넣어줘야 한다. )
+        mixture_recursive = np.hstack((mixture_recursive, np.zeros((mixture_recursive.shape[0], 1))))
+        print ( "\t실패해서 그냥 Simple Kmeans 돌림 → mixture_recursive = {}".format (  ", ".join(str(np.round(row, 2)) for row in mixture_recursive  ) ) )
 
 
-    ########### 정사영을 내리지 말고 E step을 한번 더 돌아보고, membership이 없는 centroid는 빼 준다 (mixture 복구는 돌아가서)
+
+    ########### 정사영을 내리지 말고 E step을 한번 더 돌아보고, membership이 부족한 centroid는 빼 준다 (mixture 복구는 돌아가서)
     #if kwargs["VERBOSE"] >= 1:
     print ("\nDECISION = {}".format(DECISION))
     print ("\t(before) mixture_recursive = {}\tshape = {}".format ( ", ".join(str(np.round(row, 2)) for row in mixture_recursive ) , mixture_recursive.shape))
@@ -244,13 +254,14 @@ def recursive (input_containpos, df, np_vaf, np_BQ, subdim, nonzero_dim, index_i
     
 
     
-    #print ( "\treturn_counts = {}".format( np.unique(step_final.membership, return_counts=True)[1] ))
+    print ( "\t\treturn_counts = {}".format( np.unique(step_final.membership, return_counts=True)[1] ))
 
     unique_values, counts = np.unique( step_final.membership, return_counts=True)
     values_with_count_more_than_MIN_CLUSTER_SIZE = unique_values[counts >= kwargs["MIN_CLUSTER_SIZE"]]
     step_final.mixture = step_final.mixture [ :, values_with_count_more_than_MIN_CLUSTER_SIZE ]
     NUM_CLONE_recursive = step_final.mixture.shape[1]
 
+    #if kwargs["VERBOSE"] >= 1:
     #print ( values_with_count_more_than_MIN_CLUSTER_SIZE )
     print ( "\t(after) mixture_recursive = {}".format (  ", ".join(str(np.round(row, 2)) for row in step_final.mixture  ) ) )
 

@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore")
 
 def whether_trial_acc (max_step, step_index, step, trial, **kwargs):
     if step.likelihood_record [max_step] > trial.likelihood_record [ kwargs["TRIAL"]] : 
-        print ("\t\t\t✓ max_step : #{}번째 step\t\tstep.likelihood_record [max_step] = {}".format( max_step , round (step.likelihood_record [max_step] , 2) ))
+        print ("\t\t\t✓ max_step : #{}th step\t\tcheckall_strict = {}\t\tstep.likelihood_record [max_step] = {}".format( max_step , step.checkall_strict_record[max_step], np.round (step.likelihood_record [max_step] , 2) ))    
         trial.acc ( step.mixture_record [max_step],  step.membership_record [max_step], step.likelihood_record [max_step], step.membership_p_record [max_step], step.membership_p_normalize_record [max_step], 
                         step.makeone_index_record[max_step], step.tn_index_record[max_step],   step.fp_index_record[max_step],  step_index, step.fp_member_index_record[max_step], step.includefp_record[max_step], step.fp_involuntary_record[max_step], step.checkall_strict_record[max_step], step.checkall_lenient_record[max_step], max_step, kwargs["TRIAL"] )
     
@@ -27,6 +27,7 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
             print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\nNUM_CLONE = {0}".format(NUM_CLONE))
         trial = Bunch.Bunch1(NUM_MUTATION , NUM_BLOCK, NUM_CLONE, kwargs["TRIAL_NO"])
         
+
         if kwargs["KMEANS_CLUSTERNO"] < kwargs["NUM_CLONE"]:  
             continue
 
@@ -35,14 +36,29 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
             while trial_index < kwargs["TRIAL_NO"]:
                 kwargs["TRIAL"] = trial_index
 
-                if kwargs["VERBOSE"] >= 1:
-                    print("\tTrial #{0}".format(trial_index))
+                # if NUM_CLONE ==3 :
+                #     if kwargs["TRIAL"] != 10:
+                #         trial_index = trial_index + 1
+                #         continue
+
+                # if NUM_CLONE == 4:
+                #     trial_index = trial_index + 1
+                #     continue
+
+                # if NUM_CLONE == 5:
+                #     if kwargs["TRIAL"] != 3:
+                #         trial_index = trial_index + 1
+                #         continue
+
 
                 step = Bunch.Bunch1(NUM_MUTATION , NUM_BLOCK, NUM_CLONE, kwargs["STEP_NO"])
 
                 step, kwargs = miscellaneous.set_initial_parameter(np_vaf, mixture_kmeans, 
                                                                 kwargs["CLEMENT_DIR"] + "/trial/clone" + str(NUM_CLONE) + "." + str(kwargs["TRIAL"]) + "-0.initial_kmeans(hard)." + kwargs["IMAGE_FORMAT"] ,
                                                                 step, trial, **kwargs)
+
+                if kwargs["VERBOSE"] >= 1:
+                    print("\tTrial #{}\t{}".format(trial_index, trial.initial_randomsample_record  [kwargs["TRIAL"]]  ))
 
                 if step.initial_sampling == False:
                     break
@@ -58,7 +74,7 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                         print ("\t\tStep #{}".format(step_index))
 
 
-                    # if ( kwargs ["NUM_CLONE_ITER"] == 6 )  & (kwargs["TRIAL"] in [2] ) :
+                    # if ( kwargs ["NUM_CLONE_ITER"] == 3 )  & (kwargs["TRIAL"] in [0] ) :
                     #     kwargs["DEBUG"]  = True
                     # else:
                     #     kwargs["DEBUG"] = False
@@ -72,7 +88,7 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                         if kwargs["VERBOSE"] >= 1:
                             print ("\t\t\t♣ STOP:  {}th step,  because in E step →  NUM_CHILD = {}\tNUM_PARENT = {}".format( step_index, len (step.makeone_index), kwargs["NUM_CLONE"] -  len (step.makeone_index) - 1  ))    
                         if kwargs["STEP"] >= 1:
-                            print ("kwargs[STEP] = {}\t{}".format(kwargs["STEP"]), step.likelihood_record)
+                            print ("kwargs[STEP] = {}\t{}".format(kwargs["STEP"], step.likelihood) )
                             max_step =  step.find_max_likelihood_step(0, kwargs["STEP"] - 1)   # 이상, 이하
                             step, trial = whether_trial_acc (max_step, step_index, step, trial, **kwargs) 
                         break
@@ -81,10 +97,11 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                     if  ( np.min( np.unique(step.membership, return_counts=True)[1][np.arange(len(set(step.membership))) != step.fp_index] ) < kwargs["MIN_CLUSTER_SIZE"]  )  :          #  2nd early terminating condition  (except for FP index (the last index))
                         if step.less_than_min_cluster_size == True:     # If it has previous history 
                             failure_num = failure_num + 1
-                            extincted_clone_index = np.argmin ( np.unique(step.membership, return_counts=True)[1]  )
+                            extincted_clone_index = np.argmin( np.unique(step.membership, return_counts=True)[1][np.arange(len(set(step.membership))) != step.fp_index] )
+                            extincted_clone_count = np.min( np.unique(step.membership, return_counts=True)[1][np.arange(len(set(step.membership))) != step.fp_index] )
 
                             if kwargs["VERBOSE"] >= 1:
-                                print ("\t\t\t♣ STOP: {}th step, because in E step →  The number of variants in clone {}  is {}개 ( < {}). ({})".format(step_index, extincted_clone_index, np.min( np.unique(step.membership, return_counts=True)[1] ),  kwargs["MIN_CLUSTER_SIZE"], np.unique(step.membership, return_counts=True)[1] ))
+                                print ("\t\t\t♣ STOP: {}th step, because in E step →  The number of variants in clone {}  is {}개 ( < {}). ({})".format(step_index, extincted_clone_index, extincted_clone_count,  kwargs["MIN_CLUSTER_SIZE"], np.unique(step.membership, return_counts=True)[1] ))
                             max_step, trial.checkall_strict_record[ kwargs["TRIAL"] ]  =  step.find_max_likelihood_step(0, kwargs["STEP"] - 2)            # 2번 용서해줬으니 그 전까지 봐야 함
                             step, trial = whether_trial_acc (max_step, step_index, step, trial, **kwargs)
                             break
@@ -93,12 +110,12 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                             step.less_than_min_cluster_size = True
                             
 
-                    if np.all(step.mixture[:, range(step.mixture.shape[1] - 1)] == 0, axis=0).any():
+                    if np.all(step.mixture[:, range(step.mixture.shape[1] - 1)] == 0, axis=0).any():      # centroid가 (0) or (0, 0)  or (0, 0, 0) 이 나오는 경우
                         failure_num = failure_num + 1
                         zero_column_index = np.where( np.all( step.mixture[:, range (step.mixture.shape[1] - 1) ] == 0, axis = 0) )[0]
                         if kwargs["VERBOSE"] >= 1:
                             print ("\t\t\t♣ STOP: {}th step, because before M step →  clone {}  is no other than zero point ".format(step_index, zero_column_index  ))
-                        max_step =  step.find_max_likelihood_step(0, kwargs["STEP"] - 1)          
+                        max_step, max_step_bool =  step.find_max_likelihood_step(0, kwargs["STEP"] - 1)          
                         step, trial = whether_trial_acc (max_step, step_index, step, trial, **kwargs)
                         break
                     ###########################################################################################

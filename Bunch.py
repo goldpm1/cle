@@ -88,7 +88,7 @@ class Bunch1:        # step_hard, step_soft, trial_hard, trial_soft
                 if self.likelihood_record [i] > max:
                     max = self.likelihood_record [i]
                     max_index = i
-        if max_index != -1 : 
+        if max_index != -1 :   # 모든 step이 cehckall_strict == False라면 어쩔 수 없이
             return max_index, True
         
         else:   # If there isn't qualifed trial

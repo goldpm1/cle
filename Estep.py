@@ -12,12 +12,19 @@ def phred_to_percentile (phred_score):
 def expected_calculator (  i, j, k, mixture, df, input_containpos, **kwargs ):
     import re
 
+
     if (kwargs["SEX"] == "M") & ( bool(re.search(r'X|Y', input_containpos.iloc[k]["pos"]))  == True  ) :
-        depth_calc, alt_calc = int(df[k][i]["depth"] ), int(df[k][i]["depth"] * mixture[i][j])
+        depth_calc, alt_calc = int(df[k][i]["depth"] ), int( round ( df[k][i]["depth"] * mixture[i][j]) ) 
     else:
-        depth_calc, alt_calc = int(df[k][i]["depth"] ), int(df[k][i]["depth"] * mixture[i][j] * 0.5)
+        depth_calc, alt_calc = int(df[k][i]["depth"] ), int( round ( df[k][i]["depth"] * mixture[i][j] * 0.5) )
 
     depth_obs, alt_obs = int(df[k][i]["depth"]), int(df[k][i]["alt"])
+
+    if (kwargs["MAKEONE_STRICT"] in [1,2] )  & (int(df[k][i]["depth"] < 100) ):
+        depth_calc = depth_obs = 100
+        alt_calc = int ( alt_calc * (100 / int(df[k][i]["depth"])) )
+        alt_obs = int ( alt_obs * (100 / int(df[k][i]["depth"])) )
+
     a, b = alt_calc, depth_obs - alt_calc              # alt_expected, ref_expected
 
     return (depth_calc, alt_calc, depth_obs, alt_obs, a, b)
@@ -25,6 +32,8 @@ def expected_calculator (  i, j, k, mixture, df, input_containpos, **kwargs ):
 
 def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
     import re
+    global debug_k
+
     mixture = step.mixture
 
     max_prob = float("-inf")
@@ -36,13 +45,11 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
     check = 0
 
 
-    if kwargs["DEBUG"] == True:
-        #debug_k = np.where(  ( (np_vaf[:, 0] > 0.3 ) &  (np_vaf[:, 0] < 0.5 ) & ( np_vaf[:, 1] < 0.3 ) )  )[0]
-        debug_k = [1]
-        if (k in debug_k):
-            print ("\t\t\tk = {}\tNUM_CLONE = {}, NUM_BLOCK = {}, df = [{},{}]".format(k, kwargs["NUM_CLONE"], kwargs["NUM_BLOCK"], len(df), len(df[0]), mixture))
-    else:
-        debug_k = []
+    # if kwargs["DEBUG"] == True:
+    #     if (k == debug_k):
+    #         print ("\t\t\tk = {}\tnp_vaf*2 = {}".format(k, np_vaf[k]*2 ))
+    # else:
+    #     debug_k = []
 
 
     for j in range(kwargs["NUM_CLONE"]): 
@@ -85,7 +92,7 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
                         p = -400
 
                 # if(kwargs ["DEBUG"] == True ) :
-                #     if  ( k in debug_k)  :            
+                #     if  ( k == debug_k)  :            
                 #         np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
                 #         print ( "\t\t\t\t\tj = {}\ti = {}\tp = {}".format( j, i,  round(p, 2 )) )
 
@@ -93,6 +100,10 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
             else:   # TP or FP?
                 SEQ_ERROR = phred_to_percentile ( np_BQ[k][i] )
                 depth_calc, alt_calc, depth_obs, alt_obs, a, b = expected_calculator (  i, j, k, mixture, df, input_containpos, **kwargs )
+                if(kwargs ["DEBUG"] == True ) :
+                    if  ( k == debug_k)  :            
+                        np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
+                        print ( "\t\t\t\t\t\tj = {}\ti = {}\tmixture = {}\talt_obs = {}\talt_calc = {}\tdepth_obs = {}\ta = {}\tb = {}\tbetabinom = {}".format( j, i,  mixture[i][j], alt_obs, alt_calc, depth_obs, a, b, round ( scipy.stats.betabinom.pmf(alt_obs, depth_obs, a+1, b+1), 2)   ) )
 
                 if mixture [i][j] == 0: # FP
                     try:
@@ -136,9 +147,9 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
 
 
                 # if(kwargs ["DEBUG"] == True ) :
-                #     if  ( k in debug_k)  :            
+                #     if  ( k == debug_k)  :            
                 #         np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
-                #         print ( "\t\t\t\t\tj = {}\ti = {}\tp = {}".format( j, i,  round(p, 2 )) )
+                #         print ( "\t\t\t\t\t\tj = {}\ti = {}\tp(log) = {}\tp = {}".format( j, i,  round(p, 2 ), np.round ( np.power (10, p) , 2)  ) )
 
 
             prob[j] += p
@@ -154,13 +165,12 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
 
     max_clone = random.choice(max_prob_clone_candidate)
 
-    # if(kwargs ["DEBUG"] == True ) :
-    #     if  ( k in debug_k)  :
-    #         print ("prob = {}".format (prob))
-    #         np.set_printoptions(suppress=False)   
-    #         print ( "\t\t\t\t\tk = {} ({})\tmax_clone = {}\tprob = {}\tprob_abs = {}\tmax_prob_abs = {}".format( k,  np.round( np_vaf[k] * 2, 2 ) , max_clone, np.round ( np.power (10, prob) , 3) , np.round ( np.power (10, prob_abs) , 3) , round ( prob_abs[max_clone], 3)  ))
-    #         np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
-    #         print ( "\t\t\t\t\tk = {} ({})\tmax_clone = {}\tprob = {}\tprob_abs = {}\tmax_prob_abs = {}".format( k,  np.round( np_vaf[k] * 2, 2 ) , max_clone, np.round ( np.power (10, prob) , 3) , np.round ( np.power (10, prob_abs) , 3) , round ( prob_abs[max_clone], 3)  ))
+    if(kwargs ["DEBUG"] == True ) :
+        if  ( k == debug_k)  :
+            # np.set_printoptions(suppress=False)   
+            # print ( "\t\t\t\t\tk = {} ({})\tmax_clone = {}\tprob = {}\tprob_abs = {}\tmax_prob_abs = {}".format( k,  np.round( np_vaf[k] * 2, 2 ) , max_clone, np.round ( np.power (10, prob) , 3) , np.round ( np.power (10, prob_abs) , 3) , round ( prob_abs[max_clone], 3)  ))
+            np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
+            print ( "\t\t\t\tk = {} ({})\tmax_clone = {}\tprob(log) = {}\tprob = {}\tprob_abs = {}\tmax_prob_abs = {}".format( k,  np.round( np_vaf[k] * 2, 2 ) , max_clone, np.round (prob, 3) , np.round ( np.power (10, prob) , 3) , np.round ( np.power (10, prob_abs) , 3) , round ( prob_abs[max_clone], 3)  ))
 
 
     if kwargs["OPTION"] in ["Hard", "hard"]:
@@ -168,7 +178,7 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
 
     elif kwargs["OPTION"] in ["Soft", "soft"]:
         weight = np.power (10, prob_abs)   # prob? prob_abs?
-        if  ( k in debug_k)  :
+        if  ( k == debug_k)  :
             np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
             print (weight )
         new_likelihood = round(np.average(prob_abs, weights = weight), 3)       # Likelihood in Soft clustering
@@ -179,11 +189,15 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
 
 
 def main (input_containpos, df, np_vaf, np_BQ, step, **kwargs):
+    global debug_k
     total_prob = total_prob_abs = 0
 
-    # if kwargs["DEBUG"] == True:
-    #     debug_k = np.where(  ( (np_vaf[:, 1]  == 0 ) &  (np_vaf[:, 0] < 0.03 )) )  [0]
-        #print (debug_k)
+    if kwargs["DEBUG"] == True:
+        # debug_k = random.choice ( np.where(  ( (np_vaf[:, 0]  > 0.1 ) &  (np_vaf[:, 0] < 0.14 )) )  [0] )
+        # print ( "debug_k = {}".format(debug_k))
+        debug_k = 221
+    else:
+        debug_k = -1
 
     max_prob_abs_list = []
     for k in range(kwargs["NUM_MUTATION"]):
@@ -213,7 +227,7 @@ def main (input_containpos, df, np_vaf, np_BQ, step, **kwargs):
 
 
     if (kwargs["VERBOSE"] >= 1):
-        print ("\t\t\tEstep.py : set(step.membership) = {}\tcounts = {}\tfp_index = {}\tincludefp = {}\tstep.likelihood = {}".format ( set(step.membership), np.unique(step.membership  , return_counts=True)[1], step.fp_index, step.includefp, round(step.likelihood)) )
+        print ("\t\t\tEstep.py : set(step.membership) = {}\tcounts = {}\tfp_index = {}\tincludefp = {}\ttn_index = {}\tstep.likelihood = {}".format ( set(step.membership), np.unique(step.membership  , return_counts=True)[1], step.fp_index, step.includefp, step.tn_index, round(step.likelihood)) )
 
 
     # membership_p : extermely low value if the variant is  fp

@@ -103,11 +103,25 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
         NUM_CLONE_ans = int ( kwargs["SAMPLENAME"].split("_")[-1] )
 
     else:
-        if "_" not in kwargs["SAMPLENAME"]:
+        if kwargs["SAMPLENAME"].count("_") == 0:  # 1D
             NUM_CLONE_ans = 3 if  "M1" in kwargs["SAMPLENAME"] else 4
-        elif kwargs["SAMPLENAME"].count("_") == 1:  # "M1-1_M2-2"
-            NUM_CLONE_ans = 5
-        NUM_CLONE_ans += int (kwargs["CONDITIONNAME"].split("/")[-3].split("_")[-1])
+        elif kwargs["SAMPLENAME"].count("_") == 1:  # 2D
+            if kwargs["SAMPLENAME"].count("M1") == 2:
+                NUM_CLONE_ans = 3
+            if kwargs["SAMPLENAME"].count("M2") == 2:
+                NUM_CLONE_ans = 4
+            if (kwargs["SAMPLENAME"].count("M1") == 1) & (kwargs["SAMPLENAME"].count("M2") == 1):
+                NUM_CLONE_ans = 5
+        elif kwargs["SAMPLENAME"].count("_") == 2:  #3D
+            if kwargs["SAMPLENAME"].count("M1") == 3:   # "M1-4_M1-6_M1-8"
+                NUM_CLONE_ans = 3
+            elif (kwargs["SAMPLENAME"].count("M2") == 3) | (kwargs["SAMPLENAME"].count("M3") == 3) :    # "M2-2_M2-4_M2-8"
+                NUM_CLONE_ans = 4 
+            elif (kwargs["SAMPLENAME"].count("M1") == 1) & (kwargs["SAMPLENAME"].count("M2") == 1) & (kwargs["SAMPLENAME"].count("M3") == 1) :    # "M1-1_M2-1_M3_1"
+                NUM_CLONE_ans = 6
+            else:
+                NUM_CLONE_ans = 5
+        NUM_CLONE_ans += int (kwargs["CONDITIONNAME"].split("/")[-3].split("_")[-1])      # parent 개수를 더해주기
 
     rect = matplotlib.patches.Rectangle((-0.5, NUM_CLONE_ans - 0.5),                                # 사각형 꼭지점의 시작위치
                                                     ax[2].get_xlim()[1] - ax[2].get_xlim()[0] + 0.5, 1,        # x 길이, y 길이

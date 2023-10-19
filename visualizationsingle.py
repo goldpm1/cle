@@ -181,13 +181,68 @@ def drawfigure_3d(membership, output_suptitle, output_filename, np_vaf, samplena
         z_mean = round(np.mean(np_vaf[[x for x in range( len(membership)) if membership[x] == sample]][:, 2] * 2), 2)
 
         ax.text(x_mean, y_mean, z_mean, "{0}".format([x_mean, y_mean, z_mean]), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"})
-        ax.scatter(x_mean, y_mean, z_mean, marker='*', color=colorlist[samplename_dict[sample]], edgecolor='black', s = 400, label=str(sample) + " : " + str(list(membership).count(sample)))
+        ax.scatter(x_mean, y_mean, z_mean, marker='*', color=colorlist[samplename_dict[sample]], edgecolor='black', s = 400, label = "{} ({},{},{}) : {}".format( str(sample), x_mean, y_mean, z_mean, str(list(membership).count(sample))) )
         ax.legend()
-        sum_x += x_mean
-        sum_y += y_mean
-        sum_z += z_mean
+
+        if "," not in sample :   # parent가 아닐 경우에만 더해준다
+            sum_x += x_mean
+            sum_y += y_mean
+            sum_z += z_mean
 
         matplotlib.pyplot.title("sum = [{},{},{}]".format( round(sum_x, 2), round(sum_y, 2), round(sum_z, 2) ), fontsize = 12)
+
+
+    if output_filename != "NotSave":
+        fig.savefig(output_filename)
+    #matplotlib.pyplot.show()
+
+
+
+
+
+def drawfigure_3d_SVD(membership, output_suptitle, output_filename, np_vaf, samplename_dict, includefp, fp_index,  **kwargs):
+    vivid_10 = palettable.cartocolors.qualitative.Vivid_10.mpl_colors
+    bdo = palettable.lightbartlein.diverging.BlueDarkOrange18_18.mpl_colors
+    tabl = palettable.tableau.Tableau_20.mpl_colors
+    Gr_10 = palettable.scientific.sequential.GrayC_20.mpl_colors
+    colorlist = [i for i in tabl]
+    
+    matplotlib.rcParams["font.family"] =  kwargs["FONT_FAMILY"]
+    matplotlib.pyplot.style.use("seaborn-white")
+
+    from sklearn.decomposition import TruncatedSVD, PCA
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(ncols=1, nrows = 1, figsize=(6, 6))
+    fig.suptitle(output_suptitle, fontsize = 20)
+    tsvd = TruncatedSVD(n_components=2)
+    tsvd.fit( np_vaf )
+
+    np_vaf_transform= tsvd.transform( np_vaf )
+
+    plt.axis([np.min(np_vaf_transform[:, 0]) * 2.1,  np.max(np_vaf_transform[:, 0]) * 2.1,  np.min(np_vaf_transform[:, 1]) * 2.1,  np.max(np_vaf_transform[:, 1]) * 2.1])
+    for k in range ( np_vaf_transform.shape[0] ):
+        ax.scatter ( np_vaf_transform [k, 0] * 2, np_vaf_transform [k, 1] * 2, s = 30, color = colorlist [ kwargs["samplename_dict_CharacterToNum"][ membership[k] ] ], label = membership[k] , alpha = 0.8)
+
+
+    sum_x, sum_y, sum_z = 0, 0, 0
+    for sample_index, sample in enumerate(samplename_dict):
+        if sample not in set(membership):
+            continue
+
+        x_mean = round(np.mean(np_vaf[[x for x in range( len(membership)) if membership[x] == sample]][:, 0] * 2), 2)
+        y_mean = round(np.mean(np_vaf[[x for x in range( len(membership)) if membership[x] == sample]][:, 1] * 2), 2)
+        z_mean = round(np.mean(np_vaf[[x for x in range( len(membership)) if membership[x] == sample]][:, 2] * 2), 2)
+
+        if "," not in sample :   # parent가 아닐 경우에만 더해준다
+            sum_x += x_mean
+            sum_y += y_mean
+            sum_z += z_mean
+    
+    plt.title("sum = [{},{},{}]".format( round(sum_x, 2), round(sum_y, 2), round(sum_z, 2) ), fontsize = 12)
+
+
+
 
 
     if output_filename != "NotSave":

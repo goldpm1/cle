@@ -13,6 +13,7 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
         ############################### HARD CLUSTERING ##############################
         for j in range(NUM_CLONE):
             ind_list = np.where(step.membership == j)[0]   # Find the index  where membership == j
+            #check = 0
             for i in range(NUM_BLOCK):
                 sum_depth, sum_alt = 0, 0
                 for ind in ind_list:       # Summing depth and alt
@@ -23,7 +24,9 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
                         step.mixture[i][j] = 0   # FP cluster는 무조건 원점으로 박아 넣는다
                         continue
                     if j in step.tn_index:
-                        zero_dimension = np.where( step.mixture [:, j] == 0 )[0]   # 0인 축 (sample)
+                        zero_dimension = np.where( np.round ( step.mixture [:, j], 2 ) == 0 )[0]   # 0인 축 (sample)
+                        # if check == 0:
+                        #     check = 1
                         if ( i in zero_dimension )  &  (df[ind][i]["alt"] != 0):    # TN : 0이어야 하는 축에서 0이 아니면 넘기자
                             continue
                     
@@ -46,6 +49,7 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
         if step.makeone_index == []:   # if failed  (첫 3개는 웬만하면 봐주려고 하지만, 그래도 잘 안될 때)
             step.likelihood = step.likelihood_record[kwargs["STEP"]] = -9999999
             step.checkall_lenient =  step.checkall_strict = False
+            sum_mixture = np.sum (step.mixture, axis = 1)
             if kwargs["VERBOSE"] >= 1:
                 print ("\t\t\tMstep.py : Unable to make 1  ({})".format ( "\t".join(str(np.round(row, 2)) for row in step.mixture )   ) )
 
@@ -72,11 +76,12 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
                                 
         
         if (kwargs["NUM_BLOCK"] == 1):
-            visualizationeachstep.drawfigure_1d_hard(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], **kwargs)
+            visualizationeachstep.drawfigure_1d_hard(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], sum_mixture,**kwargs)
         elif (kwargs["NUM_BLOCK"] == 2):
-            visualizationeachstep.drawfigure_2d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], **kwargs)
-        elif (kwargs["NUM_BLOCK"] >= 2):
-            visualizationeachstep.drawfigure_3d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], **kwargs)
+            visualizationeachstep.drawfigure_2d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], sum_mixture, **kwargs)
+        elif (kwargs["NUM_BLOCK"] >= 3):
+            #visualizationeachstep.drawfigure_3d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], sum_mixture, **kwargs)
+            visualizationeachstep.drawfigure_3d_SVD(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], sum_mixture, **kwargs)
     ###############################################################################
 
     ################################ SOFT CLUSTERING ##############################
@@ -128,15 +133,16 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
 
         p_list, step = isparent.makeone(input_containpos, df, np_vaf, np_BQ, step, **kwargs)     # 첫 3개는 lenient로, 그 다음은 strict로 거른다
 
-        if step.makeone_index == []:   # if failed  (첫 3개는 웬만하면 봐주려고 하지만, 그래도 잘 안될 때)
+        if step.makeone_index == []:   # if failed  (첫 1개는 웬만하면 봐주려고 하지만, 그래도 잘 안될 때)
             step.likelihood = step.likelihood_record[kwargs["STEP"]] = -9999999
             step.checkall_lenient = step.checkall_strict = False
             if kwargs["VERBOSE"] >= 1:
-                print ("\t\t\tMstep.py : Unable to make 1  ({})".format ( step.mixture.flatten() ) )
+                print ("\t\t\tMstep.py : Unable to make 1  ({})".format ( step.mixture.flatten()  ) )
 
         else:    # if succeedeed
-            print ("\t\t\tMstep.py : checkall (lenient) = {}".format(step.checkall_lenient), end = "\t") 
-            print( "( {})".format  (  step.mixture.flatten()  ) )
+            if kwargs["VERBOSE"] >= 1:
+                print ("\t\t\tMstep.py : checkall (lenient) = {}".format(step.checkall_lenient), end = "\t") 
+                print( "( {})".format  (  step.mixture.flatten()  ) )
 
             if kwargs["STEP_TOTAL"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1):     # Normalization 꼭 해줄 필요가 없다.  정말 앞부분일 때에만 해준다
                 for i in range(NUM_BLOCK):
@@ -159,12 +165,15 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
                     if step.fp_index != -1: 
                         step.membership_p_normalize[k][step.fp_index] = 0
 
+        sum_mixture = np.sum (step.mixture, axis = 1)
+
         if (kwargs["NUM_BLOCK"] == 1):
             visualizationeachstep.drawfigure_1d_soft(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(soft)." + kwargs["IMAGE_FORMAT"], **kwargs)
         if (kwargs["NUM_BLOCK"] == 2):
             visualizationeachstep.drawfigure_2d_soft(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(soft)." + kwargs["IMAGE_FORMAT"], **kwargs)
         if (kwargs["NUM_BLOCK"] == 3):
-            visualizationeachstep.drawfigure_3d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(hard)." + kwargs["IMAGE_FORMAT"], **kwargs)
+            #visualizationeachstep.drawfigure_3d(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(soft)." + kwargs["IMAGE_FORMAT"], sum_mixture, **kwargs)
+            visualizationeachstep.drawfigure_3d_SVD(step, np_vaf, kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str(kwargs["TRIAL"]) + "-" + str(kwargs["STEP_TOTAL"]) + "(soft)." + kwargs["IMAGE_FORMAT"], sum_mixture, **kwargs)
 
     #############################################################################
 

@@ -225,7 +225,7 @@ def drawfigure_Final (final, toollist, toollist_concise, **kwargs):
 def Mingle_intra(SAMPLENAME, NUM_BLOCK):
     global MRS_set
     #MRS_set = [['M1-2', 'M1-5', 'M1-6', 'M1-7', 'M1-8'] ]
-    MRS_set = [['M1-2', 'M1-4', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-10'] ]
+    MRS_set = [['M1-2', 'M1-4', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-8'] ]
 
 
     if NUM_BLOCK == 1:
@@ -249,7 +249,7 @@ def Mingle_intra(SAMPLENAME, NUM_BLOCK):
 def Mingle_inter (SAMPLENAME, NUM_BLOCK):
     global MRS_set
     #MRS_set = [['M1-1', 'M1-4', 'M1-5', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-10', 'M2-12'], ['M3-1', 'M3-2', 'M3-4', 'M3-5', 'M3-11']]
-    MRS_set = [['M1-2', 'M1-4', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-10'] ]
+    MRS_set = [['M1-2', 'M1-4', 'M1-6', 'M1-8'],  ['M2-2', 'M2-4', 'M2-6', 'M2-8'] ]
 
     if NUM_BLOCK == 1:
         for i in range(len(MRS_set)):
@@ -262,7 +262,9 @@ def Mingle_inter (SAMPLENAME, NUM_BLOCK):
         else:
             return False
     elif NUM_BLOCK == 3:
-        if (SAMPLENAME.split("_")[0] in MRS_set[0]) &  (SAMPLENAME.split("_")[1] in MRS_set[1]) &   (SAMPLENAME.split("_")[2] in MRS_set[1]):
+        if (SAMPLENAME.split("_")[0] in MRS_set[0]) &  (SAMPLENAME.split("_")[1] in MRS_set[0]) &  (SAMPLENAME.split("_")[2] in MRS_set[1]):
+            return True
+        elif (SAMPLENAME.split("_")[0] in MRS_set[0]) &  (SAMPLENAME.split("_")[1] in MRS_set[1]) &  (SAMPLENAME.split("_")[2] in MRS_set[1]):
             return True
         else:
             return False
@@ -328,7 +330,13 @@ INPUT_DIR_LIST = natsorted (  INPUT_DIR_LIST_SELECTED )
 
 num_directories = len (INPUT_DIR_LIST)
 
-if num_directories > 15:
+if num_directories >= 49:
+    NUM_ROW = 7
+elif num_directories >= 42:
+    NUM_ROW = 6
+elif num_directories >= 30:
+    NUM_ROW = 5
+elif num_directories > 15:
     NUM_ROW = 4
 elif num_directories > 9:
     NUM_ROW = 3

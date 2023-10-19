@@ -8,7 +8,7 @@ from scipy.stats import kde
 from sklearn.decomposition import TruncatedSVD, PCA
 
 
-def drawfigure_1d_hard(bunch, np_vaf, output_filename, **kwargs):
+def drawfigure_1d_hard(bunch, np_vaf, output_filename, sum_mixture_beforenormalization, **kwargs):
     
     if (bunch.makeone_index == []) | (bunch.makeone_index == None) | (bunch.checkall_strict == False):  
         matplotlib.pyplot.style.use("Solarize_Light2")
@@ -64,7 +64,7 @@ def drawfigure_1d_hard(bunch, np_vaf, output_filename, **kwargs):
         matplotlib.pyplot.suptitle("clone{}.{}-{} (postnormalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP"], round(bunch.likelihood)), fontsize=20)
     else:
         matplotlib.pyplot.suptitle("clone{}.{}-{} (no normalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP"], round(bunch.likelihood)), fontsize=20)
-    matplotlib.pyplot.title("Sum_child = {}".format(list(np.round(np.sum(bunch.mixture[:, bunch.makeone_index], axis=1), 2))), fontsize=12)
+    matplotlib.pyplot.title("Sum_child = {}\tprenorm = {}".format(list(np.round(np.sum(bunch.mixture[:, bunch.makeone_index], axis=1), 2)), sum_mixture_beforenormalization), fontsize=12)
 
     ax.set_xlim( 0, np.max(np_vaf[:, :]) * 2.1 )
     ax.set_ylim( 0, max_y * 1.3 )
@@ -111,7 +111,7 @@ def drawfigure_1d_soft(bunch, np_vaf, output_filename, **kwargs):
         matplotlib.pyplot.suptitle("clone{}.{}-{} (postnormalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP_TOTAL"], round(bunch.likelihood)), fontsize=20)
     else:
         matplotlib.pyplot.suptitle("clone{}.{}-{} (no normalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP_TOTAL"], round(bunch.likelihood)), fontsize=20)
-    matplotlib.pyplot.title("sum_child = {}   makeone_index = {}".format(list(np.round(np.sum(bunch.mixture[:, bunch.makeone_index], axis=1), 2)), bunch.makeone_index ), fontsize=12)
+    matplotlib.pyplot.title("sum_child = {}".format(list(np.round(np.sum(bunch.mixture[:, bunch.makeone_index], axis=1), 2)), bunch.makeone_index ), fontsize=12)
 
     for k in sorted(list(set(bunch.membership))):
         if k in bunch.makeone_index:
@@ -134,7 +134,7 @@ def drawfigure_1d_soft(bunch, np_vaf, output_filename, **kwargs):
 
 
 
-def drawfigure_2d(bunch, np_vaf, output_filename, **kwargs):
+def drawfigure_2d(bunch, np_vaf, output_filename, sum_mixture_beforenormalization, **kwargs):
     samplename_dict = {k: k for k in range(0, bunch.mixture.shape[1])}
 
     tabl = palettable.tableau.Tableau_20.mpl_colors
@@ -157,7 +157,7 @@ def drawfigure_2d(bunch, np_vaf, output_filename, **kwargs):
         matplotlib.pyplot.suptitle("clone{}.{}-{} (postnormalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP"], round(bunch.likelihood)), fontsize=20)
     else:
         matplotlib.pyplot.suptitle("clone{}.{}-{} (no normalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP"], round(bunch.likelihood)), fontsize=20)
-    matplotlib.pyplot.title("sum_child = {}".format( list (np.round( np.sum (bunch.mixture[:, bunch.makeone_index], axis = 1), 3) )), fontsize = 12)
+    matplotlib.pyplot.title("sum_child = {}\tprenorm = {}".format( list (np.round( np.sum (bunch.mixture[:, bunch.makeone_index], axis = 1), 3) ), sum_mixture_beforenormalization), fontsize = 12)
 
 
     if (bunch.makeone_index == []) | (bunch.makeone_index == None) | (bunch.checkall_strict == False):  
@@ -330,7 +330,7 @@ def drawfigure_2d_soft(bunch, np_vaf, output_filename, **kwargs):
 
 ################################################################################################################################################################################################
 
-def drawfigure_3d(bunch, np_vaf, output_filename, **kwargs):
+def drawfigure_3d(bunch, np_vaf, output_filename, sum_mixture_beforenormalization, **kwargs):
     from mpl_toolkits.mplot3d import Axes3D
     samplename_dict = {k: k for k in range(0, bunch.mixture.shape[1])}
 
@@ -350,10 +350,10 @@ def drawfigure_3d(bunch, np_vaf, output_filename, **kwargs):
 
 
     if (kwargs["STEP"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1)) :
-        matplotlib.pyplot.suptitle("clone{}.{}-{} (postnormalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP"], round(bunch.likelihood)), fontsize=20)
+        matplotlib.pyplot.suptitle("clone{}.{}-{} (postnormalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP_TOTAL"], round(bunch.likelihood)), fontsize=20)
     else:
-        matplotlib.pyplot.suptitle("clone{}.{}-{} (no normalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP"], round(bunch.likelihood)), fontsize=20)
-    matplotlib.pyplot.title("sum_child = {}".format( list (np.round( np.sum (bunch.mixture[:, bunch.makeone_index], axis = 1), 3) )), fontsize = 12)
+        matplotlib.pyplot.suptitle("clone{}.{}-{} (no normalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP_TOTAL"], round(bunch.likelihood)), fontsize=20)
+    matplotlib.pyplot.title("sum_child = {}\tprenorm = {}".format( list (np.round( np.sum (bunch.mixture[:, bunch.makeone_index], axis = 1), 3) ), sum_mixture_beforenormalization), fontsize = 12)
 
 
     if (bunch.makeone_index == []) | (bunch.makeone_index == None) | (bunch.checkall_strict == False):  
@@ -400,6 +400,90 @@ def drawfigure_3d(bunch, np_vaf, output_filename, **kwargs):
                 ax.scatter(x_mean, y_mean, z_mean, marker='s', color=colorlist[sample_index], edgecolor='black', s=200, label="cluster" + str(sample_index) + " : " + str(list(bunch.membership).count(sample_index)))
         else:
             ax.scatter(x_mean, y_mean, z_mean, marker='+', color=colorlist[sample_index], edgecolor='black', s=200, label="cluster" + str(sample_index) + " : " + str(list(bunch.membership).count(sample_index)))
+
+        ax.legend()
+
+    if output_filename != "NotSave":
+        matplotlib.pyplot.savefig(output_filename)
+
+
+
+
+
+def drawfigure_3d_SVD(bunch, np_vaf, output_filename, sum_mixture_beforenormalization, **kwargs):
+    from mpl_toolkits.mplot3d import Axes3D
+    samplename_dict = {k: k for k in range(0, bunch.mixture.shape[1])}
+
+    tabl = palettable.tableau.Tableau_20.mpl_colors
+    Gr_10 = palettable.scientific.sequential.GrayC_20.mpl_colors
+    colorlist = [i for i in tabl]
+
+    matplotlib.rcParams["font.family"] = kwargs["FONT_FAMILY"]
+
+    fig, ax = matplotlib.pyplot.subplots(ncols=1, nrows = 1, figsize=(6, 6))
+    #ax.set_axis( [0,  np.max(np_vaf[:, :]) * 2.1, 0,  np.max(np_vaf[:, :]) * 2.1])
+    ax.set_xlim(0, np.max(np_vaf[:, :]) * 2.1)
+    ax.set_ylim(0, np.max(np_vaf[:, :]) * 2.1)
+
+    tsvd = TruncatedSVD(n_components=2)
+    tsvd.fit( np_vaf )
+
+    np_vaf, mixture = tsvd.transform( np.concatenate(  [np_vaf, bunch.mixture.T]) )[:-kwargs["NUM_CLONE"]], tsvd.transform(np.concatenate( [np_vaf, bunch.mixture.T]) )[-kwargs["NUM_CLONE"]:].T
+    #np_vaf = tsvd.transform( np.concatenate(  [np_vaf, bunch.mixture.T]) )
+    matplotlib.pyplot.axis([np.min(np_vaf[:, 0]) * 2.1,  np.max(np_vaf[:, 0]) * 2.1,  np.min(np_vaf[:, 1]) * 2.1,  np.max(np_vaf[:, 1]) * 2.1])
+
+
+
+    if (kwargs["STEP"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1)) :
+        matplotlib.pyplot.suptitle("clone{}.{}-{} (postnormalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP_TOTAL"], round(bunch.likelihood)), fontsize=20)
+    else:
+        matplotlib.pyplot.suptitle("clone{}.{}-{} (no normalization) : {}".format(kwargs["NUM_CLONE_ITER"], kwargs["TRIAL"], kwargs["STEP_TOTAL"], round(bunch.likelihood)), fontsize=20)
+    matplotlib.pyplot.title("sum_child = {}\tprenorm = {}".format( list (np.round( np.sum (bunch.mixture[:, bunch.makeone_index], axis = 1), 3) ), sum_mixture_beforenormalization), fontsize = 12)
+
+
+    if (bunch.makeone_index == []) | (bunch.makeone_index == None) | (bunch.checkall_strict == False):  
+        matplotlib.pyplot.style.use("Solarize_Light2")
+    # elif (bunch.checkall_strict == False):
+    #     matplotlib.pyplot.style.use("bmh")
+    else:
+        matplotlib.pyplot.style.use("seaborn-white")
+
+    if (kwargs["STEP"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1)) :
+        import matplotlib.patches as patches
+        fig_width, fig_height = fig.get_size_inches()
+        rect = patches.Rectangle((0, 0), fig_width * fig.dpi, fig_height * fig.dpi, linewidth=8, edgecolor="#C23373", facecolor='none')
+        fig.patches.append(rect)
+        # Set the layout to tight to ensure the rectangle is not cut off
+        matplotlib.pyplot.tight_layout()
+
+    
+    #matplotlib.pyplot.scatter(np_vaf[:, 0] * 2, np_vaf[:, 1] * 2, color=[colorlist[samplename_dict[k]] for k in bunch.membership])
+    for k in range (len ( bunch.membership)):
+        if (bunch.fp_index == bunch.membership[k]):
+            ax.scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, color = Gr_10[10]  )
+        else:
+            ax.scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, color = colorlist[ samplename_dict [ bunch.membership[k] ]]  )
+
+
+    for sample_index, sample in enumerate(samplename_dict):
+        if (sample_index >= mixture.shape[1]):
+            continue
+
+        # Drawe the centroid based on mixture
+        x_mean = round(mixture[0][sample_index], 2)
+        y_mean = round(mixture[1][sample_index], 2)
+
+        ax.text(x_mean, y_mean, "{0}".format( [ round(bunch.mixture[0][sample_index],2), round(bunch.mixture[1][sample_index],2),  round(bunch.mixture[2][sample_index],2)  ]), verticalalignment='top', horizontalalignment='center', fontdict = {"fontsize": 16, "fontweight" : "bold"} )
+
+        if (bunch.fp_index == sample_index):
+            ax.scatter(x_mean, y_mean, marker='s', color= Gr_10[10], edgecolor='black', s=200, label="cluster" + str(sample_index) + " : " + str(list(bunch.membership).count(sample_index)))            
+        elif (bunch.makeone_index != []) & (bunch.makeone_index != None):
+            if sample_index in bunch.makeone_index:
+                ax.scatter(x_mean, y_mean, marker='*', color=colorlist[sample_index], edgecolor='black', s=400, label="cluster" + str(sample_index) + " : " + str(list(bunch.membership).count(sample_index)))
+            else:
+                ax.scatter(x_mean, y_mean, marker='s', color=colorlist[sample_index], edgecolor='black', s=200, label="cluster" + str(sample_index) + " : " + str(list(bunch.membership).count(sample_index)))
+        else:
+            ax.scatter(x_mean, y_mean, marker='+', color=colorlist[sample_index], edgecolor='black', s=200, label="cluster" + str(sample_index) + " : " + str(list(bunch.membership).count(sample_index)))
 
         ax.legend()
 

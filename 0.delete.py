@@ -5,20 +5,21 @@ import os
 # Remove SimData
 for data in ["1.SimData/SimData_1D", "1.SimData/SimData_2D", "1.SimData/SimData_3D"]:
     for tool in  ["CLEMENT", "pyclone-vi", "quantumclone", "sciclone", "SIMPLE_KMEANS"]:
-        os.system ("rm -rf " + "/data/project/Alzheimer/YSscript/cle/data/" + tool + "/" + data )
-    os.system ("rm -rf /data/project/Alzheimer/CLEMENT/02.npvaf/" + data )
+        os.system ("rm -rf " + "/data/project/Alzheimer/YSscript/cle/data/" + tool + "/" + data  )
+    os.system ("rm -rf /data/project/Alzheimer/CLEMENT/01.INPUT_TSV/" + data  )
+    os.system ("rm -rf /data/project/Alzheimer/CLEMENT/02.npvaf/" + data  )
     os.system ("rm -rf /data/project/Alzheimer/CLEMENT/03.combinedoutput/" + data )
-    os.system ("rm -rf /data/project/Alzheimer/YSscript/cle/log/" + data )
+    os.system ("rm -rf /data/project/Alzheimer/YSscript/cle/log/" + data  )
     print ("{} removed".format(data))
 
 
 # Remove CellData
-# for data in ["2.CellData/CellData_2D"]:
+# for data in ["2.CellData/CellData_3D"]:
 #     for tool in  ["CLEMENT", "pyclone-vi", "quantumclone", "sciclone", "SIMPLE_KMEANS"]:
-#         os.system ("rm -rf " + "/data/project/Alzheimer/YSscript/cle/data/" + tool + "/" + data )
-#     os.system ("rm -rf /data/project/Alzheimer/CLEMENT/02.npvaf/" + data )
-#     os.system ("rm -rf /data/project/Alzheimer/CLEMENT/03.combinedoutput/" + data )
-#     os.system ("rm -rf /data/project/Alzheimer/YSscript/cle/log/" + data )
+#         os.system ("rm -rf " + "/data/project/Alzheimer/YSscript/cle/data/" + tool + "/" + data  + "/*")
+#     os.system ("rm -rf /data/project/Alzheimer/CLEMENT/02.npvaf/" + data + "/*" )
+#     os.system ("rm -rf /data/project/Alzheimer/CLEMENT/03.combinedoutput/" + data + "/*" )
+#     os.system ("rm -rf /data/project/Alzheimer/YSscript/cle/log/" + data + "/*" )
 #     print ("{} removed".format(data))
 
 
