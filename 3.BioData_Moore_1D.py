@@ -24,8 +24,6 @@ def Other_tissues (SCRIPT_DIR ) :
         TISSUE_LIST = [i.split("/")[-1] for i in TISSUE_LIST]
 
         for TISSUE in TISSUE_LIST:               # colon_crypt, pancreas_islet
-            if TISSUE in [ "bronchus_epithelium", "adrenal_gland_zona_glomerulosa", "adrenal_gland_zona_fasciculata",  "adrenal_gland_zona_reticularis" ]:
-                continue
         #for TISSUE in [ "bronchus_epithelium", "adrenal_gland_zona_glomerulosa", "adrenal_gland_zona_fasciculata",  "adrenal_gland_zona_reticularis" ]:
 
             SAMPLE_LIST = sorted ( glob.glob (DIR + "/" + DONOR + "/" + TISSUE + "/*") ) 
@@ -33,6 +31,9 @@ def Other_tissues (SCRIPT_DIR ) :
 
             for SAMPLE in SAMPLE_LIST:       # PD42566b_lo00_A7.txt
                 INPUT_TSV = DIR + "/" + DONOR + "/" + TISSUE + "/" + SAMPLE + ".txt"
+
+                if os.path.exists(INPUT_TSV) == False:
+                    continue
                 
                 kwargs = {"INPUT_TSV" : INPUT_TSV,  "MODE" : "Both",  "NUM_CLONE_TRIAL_START" : 1, "NUM_CLONE_TRIAL_END" : 5, 
                                 "TRIAL_NO" : 10, "DEPTH_CUTOFF" : 10,  "KMEANS_CLUSTERNO" : 8, "MIN_CLUSTER_SIZE" : 5,  "MAKEONE_STRICT" :  3,
@@ -43,7 +44,7 @@ def Other_tissues (SCRIPT_DIR ) :
 
                 NUMBER_LINE = int(out ("wc -l  " + INPUT_TSV).split(" ")[0]) 
 
-                if NUMBER_LINE < 350:       # 350줄이 안 되는 파일은 넘어간다
+                if (NUMBER_LINE < 350) & ("adrenal_gland" not in TISSUE):       # 350줄이 안 되는 파일은 넘어간다
                     continue 
 
                 kwargs ["RANDOM_PICK"] = -1    # Select all
@@ -62,13 +63,11 @@ def Other_tissues (SCRIPT_DIR ) :
                 kwargs["SCICLONE_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/sciclone/3.BioData/Moore_1D/" + TISSUE + "/" + DONOR + "-" + SAMPLENAME
                 kwargs["QUANTUMCLONE_DIR"] = "/data/project/Alzheimer/YSscript/cle/data/quantumclone/3.BioData/Moore_1D/" + TISSUE  + "/" + DONOR + "-" + SAMPLENAME
 
-                for SUBDIR in [ kwargs["NPVAF_DIR"],  kwargs["COMBINED_OUTPUT_DIR"] , kwargs["SIMPLE_KMEANS_DIR"],  kwargs["CLEMENT_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["SCICLONE_DIR"],  kwargs["QUANTUMCLONE_DIR"] ]:
-                    if os.path.exists(SUBDIR) == True:
-                        os.system("rm -rf " + SUBDIR)
-                    if os.path.exists(SUBDIR) == False:
-                        os.system("mkdir -p " + SUBDIR)
-                
-
+                # for SUBDIR in [ kwargs["NPVAF_DIR"],  kwargs["COMBINED_OUTPUT_DIR"] , kwargs["SIMPLE_KMEANS_DIR"],  kwargs["CLEMENT_DIR"], kwargs["PYCLONEVI_DIR"], kwargs["SCICLONE_DIR"],  kwargs["QUANTUMCLONE_DIR"] ]:
+                #     if os.path.exists(SUBDIR) == True:
+                #         os.system("rm -rf " + SUBDIR)
+                #     if os.path.exists(SUBDIR) == False:
+                #         os.system("mkdir -p " + SUBDIR)
 
                 print ("# n = {}\tNUMBER_LINE = {} {}".format (n,  NUMBER_LINE, SAMPLENAME))
 
@@ -87,7 +86,9 @@ def Other_tissues (SCRIPT_DIR ) :
                                                     str(kwargs["NPVAF_DIR"]), str(kwargs["SIMPLE_KMEANS_DIR"]), str(kwargs["CLEMENT_DIR"]), str(kwargs["SCICLONE_DIR"]), str(kwargs["PYCLONEVI_DIR"]) , str(kwargs["QUANTUMCLONE_DIR"]),  str(kwargs["COMBINED_OUTPUT_DIR"]), 
                                                     str(kwargs["SCORING"]), str(kwargs["MAKEONE_STRICT"]), str(kwargs["MAXIMUM_NUM_PARENT"])     ] )
                 n = n  + 1
-                os.system (command)
+                # if os.path.exists( kwargs["CLEMENT_DIR"] ) == False:
+                #     print (kwargs["CLEMENT_DIR"]  )
+                #os.system (command)
 
 
                 #2. MatrixFormation + SigProfiler
@@ -124,6 +125,9 @@ def Other_tissues (SCRIPT_DIR ) :
                                     "--DONOR", DONOR,
                                     "--TISSUE", TISSUE,
                                     "--OUTPUT_DIR", str( kwargs["OUTPUT_DIR"] ) ])
+
+                    # if os.path.exists( kwargs["OUTPUT_DIR"] + "/output/Assignment/Assignment_Solution/Activities/Assignment_Solution_Activities.txt" ) == False:
+                    #     print (kwargs["OUTPUT_DIR"])
                     os.system (command)
 
 

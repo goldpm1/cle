@@ -1,0 +1,16 @@
+NUM_BLOCK	tool	RMSE_mean	MS_mean
+1	CLEMENT_decision	0.15	70.25 (99.5-99.9% ↑)
+1	pyclonevi	0.82	70.5
+1	quantumclone	0.83	70.58
+1	sciclone	0.79	70.35
+1	simpleK_elbow	0.53	64.05
+2	CLEMENT_decision	0.8	77.62 (106.8-111.2% ↑)
+2	pyclonevi	1.42	72.69
+2	quantumclone	2.19	69.8
+2	sciclone	1.28	71.9
+2	simpleK_elbow	1.19	70.84
+3	CLEMENT_decision	0.87	80.63 (110.1-120.3% ↑)
+3	pyclonevi	1.73	73.23
+3	quantumclone	4.0	67.01
+3	sciclone	1.45	68.25
+3	simpleK_elbow	1.61	67.7

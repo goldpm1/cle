@@ -57,11 +57,11 @@ def Mingle_inter (SAMPLENAME, NUM_BLOCK):
 if __name__ == "__main__":
     kwargs = {}
     
-    NUM_BLOCK_LIST = [ 1  ]             # 1, 2, 3
+    NUM_BLOCK_LIST = [ 1, 2, 3  ]             # 1, 2, 3
     NUM_MUTATION_LIST = [ 500 ]    # 1000, 500, 100
-    DEPTH_MEAN_LIST = [ 250, 125, 30 ]       # 250, 125, 30
+    DEPTH_MEAN_LIST = [ 250 ]       # 250, 125, 30
     NUM_PARENT_LIST = [ 0, 1 ]       # 0 , 1
-    FP_RATIO_LIST = [ 0.0, 0.1  ]        # 0.0, 0.1
+    FP_RATIO_LIST = [ 0.025, 0.05, 0.075  ]        # 0.0, 0.025, 0.05, 0.075, 0.1
     AXIS_RATIO_LIST = [ -1 ]        # -1, 0.0, 0.2
     BENCHMARK_LIST = [0, 3]; kwargs["BENCHMARK_START"] = BENCHMARK_LIST[0];  kwargs["BENCHMARK_END"] = BENCHMARK_LIST[1]
 

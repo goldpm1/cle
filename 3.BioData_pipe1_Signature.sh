@@ -88,8 +88,6 @@ python3 ${SCRIPT_DIR}"/3.BioData_pipe1-3.Assignment.py" \
 
 cp ${OUTPUT_DIR}"/output/Assignment/Assignment_Solution/Activities/Assignment_Solution_Activity_Plots.pdf" ${PLOT_OUTPUT_PATH}
 
-#/data/project/Alzheimer/CLEMENT/03.combinedoutput/3.BioData/Moore_1D/adrenal_gland_zona_glomerulosa/PD28690-L2/SigProfiler/output/Assignment/Assignment_Solution/Activities/Assignment_Solution_Activity_Plots.pdf
-
 
 # SigProfiler : Extractor
 echo -e "\n------------------------------------------------------------------------------------------------ #4. SigProfiler : Extractor-----------------------------------------------------------------------------------------------"

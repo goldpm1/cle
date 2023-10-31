@@ -31,8 +31,8 @@ def main(input_containpos, df, np_vaf, np_BQ, step, option, **kwargs):
                             continue
                     
                     if (kwargs["SEX"] == "M") & ( bool(re.search(r'X|Y', input_containpos.iloc[ind]["pos"]))  == True  ) :
-                        sum_depth = sum_depth + df[ind][i]["depth"] * 2
-                        sum_alt = sum_alt + df[ind][i]["alt"]
+                        sum_depth = sum_depth + df[ind][i]["depth"]
+                        sum_alt = sum_alt + int( df[ind][i]["alt"] / 2 )
                     else: #Most of the cases
                         sum_depth = sum_depth + df[ind][i]["depth"]
                         sum_alt = sum_alt + df[ind][i]["alt"]

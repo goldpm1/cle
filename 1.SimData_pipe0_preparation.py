@@ -6,11 +6,36 @@ import copy
 import collections
 from random import *
 
+def custDist(x):
+    if x < 10:
+        return 0.3
+    elif x <= 30:
+        return 0.5
+    elif x <= 80:
+        return 0.3
+    else:
+        return 0.5
+
+def random_custDist(x0, x1, custDist, size=None, nControl=10**6):
+    samples=[]
+    nLoop=0
+    while len(samples) < size and nLoop < nControl:
+        x = np.random.uniform(low=x0,high=x1)
+        prop = custDist(x)
+        assert prop >=0 and prop <= 1
+        if np.random.uniform(low = 0,high = 1) <=prop:
+            samples += [x]
+        nLoop+=1
+    return samples
+
+
+################################################################################################################
+
 
 # python3  1.SimData_pipe0_preparation.py --NUM_CLONE 4 --NUM_BLOCK 2 --NUM_MUTATION 500 --FP_RATIO 0.1
 def TN_prior_cal(x):
     from scipy.special import expit
-    return (1 - expit( 200*x - 5)) * 0.15
+    return (1 - expit( 100*x - 5)) * 0.15
 
 def fp_sampling ( **kwargs ):
     import random 
@@ -87,7 +112,8 @@ def dirichlet_sampling ( trial, **kwargs ):
                 num_zero = 0
             num_zero = 0
             #li = np.array( [0] * num_zero +  list ( np.round ( np.random.uniform (1, 100, NUM_CLONE_ACTIVE - num_zero) ) ) )    # 0 ~100 중에 j - num_zero 개를 뽑음
-            li = np.array(  list ( np.round ( np.random.uniform (1, 100, NUM_CLONE_ACTIVE - num_zero) ) ) )    # 0 ~100 중에 j - num_zero 개를 뽑음
+            li = np.array(  list ( np.round ( np.random.uniform (1, 100, NUM_CLONE_ACTIVE - num_zero) ) ) )    # 0 ~100 중에 j - num_zero 개를 뽑음 (축 상은 뽑지 않음)
+            li = np.array ( random_custDist(x0 = 1 ,x1 = 100, custDist = custDist, size = NUM_CLONE_ACTIVE - num_zero) )    # 내가 설정한 probability model을 통해 선정하는 것
         elif kwargs["SimData"] == "lump":
             num_zero = int ( np.random.uniform (0, math.ceil (NUM_CLONE_ACTIVE / 3) ) ) if NUM_BLOCK >= 2 else 0      # 맘에 안들면 무조건 0으로 하면 됨. 좀더 확률을 낮추자
             if NUM_BLOCK == 1:         # 1차원에서는 0을 빼주자
@@ -100,14 +126,7 @@ def dirichlet_sampling ( trial, **kwargs ):
         random.shuffle (li)       # 섞어주자
         for j in range (NUM_CLONE_ACTIVE):      # 기준값(li)에서 binomial로 난수 추출
             if kwargs["SimData"] == "decoy":
-                if li[j] < 25:
-                    p = 0.3
-                elif li[j] < 40:
-                    p = 0.4
-                elif li[j]  < 70:
-                    p = 0.5
-                else:
-                    p = 0.6
+                p = 0.5
             elif kwargs["SimData"] == "lump":
                 p = 0.5
 
@@ -169,7 +188,8 @@ def dirichlet_sampling ( trial, **kwargs ):
     # FP sampling
     k = int (NUM_MUTATION * ( 1 - kwargs["FP_RATIO"] ))  # 맨 뒤에부터 하나씩 추가
     while k < NUM_MUTATION:
-        pp = fp_sampling (**kwargs)
+        #pp = fp_sampling (**kwargs)
+        pp = np.array ( random_custDist (0, 1, TN_prior_cal, size = kwargs["NUM_BLOCK"] ) )
 
         if np.sum (pp) != 0:
             np_vaf [k] = pp
@@ -181,6 +201,9 @@ def dirichlet_sampling ( trial, **kwargs ):
                     if df[k][i]["depth"] > kwargs["DEPTH_CUTOFF"]:
                         break
                 df[k][i]["alt"] =  round( df[k][i]["depth"] * np_vaf [k][i] )
+                if df[k][i]["alt"] == 0:     # 0은 제외해주자.
+                    df[k][i]["alt"] = 1
+                    np_vaf[k][i] = df[k][i]["depth"] / 1
                 df[k][i]["ref"] = df[k][i]["depth"]  -  df[k][i]["alt"] 
                 df[k][i]["membership_answer"] = "FP"
 

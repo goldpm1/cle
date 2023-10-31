@@ -50,8 +50,8 @@ def makedf ( **kwargs ):
         rmv_bracket=input_containpos.iloc[row][2].split(",")
         for i in range(0, len(rmv_bracket), 2 ):
             depth = int(rmv_bracket[i])
-            if (kwargs["SEX"] == "M") & ( ("chrX" in str(input_containpos.iloc[row][0])) | ("chrY" in str(input_containpos.iloc[row][0])) ) :    # 남자이고 sex chromosome이면 depth를 늘려줌
-                depth = depth * 2
+            # if (kwargs["SEX"] == "M") & ( ("chrX" in str(input_containpos.iloc[row][0])) | ("chrY" in str(input_containpos.iloc[row][0])) ) :    # 남자이고 sex chromosome이면 depth를 늘려줌
+            #     depth = depth * 2
             alt = int(rmv_bracket[i+1])
             ref = depth - alt
 

@@ -12,9 +12,8 @@ def phred_to_percentile (phred_score):
 def expected_calculator (  i, j, k, mixture, df, input_containpos, **kwargs ):
     import re
 
-
     if (kwargs["SEX"] == "M") & ( bool(re.search(r'X|Y', input_containpos.iloc[k]["pos"]))  == True  ) :
-        depth_calc, alt_calc = int(df[k][i]["depth"] ), int( round ( df[k][i]["depth"] * mixture[i][j]) ) 
+        depth_calc, alt_calc = int(df[k][i]["depth"] ), int( round ( df[k][i]["depth"] * mixture[i][j]) )  
     else:
         depth_calc, alt_calc = int(df[k][i]["depth"] ), int( round ( df[k][i]["depth"] * mixture[i][j] * 0.5) )
 
@@ -45,11 +44,11 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
     check = 0
 
 
-    # if kwargs["DEBUG"] == True:
-    #     if (k == debug_k):
-    #         print ("\t\t\tk = {}\tnp_vaf*2 = {}".format(k, np_vaf[k]*2 ))
-    # else:
-    #     debug_k = []
+    if kwargs["DEBUG"] == True:
+        if (k == debug_k):
+            print ("\t\t\tk = {}\tnp_vaf*2 = {}".format(k, np_vaf[k]*2 ))
+    else:
+        debug_k = []
 
 
     for j in range(kwargs["NUM_CLONE"]): 
@@ -66,7 +65,6 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
                     depth_calc, alt_calc, depth_obs, alt_obs, a, b = expected_calculator (  i, j, k, mixture, df, input_containpos, **kwargs )
                     try:
                         p2_numerator = scipy.stats.betabinom.pmf(alt_obs, depth_obs, a+1, b+1)   # 분자
-                        #p2_numerator = scipy.spatial.distance.euclidean ( np_vaf[k] * 2 ,  np.array ( mixture [: , j] ) )
                         
                         p2_denominator = 0   # 분모
                         for whole_j in range(kwargs["NUM_CLONE"]): 
@@ -74,7 +72,6 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
                                 depth_calc, alt_calc, depth_obs, alt_obs, a, b = expected_calculator (  i, whole_j, k, mixture, df, input_containpos, **kwargs )
                                 try:
                                     p2_denominator += scipy.stats.betabinom.pmf( alt_obs, depth_obs, a+1, b+1 )
-                                    #p2_denominator += scipy.spatial.distance.euclidean(  np_vaf[k] * 2  ,  np.array ( mixture [:, whole_j] ) )
                                 except:
                                     p2_denominator += 0
                         p2 = p2_numerator / p2_denominator
@@ -118,14 +115,12 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
 
                     try:
                         p2_numerator = scipy.stats.betabinom.pmf(alt_obs, depth_obs, a+1, b+1)   # 분자
-                        #p2_numerator = scipy.spatial.distance.euclidean ( np_vaf[k] * 2 ,  np.array ( mixture [: , j] ) )
                         p2_denominator = 0   # 분모
                         for whole_j in range(kwargs["NUM_CLONE"]): 
                             if (whole_j != step.fp_index):
                                 depth_calc, alt_calc, depth_obs, alt_obs, a, b = expected_calculator (  i, whole_j, k, mixture, df, input_containpos, **kwargs )
                                 try:
                                     p2_denominator += scipy.stats.betabinom.pmf( alt_obs, depth_obs, a+1, b+1 )
-                                    #p2_denominator += scipy.spatial.distance.euclidean(  np_vaf[k] * 2  ,  np.array ( mixture [:, whole_j] ) )
                                 except:
                                     p2_denominator += 0
                         
@@ -146,10 +141,10 @@ def calc_likelihood(input_containpos, df,  np_vaf, np_BQ, step, k, **kwargs):
                         p = p1 - 400
 
 
-                # if(kwargs ["DEBUG"] == True ) :
-                #     if  ( k == debug_k)  :            
-                #         np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
-                #         print ( "\t\t\t\t\t\tj = {}\ti = {}\tp(log) = {}\tp = {}".format( j, i,  round(p, 2 ), np.round ( np.power (10, p) , 2)  ) )
+                if(kwargs ["DEBUG"] == True ) :
+                    if  ( k == debug_k)  :            
+                        np.set_printoptions(suppress=True)   # Scientific expression이 싫어요
+                        print ( "\t\t\t\t\t\t\t\t→ p(log) = {}\tp = {}".format( j, i,  round(p, 2 ), np.round ( np.power (10, p) , 2)  ) )
 
 
             prob[j] += p
@@ -195,7 +190,7 @@ def main (input_containpos, df, np_vaf, np_BQ, step, **kwargs):
     if kwargs["DEBUG"] == True:
         # debug_k = random.choice ( np.where(  ( (np_vaf[:, 0]  > 0.1 ) &  (np_vaf[:, 0] < 0.14 )) )  [0] )
         # print ( "debug_k = {}".format(debug_k))
-        debug_k = 221
+        debug_k = 467
     else:
         debug_k = -1
 

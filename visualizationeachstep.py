@@ -33,6 +33,15 @@ def drawfigure_1d_hard(bunch, np_vaf, output_filename, sum_mixture_beforenormali
     x = np.linspace(0, 2, 200)
 
     for k in sorted(list(set(bunch.membership))):     
+        # if (bunch.fp_index == k):  # FP를 따로 그려줌
+        #     np_vaf_new_index, np_vaf_new = extract.npvaf(np_vaf, bunch.membership, k)           # extract membership1  == clone_num
+        #     print (np_vaf[ np_vaf_new_index])
+        #     print (np_vaf)
+        #     kde_np_vaf_new = kde.gaussian_kde(np_vaf_new[:, 0] * 2)
+        #     weight = len(np_vaf_new) / kwargs["NUM_MUTATION"]  
+        #     y = kde_np_vaf_new(x) * weight
+        #     ax.plot(x, y, color=Gr_10[10], linewidth=5, label="FP {} (n = {})".format(k, np.bincount(bunch.membership)[k]))   
+
         np_vaf_new_index, np_vaf_new = extract.npvaf(np_vaf, bunch.membership, k)           # extract membership1  == clone_num
 
         try:   
@@ -43,14 +52,18 @@ def drawfigure_1d_hard(bunch, np_vaf, output_filename, sum_mixture_beforenormali
             if max_y < np.max(y):
                 max_y = np.max(y)
 
-            if k in bunch.makeone_index:
-                ax.plot(x, y, color=colorlist[k], linewidth=5, label="clone {}".format(k))
+            if k == bunch.fp_index:  # FP를 따로 그려줌
+                #print (k)
+                ax.plot(x, y, color=Gr_10[10], linewidth=5, label="FP (n = {})".format(k, np.bincount(bunch.membership)[k]))
+            elif k in bunch.makeone_index:
+                ax.plot(x, y, color=colorlist[k], linewidth=5, label="clone {} (n = {})".format(k, np.bincount(bunch.membership)[k]))
             else:
-                ax.plot(x, y, color=colorlist[k], linewidth=2, label="clone {}".format(k), linestyle="-.")
+                ax.plot(x, y, color=colorlist[k], linewidth=2, label="clone {} (n = {})".format(k, np.bincount(bunch.membership)[k]), linestyle="-.")
             ax.text(bunch.mixture[0, k], np.max(y) * 1.1, "{} (n={})".format(bunch.mixture[0,  k],  np.bincount(bunch.membership)[k]), ha="center", fontdict = {"fontsize": 16, "fontweight" : "bold"})
 
         except:
             continue
+
 
     
 

@@ -10,13 +10,13 @@ print (SCRIPT_DIR, "\n")
 if __name__ == "__main__":
     kwargs = {}
 
-    NUM_BLOCK_LIST = [ 1, 2, 3 ]             # 1, 2, 3
+    NUM_BLOCK_LIST = [ 1 ]             # 1, 2, 3
     NUM_MUTATION_LIST = [ 500 ]    # 100, 500, 1000
     DEPTH_MEAN_LIST = [ 250 ]       # 250, 125, 30
-    FP_RATIO_LIST = [ 0.0, 0.025, 0.05, 0.075, 0.1  ]        # 0.0, 0.025, 0.05, 0.075, 0.1
+    FP_RATIO_LIST = [ 0.1  ]        # 0.0, 0.025, 0.05, 0.075, 0.1
     SIMDATA_LIST = [ "decoy", "lump" ] # "decoy", "lump"
-    NUM_CLONE_LIST = [2, 3, 4, 5, 6,  7]      # 2, 3, 4, 5, 6, 7
-    BENCHMARK_LIST = [4, 9]; kwargs["BENCHMARK_START"] = BENCHMARK_LIST[0];  kwargs["BENCHMARK_END"] = BENCHMARK_LIST[1]
+    NUM_CLONE_LIST = [2, 3, 4, 5, 6, 7]      # 2, 3, 4, 5, 6, 7
+    BENCHMARK_LIST = [0, 3]; kwargs["BENCHMARK_START"] = BENCHMARK_LIST[0];  kwargs["BENCHMARK_END"] = BENCHMARK_LIST[1]
 
     kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] = 2, 7
     kwargs["MAXIMUM_NUM_PARENT"] = 0
@@ -159,7 +159,6 @@ if __name__ == "__main__":
                                                 "--OUTPUT_JPG", str(kwargs["OUTPUT_JPG"]),
                                                 "--FP_RATIO", str(kwargs["FP_RATIO"])
                                                 ])
-                            #print (command3)
                             os.system(command3)
                             n += 1
 
@@ -188,7 +187,6 @@ if __name__ == "__main__":
                                                                 "--OUTPUT_FINAL_TABLE", str(INPUT_DIR) + "/BM_FINAL.tsv"
                                                                     ]  )
                         
-                        # print (command4)
                         os.system(command4)
                         n += 1
     print ("Total job = {}".format( n ))

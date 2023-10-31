@@ -523,7 +523,7 @@ def set_initial_parameter(np_vaf, mixture_kmeans, OUTPUT_FILENAME, step, trial, 
     initial_mixture = initial_mixture[:, sorted_indices]
 
     #################  fp_index & tn_index  ###############################################
-    step.mixture  = np.hstack(( initial_mixture,  np.zeros( (kwargs["NUM_BLOCK"], 1),  dtype = "float")  ))    
+    step.mixture  = np.hstack(( initial_mixture,  np.zeros( (kwargs["NUM_BLOCK"], 1),  dtype = "float")  ))         # 맨 뒤에 FP를 위한 공간을 만듬
     step.fp_index = kwargs["NUM_CLONE_ITER"]
     kwargs["NUM_CLONE"] = kwargs["NUM_CLONE_ITER"] + 1
 

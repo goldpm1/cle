@@ -36,21 +36,6 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
             while trial_index < kwargs["TRIAL_NO"]:
                 kwargs["TRIAL"] = trial_index
 
-                # if NUM_CLONE ==3 :
-                #     if kwargs["TRIAL"] != 10:
-                #         trial_index = trial_index + 1
-                #         continue
-
-                # if NUM_CLONE == 4:
-                #     trial_index = trial_index + 1
-                #     continue
-
-                # if NUM_CLONE == 5:
-                #     if kwargs["TRIAL"] != 3:
-                #         trial_index = trial_index + 1
-                #         continue
-
-
                 step = Bunch.Bunch1(NUM_MUTATION , NUM_BLOCK, NUM_CLONE, kwargs["STEP_NO"])
 
                 step, kwargs = miscellaneous.set_initial_parameter(np_vaf, mixture_kmeans, 
@@ -74,10 +59,10 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                         print ("\t\tStep #{}".format(step_index))
 
 
-                    # if ( kwargs ["NUM_CLONE_ITER"] == 3 )  & (kwargs["TRIAL"] in [0] ) :
-                    #     kwargs["DEBUG"]  = True
-                    # else:
-                    #     kwargs["DEBUG"] = False
+                    if ( kwargs ["NUM_CLONE_ITER"] == 4 )  & (kwargs["TRIAL"] in [1, 2] ) :
+                        kwargs["DEBUG"]  = True
+                    else:
+                        kwargs["DEBUG"] = False
 
                     step = Estep.main(input_containpos, df, np_vaf, np_BQ, step, **kwargs)  
                     

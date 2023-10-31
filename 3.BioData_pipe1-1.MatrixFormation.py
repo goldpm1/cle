@@ -40,7 +40,10 @@ def extract (Moore_VCF, **kwargs):
         pos_Clone_no =  list ( npvaf_Clone_no.iloc[:, 0] )
         pos_whole += pos_Clone_no
 
+
+        print (pos_Clone_no)
         Moore_VCF_Clone_no = Moore_VCF [Moore_VCF['pos'].isin( pos_Clone_no ) == True]
+        print (Moore_VCF_Clone_no)
         
         kwargs["OUTPUT_PATH"] = kwargs["OUTPUT_DIR"] + "/clone{}.txt".format(Clone_no)
         GenerateMatrix (Moore_VCF_Clone_no, Clone_no, **kwargs)
@@ -81,24 +84,9 @@ if __name__ == "__main__":
 
     print ("DONOR = {}\tTISSUE = {}\tOUTPUT_DIR = {}".format (kwargs["DONOR"], kwargs["TISSUE"], kwargs["OUTPUT_DIR"]))
 
-    Moore_VCF = pd.read_csv("/data/project/Alzheimer/CLEMENT/resource/paper/whole_info.txt", sep = "\t")
+    Moore_VCF = pd.read_csv("/data/project/Alzheimer/CLEMENT/resource/paper/old/whole_info.txt", sep = "\t")
 
-    # filter_row = []
-    # if ("fasciculata" in kwargs["TISSUE"]) :
-    #     Moore_VCF = Moore_VCF [  (Moore_VCF['Sample'].str.contains( kwargs["TISSUE"].split("fasciculata_")[1] )) & (Moore_VCF[ "Tissue" ] == 'adrenal_gland_zona_fasciculata') ]
-    # elif ("glomerulosa" in kwargs["TISSUE"]):
-    #     Moore_VCF = Moore_VCF [  (Moore_VCF['Sample'].str.contains( kwargs["TISSUE"].split("glomerulosa_")[1] )) & (Moore_VCF[ "Tissue" ] == 'adrenal_gland_zona_glomerulosa') ]
-    # elif ("reticularis" in kwargs["TISSUE"]):
-    #     Moore_VCF = Moore_VCF [  (Moore_VCF['Sample'].str.contains( kwargs["TISSUE"].split("reticularis_")[1] )) & (Moore_VCF[ "Tissue" ] == 'adrenal_gland_zona_reticularis') ]
-    # else:
-    #     Moore_VCF = Moore_VCF [ (Moore_VCF ["DonorID"] == kwargs["DONOR"] ) & (Moore_VCF["Tissue"] == kwargs["TISSUE"]) ]
-
-    
-    # Moore_VCF = Moore_VCF [filter_row]
-    # Moore_VCF = Moore_VCF.drop_duplicates(['Start'], keep = 'first')
-    # Moore_VCF = Moore_VCF.reset_index(drop = True)
-    # print (Moore_VCF.shape)
-
+    #"/data/project/Alzheimer/CLEMENT/resource/paper/whole_info.txt"
     
 
     # column을 소문자로 바꾸기
