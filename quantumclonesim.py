@@ -6,9 +6,11 @@ import palettable
 import scoring
 import copy
 
-def main (INPUT_QUANTUMCLONE_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answer, membership_answer, membership_answer_numerical, samplename_dict_input, samplename_dict_input_rev, **kwargs):   
+def main (INPUT_QUANTUMCLONE_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answer, membership_answer, membership_answer_numerical,  **kwargs):   
     #  INPUT_QUANTUMCLONE_RESULT =  "/data/project/Alzheimer/EM_cluster/old/pilot/04.EM_input/quantumclone/result/results.tsv"
     #  OUTPUT_FILENAME = "./output/MRS_quantumclone.jpg" 
+
+    samplename_dict_input, samplename_dict_input_rev = kwargs["samplename_dict_CharacterToNum"], kwargs["samplename_dict_NumToCharacter"] 
 
     
     df = pd.read_csv (INPUT_QUANTUMCLONE_RESULT + "/output0.txt", sep = "\t")
@@ -78,12 +80,11 @@ def main (INPUT_QUANTUMCLONE_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answ
 
     # 채점하기
     if kwargs["SCORING"] == True:
-        score_df, score = \
-            scoring.mixturebased(mixture_answer, mixture_quantumclone, membership_answer, membership_quantumclone, samplename_dict_input, samplename_dict_input_rev, "No", -1, "QuantumClone", **kwargs) # FP는 무조건 못 잡을테니 -1로 넘겨준다
-        max_score, sample_dict_PtoA, sample_dict_AtoP = scoring.Scoring ( membership_answer, membership_answer_numerical, membership_quantumclone, -1, []  ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1  , parent_index는 []
+        #score_df, score = scoring.mixturebased(mixture_answer, mixture_quantumclone, membership_answer, membership_quantumclone, samplename_dict_input, samplename_dict_input_rev, "No", -1, "QuantumClone", **kwargs) # FP는 무조건 못 잡을테니 -1로 넘겨준다
+        max_score, sample_dict_PtoA, sample_dict_AtoP, score_df = scoring.Scoring ( membership_answer, membership_answer_numerical, membership_quantumclone, -1, [] , **kwargs ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1  , parent_index는 []
 
         mixture_quantumclone = np.round(mixture_quantumclone, 2)
-        return score_df, score, max_score, membership_quantumclone, mixture_quantumclone, sample_dict_PtoA, sample_dict_AtoP 
+        return score_df, max_score, max_score, membership_quantumclone, mixture_quantumclone, sample_dict_PtoA, sample_dict_AtoP 
 
     else:
         return pd.DataFrame(), -1, -1, membership_quantumclone, mixture_quantumclone, {}, {}

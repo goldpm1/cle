@@ -1,13 +1,13 @@
 DEPTH_MEAN	tool	RMSE_mean	MS_mean
-30	CLEMENT_decision	2.39	54.03 (100.5-110.6% ↑)
-30	pyclonevi	2.52	50.9
-30	quantumclone	2.56	53.75
-30	sciclone	2.24	48.85
-125	CLEMENT_decision	1.38	70.73 (106.4-113.2% ↑)
-125	pyclonevi	1.44	66.49
-125	quantumclone	2.42	62.49
-125	sciclone	1.33	62.79
-250	CLEMENT_decision	1.22	77.34 (108.0-114.7% ↑)
-250	pyclonevi	1.28	71.59
-250	quantumclone	2.64	67.41
-250	sciclone	1.31	69.05
+30	CLEMENT_decision	1.56	60.26 (95.3-100.1% ↑)
+30	pyclonevi	1.64	60.21
+30	quantumclone	1.65	63.26
+30	sciclone	1.69	63.21
+125	CLEMENT_decision	1.27	71.4 (105.8-110.6% ↑)
+125	pyclonevi	1.33	67.46
+125	quantumclone	1.96	64.54
+125	sciclone	1.48	67.49
+250	CLEMENT_decision	1.25	80.19 (109.4-117.6% ↑)
+250	pyclonevi	1.31	73.28
+250	quantumclone	2.81	68.16
+250	sciclone	1.23	72.1

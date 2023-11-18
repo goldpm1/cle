@@ -37,6 +37,7 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
     Gr_10 = palettable.scientific.sequential.GrayC_20.mpl_colors
 
     colorlist = [i for i in safe7]
+    colorlist = ["royalblue", "firebrick", "forestgreen", "darkorange", Gr_10[6], Gr_10[5], Gr_10[4]]
     sns.set_style("white")
     #sns.set_palette("tab10")
     sns.set_palette(sns.color_palette(colorlist))
@@ -46,6 +47,15 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
     # for font in font_dirs:
     #     matplotlib.font_manager.fontManager.addfont(font)
     matplotlib.rcParams["font.family"] = "arial"
+
+    output_result = open (kwargs["OUTPUT_RESULT_TABLE"], "w")
+    print ("\n")
+    for i, tool in enumerate( toollist ):
+        print ("{}\t{}\t{}\t{}\t{}\t{}\t{}".format( tool, round ( np.mean (result.score_record [i , : ]) , 2) ,  round ( np.std (result.score_record [i , : ]) , 2), round ( np.mean (result.NUM_CLONE_record [i , : ]) , 2) ,  round ( np.std (result.NUM_CLONE_record [i , : ]) , 2) , round ( np.mean (result.ARI_record [i , : ]) , 2) ,  round ( np.std (result.ARI_record [i , : ]) , 2)  )  )
+        print ("{}\t{}\t{}\t{}\t{}\t{}\t{}".format( tool, round ( np.mean (result.score_record [i , : ]) , 2) ,  round ( np.std (result.score_record [i , : ]) , 2), round ( np.mean (result.NUM_CLONE_record [i , : ]) , 2) ,  round ( np.std (result.NUM_CLONE_record [i , : ]) , 2), round ( np.mean (result.ARI_record [i , : ]) , 2) ,  round ( np.std (result.ARI_record [i , : ]) , 2)   ), file = output_result)
+    print ("\n")
+    output_result.close()
+
 
     # Seaborn을 위해 df를 만들기
     df = pd.DataFrame (columns = ["tool", "score",  "ARI", "NUM_CLONE_answer", "runningtime"] )
@@ -128,27 +138,31 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
 
 
 if __name__ == "__main__":    
-    import argparse, os
+    import argparse, os, subprocess
 
     parser = argparse.ArgumentParser(description='The below is usage direction.')
+    parser.add_argument('--LOG_DIR', type = str)
     parser.add_argument('--COMBINED_OUTPUT_DIR', type = str)
     parser.add_argument('--SAMPLENAME', type = str)
     parser.add_argument('--BENCHMARK_START', type = int)
     parser.add_argument('--BENCHMARK_END', type = int)
     parser.add_argument('--OUTPUT_TTEST', type = str)
     parser.add_argument('--OUTPUT_JPG', type = str)
+    parser.add_argument('--OUTPUT_RESULT_TABLE', type = str)
     parser.add_argument('--FP_RATIO', type = float)
 
     kwargs = {}
     args = parser.parse_args()
 
 
+    kwargs["LOG_DIR"] = args.LOG_DIR
     kwargs["COMBINED_OUTPUT_DIR"] = args.COMBINED_OUTPUT_DIR
     kwargs["SAMPLENAME"] = args.SAMPLENAME
     kwargs["BENCHMARK_START"] = int(args.BENCHMARK_START)
     kwargs["BENCHMARK_END"] = int(args.BENCHMARK_END)
     kwargs["OUTPUT_TTEST"] = args.OUTPUT_TTEST
     kwargs["OUTPUT_JPG"] = args.OUTPUT_JPG
+    kwargs["OUTPUT_RESULT_TABLE"] = args.OUTPUT_RESULT_TABLE
     kwargs["FP_RATIO"] = float( args.FP_RATIO )
 
 
@@ -164,6 +178,11 @@ if __name__ == "__main__":
 
             if os.path.exists( kwargs["COMBINED_OUTPUT_DIR"] + "/" + str(j) + "/result/" + tool + ".results.txt" ) == True:
                 inputdf = pd.read_csv ( kwargs["COMBINED_OUTPUT_DIR"] + "/" + str(j) + "/result/" + tool + ".results.txt", sep = "\t", header = None)
+
+                # log 복사
+                subprocess.run(["mkdir", "-p",  kwargs["LOG_DIR"] + "/" + str(j) , kwargs["COMBINED_OUTPUT_DIR"] + "/" + str(j) + "/log"], shell=False)
+                subprocess.run(["cp", "-rf",  kwargs["LOG_DIR"] + "/" + str(j) , kwargs["COMBINED_OUTPUT_DIR"] + "/" + str(j) + "/log"], shell=False)
+                
 
                 for k in range (inputdf.shape[0]):
                     if inputdf.iloc[k][0] == "score":

@@ -1,0 +1,13 @@
+NUM_BLOCK	tool	RMSE_mean
+1	CLEMENT_decision	0.62
+1	pyclonevi	2.54
+1	quantumclone	2.63
+1	sciclone	2.52
+2	CLEMENT_decision	0.2
+2	pyclonevi	2.02
+2	quantumclone	1.79
+2	sciclone	1.55
+3	CLEMENT_decision	0.0
+3	pyclonevi	1.86
+3	quantumclone	1.66
+3	sciclone	0.84

@@ -87,7 +87,7 @@ def drawfigure_2d(membership_left, mixture_left, membership_right, mixture_right
     matplotlib.rcParams["font.family"] = kwargs["FONT_FAMILY"]
 
     if (includeoutlier == True ) &  ("FP" in list(score_df["answer"])):
-        colorlist[ np.where(score_df["answer"] == "FP")[0][0] ] = Gr_10[16]        # Draw FP in black
+        colorlist[ np.where(score_df["answer"] == "FP")[0][0] ] = Gr_10[9]        # Draw FP in black
 
     if mixture_right.shape[0] > 2:  # more than 3 samples
         dimensionreduction = "SVD"
@@ -138,18 +138,29 @@ def drawfigure_2d(membership_left, mixture_left, membership_right, mixture_right
     
 
     # Scatter plot
+    cluster_unmatched = {}
+    color_unmatched = score_df.shape[0]   # 이것부터 시작
     for k in range(len(membership_left)):
         try:
             i =  np.where(score_df["answer"] == membership_left[k])[0][0] 
             ax[0].scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, alpha=1, color=[colorlist[ i ]])
         except:
-            print ("What happened in visualizationpair.py?\n", membership_left[k], score_df)
+            i = color_unmatched
+            ax[0].scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, alpha=1, color=[colorlist[ i ]])
+            color_unmatched += 1
+            print ("What happened in visualizationpair.py?\n{}\n{}\n{}".format ( membership_left[k], score_df, i ) )
     for k in range(len(membership_right)):
-        i = np.where(score_df["predicted"] == membership_right[k])[0][0] 
-        if (includeoutlier == True) & (membership_right[k] == mixture_right.shape[1] - 1):   #FP
-            ax[1].scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, alpha=1, color= Gr_10[10])
-        else:    
+        try:
+            i = np.where(score_df["predicted"] == membership_right[k])[0][0] 
+            if (includeoutlier == True) & (membership_right[k] == mixture_right.shape[1] - 1):   #FP
+                ax[1].scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, alpha=1, color= Gr_10[10])
+            else:    
+                ax[1].scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, alpha=1, color=[colorlist[ i ]])
+        except:
+            i = color_unmatched
             ax[1].scatter(np_vaf[k, 0] * 2, np_vaf[k, 1] * 2, alpha=1, color=[colorlist[ i ]])
+            color_unmatched += 1
+            print ("What happened in visualizationpair.py?\n{}\n{}\n{}".format ( membership_right[k], score_df, i ) )
 
 
 
@@ -178,8 +189,6 @@ def drawfigure_2d(membership_left, mixture_left, membership_right, mixture_right
         for sample_index in range(xx): 
             x_mean = mixture_right[0][sample_index]
             y_mean = mixture_right[1][sample_index]
-            x_mean_list.append(x_mean)
-            y_mean_list.append(y_mean)
             ax[1].text(x_mean, y_mean, "{0}".format([x_mean, y_mean]), verticalalignment='top', fontdict = {"fontsize": 16, "fontweight" : "bold"})
             try:
                 i = np.where(score_df["predicted"] == sample_index)[0][0] 
@@ -188,8 +197,11 @@ def drawfigure_2d(membership_left, mixture_left, membership_right, mixture_right
             
             if (x_mean == 0) & (y_mean == 0):  # FP
                 ax[1].scatter(x_mean, y_mean, marker='s', color= Gr_10[10], edgecolor='black', s=200, label="cluster" + str(sample_index) + " : " + str(list(membership_right).count(sample_index)))            
+                continue
 
-            elif (makeone_index != []) & (makeone_index != None):
+            x_mean_list.append(x_mean)
+            y_mean_list.append(y_mean)
+            if (makeone_index != []) & (makeone_index != None):
                 if sample_index in makeone_index:
                     ax[1].scatter(x_mean, y_mean, marker='*', color=colorlist[i], edgecolor='black', s=200, label="cluster" + str(sample_index) + " : " + str(list(membership_right).count(sample_index)) )
                 else:

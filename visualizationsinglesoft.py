@@ -48,10 +48,13 @@ def drawfigure_1d(membership, mixture, membership_p_normalize, output_suptitle, 
         # sample_index = 0	sample_value = 0	samplename_dict = {0: 0, 1: 1, 2: 2, 3: 3}
         
         if includeoutlier == True:
-            if sample_index == fp_index: 
+            if sample_index == fp_index:         
+                sns.distplot(pd.DataFrame(np_vaf[:, 0] * 2, columns=["vaf"])["vaf"], hist_kws={"weights": membership_p_normalize[:, sample_index], "rwidth": 0.8}, color = Gr_10[10],
+                         kde=False, bins=50, label="cluster FP  (mixture = {})".format(  str(round((mixture[0][ sample_index ]), 2))))
                 break
 
         if j in makeone_index:
+            #print ( "samplename_dict = {}\tsample_value = {}\tcolorlist = {}".format (samplename_dict, sample_value , colorlist) )
             sns.distplot(pd.DataFrame(np_vaf[:, 0] * 2, columns=["vaf"])["vaf"], hist_kws={"weights": membership_p_normalize[:, j], "linewidth": 1.4, "edgecolor": "black"}, kde_kws={
                          "linewidth": 5, "color": "gray"}, color=colorlist [ sample_value ], kde=False, bins=50, label="cluster {}  (mixture = {})".format(j,   str(round((mixture[0][j]), 2))))
             sum_x += mixture[0][j]

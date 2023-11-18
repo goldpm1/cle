@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import pandas as pd
 import EMhard
 
 
@@ -16,8 +17,14 @@ class Bunch1:        # step_hard, step_soft, trial_hard, trial_soft
         self.membership_p_record = np.zeros ( (K, NUM_MUTATION, NUM_CLONE + 1), dtype = "float")
         self.membership_p_normalize = np.zeros ( (NUM_MUTATION, NUM_CLONE + 1), dtype = "float")
         self.membership_p_normalize_record = np.zeros ( (K, NUM_MUTATION, NUM_CLONE + 1), dtype = "float")
+        self.posterior = float("-inf")
+        self.posterior_record = np.array ([  float("-inf") ] * (K))
         self.likelihood = float("-inf")
         self.likelihood_record = np.array ([  float("-inf") ] * (K))
+        self.posterior_normalized = float("-inf")
+        self.posterior_normalized_record = np.array ([  float("-inf") ] * (K))
+        self.likelihood_normalized = float("-inf")
+        self.likelihood_normalized_record = np.array ([  float("-inf") ] * (K))
         self.stepindex = 0
         self.stepindex_record = np.zeros (K , dtype = "int")
         self.max_step_index = -1
@@ -39,10 +46,12 @@ class Bunch1:        # step_hard, step_soft, trial_hard, trial_soft
         self.checkall_lenient = True
         self.checkall_lenient_record = np.zeros (K , dtype = "bool")
         self.less_than_min_cluster_size = False
+        self.df = pd.DataFrame ( columns = ["NUM_BLOCK", "TRIAL", "STEP", "STEP_TOTAL", "POSTERIOR", "LIKELIHOOD", "HARD_SOFT"] ) 
 
-    def acc (self, mixture, membership, likelihood, membership_p, membership_p_normalize, makeone_index, tn_index, fp_index, step_index, fp_member_index, includefp, fp_involuntary, checkall_strict, checkall_lenient, max_step_index, K):
+    def acc (self, mixture, membership, posterior, likelihood, membership_p, membership_p_normalize, makeone_index, tn_index, fp_index, step_index, fp_member_index, includefp, fp_involuntary, checkall_strict, checkall_lenient, max_step_index, K):
         self.mixture_record [K]= copy.deepcopy ( mixture )
         self.membership_record [K] = copy.deepcopy ( membership ) 
+        self.posterior_record [K] = posterior
         self.likelihood_record [K] = likelihood
         self.membership_p_record [K] = copy.deepcopy ( membership_p )
         self.membership_p_normalize_record [K] = copy.deepcopy ( membership_p_normalize )
@@ -65,7 +74,7 @@ class Bunch1:        # step_hard, step_soft, trial_hard, trial_soft
         self.checkall_lenient_record [K] = checkall_lenient
 
 
-    def find_max_likelihood_step (self, start, end):
+    def find_max_likelihood_step (self, start, end):         # For 
         if start > end:
             return -1, False
         
@@ -113,6 +122,8 @@ class Bunch1:        # step_hard, step_soft, trial_hard, trial_soft
         self.membership_p = copy.deepcopy  ( other.membership_p_record[ other_j ] ) 
         self.membership_p_record [self_i] = copy.deepcopy ( other.membership_p_record[ other_j ] )
         self.membership_p_normalize_record [self_i] = copy.deepcopy ( other.membership_p_normalize_record[ other_j ] )
+        self.posterior = copy.deepcopy ( other.posterior_record [ other_j ] )
+        self.posterior_record [ self_i ] = copy.deepcopy ( other.posterior_record [other_j] )
         self.likelihood = copy.deepcopy ( other.likelihood_record [ other_j ] )
         self.likelihood_record [ self_i ] = copy.deepcopy ( other.likelihood_record [other_j] )
         self.makeone_index = copy.deepcopy  ( other.makeone_index_record[ other_j ] )
@@ -143,6 +154,7 @@ class Bunch2:
         self.membership_record = [[]] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
         self.membership_p_record = [[]] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
         self.membership_p_normalize_record = [[]] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
+        self.posterior_record = np.array ([  float("-inf") ] * (kwargs["NUM_CLONE_TRIAL_END"] + 1))
         self.likelihood_record = np.array ([  float("-inf") ] * (kwargs["NUM_CLONE_TRIAL_END"] + 1))
         self.stepindex_record = np.array ([0] * (kwargs["NUM_CLONE_TRIAL_END"] + 1))
         self.trialindex_record = np.array ([-1] * (kwargs["NUM_CLONE_TRIAL_END"] + 1))
@@ -154,8 +166,9 @@ class Bunch2:
         self.fp_member_index_record = [[]] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
         self.tn_index_record = [[]] * (kwargs["NUM_CLONE_TRIAL_END"] + 1)
         self.max_step_index_record = np.array ([-1] * (kwargs["NUM_CLONE_TRIAL_END"] + 1))
+        self.df = pd.DataFrame ( columns =  ["NUM_BLOCK", "TRIAL", "STEP", "STEP_TOTAL", "POSTERIOR", "LIKELIHOOD", "HARD_SOFT", "NUM_CLONE"] ) 
 
-    def acc (self, mixture, membership, likelihood, membership_p, membership_p_normalize, step_index, trial_index, max_step_index, makeone_index, tn_index, fp_index, includefp, fp_involuntary, fp_member_index, **kwargs):
+    def acc (self, mixture, membership, posterior, likelihood, membership_p, membership_p_normalize, step_index, trial_index, max_step_index, makeone_index, trial_checkall_strict, tn_index, fp_index, includefp, fp_involuntary, fp_member_index, **kwargs):
         self.mixture = np.zeros ( (kwargs["NUM_BLOCK"], kwargs["NUM_CLONE"] + 1), dtype = "float")
         self.mixture_record [kwargs["NUM_CLONE_ITER"]] = copy.deepcopy  ( mixture ) 
         self.membership = np.zeros ( (kwargs["NUM_MUTATION"]), dtype = "int")
@@ -164,6 +177,7 @@ class Bunch2:
         self.membership_p_record [kwargs["NUM_CLONE_ITER"]] = copy.deepcopy  ( membership_p ) 
         self.membership_p_normalize = np.zeros ( (kwargs["NUM_MUTATION"], kwargs["NUM_CLONE"] + 1), dtype = "float")
         self.membership_p_normalize_record [kwargs["NUM_CLONE_ITER"]] = copy.deepcopy  ( membership_p_normalize )
+        self.posterior_record [kwargs["NUM_CLONE_ITER"]] = posterior
         self.likelihood_record [kwargs["NUM_CLONE_ITER"]] = likelihood
         self.stepindex = step_index
         self.stepindex_record [kwargs["NUM_CLONE_ITER"]] = step_index
@@ -172,6 +186,7 @@ class Bunch2:
         self.max_step_index = max_step_index
         self.max_step_index_record[kwargs["NUM_CLONE_ITER"]]  = max_step_index
         self.makeone_index_record [kwargs["NUM_CLONE_ITER"]] = copy.deepcopy  ( makeone_index )
+        self.checkall_strict_record [kwargs["NUM_CLONE_ITER"]] = trial_checkall_strict
         self.fp_index_record [kwargs["NUM_CLONE_ITER"]] = fp_index
         self.includefp_record  [kwargs["NUM_CLONE_ITER"]] = includefp
         self.fp_involuntary_record  [kwargs["NUM_CLONE_ITER"]] = fp_involuntary
@@ -185,6 +200,8 @@ class Bunch2:
     def copy (self, other, self_i, other_j):
         other.mixture = copy.deepcopy  ( self.mixture_record [ self_i ] )
         other.mixture_record [other_j ] = copy.deepcopy  ( self.mixture_record [ self_i ] )
+        other.posterior = copy.deepcopy  ( self.posterior_record [ self_i ] )
+        other.posterior_record [ other_j ] = copy.deepcopy  ( self.posterior_record [ self_i ] )
         other.likelihood = copy.deepcopy  ( self.likelihood_record [ self_i ] )
         other.likelihood_record [ other_j ] = copy.deepcopy  ( self.likelihood_record [ self_i ] )
         other.membership = copy.deepcopy  ( self.membership_record [ self_i ] )

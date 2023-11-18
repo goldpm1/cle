@@ -1,13 +1,13 @@
 NUM_MUTATION	tool	RMSE_mean	MS_mean
-100	CLEMENT_decision	1.94	54.91 (107.3-114.3% ↑)
-100	pyclonevi	1.6	51.17
-100	quantumclone	2.57	48.06
-100	sciclone	1.63	48.73
-500	CLEMENT_decision	1.53	66.98 (109.4-116.0% ↑)
-500	pyclonevi	1.53	61.22
-500	quantumclone	2.79	57.72
-500	sciclone	1.57	58.77
-1000	CLEMENT_decision	1.41	69.0 (108.5-115.0% ↑)
-1000	pyclonevi	1.76	63.61
-1000	quantumclone	2.8	60.02
-1000	sciclone	1.75	61.34
+100	CLEMENT_decision	1.78	64.75 (104.1-109.4% ↑)
+100	pyclonevi	1.23	62.18
+100	quantumclone	1.86	59.18
+100	sciclone	1.37	60.11
+500	CLEMENT_decision	1.38	64.82 (108.3-114.0% ↑)
+500	pyclonevi	1.62	59.87
+500	quantumclone	2.17	56.84
+500	sciclone	1.58	59.74
+1000	CLEMENT_decision	1.36	65.96 (104.8-109.1% ↑)
+1000	pyclonevi	1.96	62.94
+1000	quantumclone	1.75	60.45
+1000	sciclone	1.29	61.84

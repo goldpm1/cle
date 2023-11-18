@@ -118,6 +118,7 @@ def drawfigure_2d(membership, output_suptitle, output_filename, np_vaf, samplena
         outlier_color_num = samplename_dict[ fp_index ] 
         colorlist [ outlier_color_num ] = Gr_10[8]
 
+
     ax.scatter(np_vaf[:, 0] * 2, np_vaf[:, 1] * 2, color=[colorlist[samplename_dict[k]] for k in membership], s = 40 )
 
     sum_x, sum_y = 0, 0
@@ -129,7 +130,10 @@ def drawfigure_2d(membership, output_suptitle, output_filename, np_vaf, samplena
         y_mean = round(np.mean(np_vaf[[x for x in range( len(membership)) if membership[x] == sample]][:, 1] * 2), 2)
 
         ax.text(x_mean, y_mean, "{0}".format([x_mean, y_mean]), verticalalignment='top', ha = "center", fontdict = {"fontsize": 16, "fontweight" : "bold"})
-        ax.scatter(x_mean, y_mean, marker='*', color=colorlist[samplename_dict[sample]], edgecolor='black', s = 400, label=str(sample) + " : " + str(list(membership).count(sample)))
+        if sample_index == fp_index:
+            ax.scatter(x_mean, y_mean, marker='*', color=colorlist[samplename_dict[sample]], edgecolor='black', s = 400, label="FP : " + str(list(membership).count(sample)))
+        else:
+            ax.scatter(x_mean, y_mean, marker='*', color=colorlist[samplename_dict[sample]], edgecolor='black', s = 400, label=str(sample) + " : " + str(list(membership).count(sample)))
         ax.legend()
         sum_x += x_mean
         sum_y += y_mean

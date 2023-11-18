@@ -5,9 +5,11 @@ import seaborn as sns
 import palettable
 import scoring
 
-def main (INPUT_SCICLONE_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answer, membership_answer, membership_answer_numerical, samplename_dict_input, samplename_dict_input_rev, **kwargs):   
+def main (INPUT_SCICLONE_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answer, membership_answer, membership_answer_numerical,  **kwargs):   
     #  INPUT_SCICLONE_RESULT =  "/data/project/Alzheimer/EM_cluster/old/pilot/04.EM_input/sciclone/result/results.tsv"
     #  OUTPUT_FILENAME = "./output/MRS_sciclone.jpg" 
+
+    samplename_dict_input, samplename_dict_input_rev = kwargs["samplename_dict_CharacterToNum"], kwargs["samplename_dict_NumToCharacter"], 
 
     df = pd.read_csv (INPUT_SCICLONE_RESULT, sep = "\t")
 
@@ -56,16 +58,15 @@ def main (INPUT_SCICLONE_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answer, 
     # 채점하기
     if kwargs["SCORING"] == True:
         
-        score_df, score = \
-            scoring.mixturebased(mixture_answer, mixture_sciclone, membership_answer, membership_sciclone, samplename_dict_input, samplename_dict_input_rev, "No", -1,  "SciClone", **kwargs)  # FP는 무조건 못 잡을테니 -1로 넘겨준다
+        # score_df, score = scoring.mixturebased(mixture_answer, mixture_sciclone, membership_answer, membership_sciclone, samplename_dict_input, samplename_dict_input_rev, "No", -1,  "SciClone", **kwargs)  # FP는 무조건 못 잡을테니 -1로 넘겨준다
         try:
-            max_score, sample_dict_PtoA, sample_dict_AtoP  = scoring.Scoring ( membership_answer, membership_answer_numerical, membership_sciclone, -1 , [] ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
+            max_score, sample_dict_PtoA, sample_dict_AtoP, score_df  = scoring.Scoring ( membership_answer, membership_answer_numerical, membership_sciclone, -1 , [], **kwargs ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
         except:
             print ("SciClone 뭔가 이상하다 membership_answer = {}\nmembership_sciclone = {}".format(membership_answer, membership_sciclone))
-            return score_df, score, score, membership_sciclone, mixture_sciclone, {}, {}
+            return score_df, 0, 0, membership_sciclone, mixture_sciclone, {}, {}
 
         mixture_sciclone = np.round(mixture_sciclone, 2)
-        return score_df, score, max_score, membership_sciclone, mixture_sciclone,  sample_dict_PtoA, sample_dict_AtoP         # 100점 만점 score 반환
+        return score_df, max_score, max_score, membership_sciclone, mixture_sciclone,  sample_dict_PtoA, sample_dict_AtoP         # 100점 만점 score 반환
 
     else:
         return pd.DataFrame(), -1, -1, membership_sciclone, mixture_sciclone, {}, {}

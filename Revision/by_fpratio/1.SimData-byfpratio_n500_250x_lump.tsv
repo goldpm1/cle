@@ -1,21 +1,13 @@
 FP_RATIO	tool	MS_mean	RMSE_mean
-0.0	CLEMENT_decision	69.94 (128.7-147.6% ↑)	0.16
-0.0	pyclonevi	54.34	2.51
-0.0	quantumclone	53.4	2.9
-0.0	sciclone	47.37	2.57
-0.025	CLEMENT_decision	70.28 (131.3-133.6% ↑)	0.16
-0.025	pyclonevi	53.52	2.27
-0.025	quantumclone	52.6	3.01
-0.025	sciclone	53.16	1.97
-0.05	CLEMENT_decision	72.81 (136.9-150.7% ↑)	0.55
-0.05	pyclonevi	53.19	2.32
-0.05	quantumclone	52.8	2.94
-0.05	sciclone	48.33	1.91
-0.075	CLEMENT_decision	71.42 (135.2-142.2% ↑)	0.72
-0.075	pyclonevi	52.81	2.3
-0.075	quantumclone	51.01	3.02
-0.075	sciclone	50.23	1.97
-0.1	CLEMENT_decision	72.67 (143.4-158.0% ↑)	0.66
-0.1	pyclonevi	50.69	2.33
-0.1	quantumclone	48.12	3.25
-0.1	sciclone	45.99	1.98
+0.0	CLEMENT_decision	69.08 (127.8-147.4% ↑)	0.12
+0.0	pyclonevi	54.04	2.51
+0.0	quantumclone	53.14	2.9
+0.0	sciclone	46.87	2.64
+0.05	CLEMENT_decision	71.51 (136.1-149.7% ↑)	0.47
+0.05	pyclonevi	52.54	2.33
+0.05	quantumclone	52.51	2.98
+0.05	sciclone	47.78	2.03
+0.1	CLEMENT_decision	69.88 (135.3-150.2% ↑)	1.02
+0.1	pyclonevi	51.66	2.31
+0.1	quantumclone	48.92	3.23
+0.1	sciclone	46.52	2.13

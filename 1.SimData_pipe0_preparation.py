@@ -7,8 +7,8 @@ import collections
 from random import *
 
 def custDist(x):
-    if x < 10:
-        return 0.3
+    if x < 20:
+        return 0.15
     elif x <= 30:
         return 0.5
     elif x <= 80:
@@ -114,6 +114,9 @@ def dirichlet_sampling ( trial, **kwargs ):
             #li = np.array( [0] * num_zero +  list ( np.round ( np.random.uniform (1, 100, NUM_CLONE_ACTIVE - num_zero) ) ) )    # 0 ~100 중에 j - num_zero 개를 뽑음
             li = np.array(  list ( np.round ( np.random.uniform (1, 100, NUM_CLONE_ACTIVE - num_zero) ) ) )    # 0 ~100 중에 j - num_zero 개를 뽑음 (축 상은 뽑지 않음)
             li = np.array ( random_custDist(x0 = 1 ,x1 = 100, custDist = custDist, size = NUM_CLONE_ACTIVE - num_zero) )    # 내가 설정한 probability model을 통해 선정하는 것
+            for j in range (num_zero, NUM_CLONE_ACTIVE):  
+                li[j] = (j * (10 + (j / 2))) + 5 
+            li[0] += 5
         elif kwargs["SimData"] == "lump":
             num_zero = int ( np.random.uniform (0, math.ceil (NUM_CLONE_ACTIVE / 3) ) ) if NUM_BLOCK >= 2 else 0      # 맘에 안들면 무조건 0으로 하면 됨. 좀더 확률을 낮추자
             if NUM_BLOCK == 1:         # 1차원에서는 0을 빼주자
@@ -181,6 +184,9 @@ def dirichlet_sampling ( trial, **kwargs ):
                 if df[k][i]["depth"] > kwargs["DEPTH_CUTOFF"]:
                     break
             df[k][i]["alt"] =  round( df[k][i]["depth"] * np_vaf [k][i] )
+            if df[k][i]["alt"] == 0:     # 0은 제외해주자.
+                df[k][i]["alt"] = 1
+                np_vaf[k][i] = df[k][i]["depth"] / 1
             df[k][i]["ref"] = df[k][i]["depth"]  -  df[k][i]["alt"] 
             df[k][i]["membership_answer"] = membership[k]
 
@@ -189,10 +195,13 @@ def dirichlet_sampling ( trial, **kwargs ):
     k = int (NUM_MUTATION * ( 1 - kwargs["FP_RATIO"] ))  # 맨 뒤에부터 하나씩 추가
     while k < NUM_MUTATION:
         #pp = fp_sampling (**kwargs)
-        pp = np.array ( random_custDist (0, 1, TN_prior_cal, size = kwargs["NUM_BLOCK"] ) )
+        pp = 0
+        while float(pp) == 0:
+            pp = np.array ( random_custDist (0, 1, TN_prior_cal, size = 1 ) )   # 2, 3차원인 경우는 common FP는 없다고 가정
+        FP_SAMPLE = random.randrange (0, kwargs["NUM_BLOCK"] )
 
         if np.sum (pp) != 0:
-            np_vaf [k] = pp
+            np_vaf [k][FP_SAMPLE] = pp
             membership[k] = "FP"
             
             for i in range (NUM_BLOCK):
@@ -201,9 +210,10 @@ def dirichlet_sampling ( trial, **kwargs ):
                     if df[k][i]["depth"] > kwargs["DEPTH_CUTOFF"]:
                         break
                 df[k][i]["alt"] =  round( df[k][i]["depth"] * np_vaf [k][i] )
-                if df[k][i]["alt"] == 0:     # 0은 제외해주자.
-                    df[k][i]["alt"] = 1
-                    np_vaf[k][i] = df[k][i]["depth"] / 1
+                if i == FP_SAMPLE:    # FP blockd에서 alt == 0은 제외해주자.
+                    if df[k][i]["alt"] == 0:  
+                        df[k][i]["alt"] = 1
+                        np_vaf[k][i] = df[k][i]["depth"] / 1
                 df[k][i]["ref"] = df[k][i]["depth"]  -  df[k][i]["alt"] 
                 df[k][i]["membership_answer"] = "FP"
 
@@ -245,7 +255,12 @@ def printresult():
         print ("mut_{}\t{}\t".format( k, df[k][i]["membership_answer"] ) , end = "", file = output_file_inputtsv)
         for i in range (NUM_BLOCK - 1):
             print ( "{},{}".format( df[k][i]["depth"], df[k][i]["alt"] ), end = ",", file = output_file_inputtsv)
-        print ( "{},{}".format( df[k][NUM_BLOCK - 1]["depth"], df[k][NUM_BLOCK - 1]["alt"] ), file = output_file_inputtsv)
+        print ( "{},{}".format( df[k][NUM_BLOCK - 1]["depth"], df[k][NUM_BLOCK - 1]["alt"] ), end = "\t", file = output_file_inputtsv)
+        if df[k][i]["membership_answer"] == "FP":
+            print ( ",".join ( [str(20)] * NUM_BLOCK), file = output_file_inputtsv )
+        else:
+            print ( ",".join ( [str(30)] * NUM_BLOCK), file = output_file_inputtsv )
+
     output_file_inputtsv.close()
 
 

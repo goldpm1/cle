@@ -10,12 +10,12 @@ print (SCRIPT_DIR, "\n")
 if __name__ == "__main__":
     kwargs = {}
 
-    NUM_BLOCK_LIST = [ 1 ]             # 1, 2, 3
-    NUM_MUTATION_LIST = [ 500 ]    # 100, 500, 1000
-    DEPTH_MEAN_LIST = [ 250 ]       # 250, 125, 30
-    FP_RATIO_LIST = [ 0.1  ]        # 0.0, 0.025, 0.05, 0.075, 0.1
+    NUM_BLOCK_LIST = [  1, 2, 3 ]             # 1, 2, 3
+    NUM_MUTATION_LIST = [  100, 1000 ]    # 100, 500, 1000
+    DEPTH_MEAN_LIST = [ 125  ]       # 250, 125, 30
+    FP_RATIO_LIST = [ 0.0, 0.1 ]        # 0.0, 0.025, 0.05, 0.075, 0.1
     SIMDATA_LIST = [ "decoy", "lump" ] # "decoy", "lump"
-    NUM_CLONE_LIST = [2, 3, 4, 5, 6, 7]      # 2, 3, 4, 5, 6, 7
+    NUM_CLONE_LIST = [2, 3, 4, 5, 6, 7 ]      # 2, 3, 4, 5, 6, 7
     BENCHMARK_LIST = [0, 3]; kwargs["BENCHMARK_START"] = BENCHMARK_LIST[0];  kwargs["BENCHMARK_END"] = BENCHMARK_LIST[1]
 
     kwargs["NUM_CLONE_TRIAL_START"], kwargs["NUM_CLONE_TRIAL_END"] = 2, 7
@@ -24,11 +24,17 @@ if __name__ == "__main__":
     kwargs["MAKEONE_STRICT"] = 1
     kwargs["SCORING"] = "True"
     kwargs["MODE"] = "Both"
+    kwargs["IMAGE_FORMAT"] = "jpg"
+    kwargs["VISUALIZATION"] = "True"
     kwargs["VERBOSE"] = 1
 
     #COMPUTE_RANDOM = "cpu.q@compute" + str( random.choice ( list ( range (1,14) ) + list ( range (16, 19) ) ) ).zfill(2)                           
 
     n  = 0 
+
+    # DELETE_PREVIOUS_HISTORY = input("DELETE_PREVIOUS_HISTORY?: ")
+    # DELETE_PREVIOUS_HISTORY == True if DELETE_PREVIOUS_HISTORY in ["True", "Treu", "true", "T", "Y", "Yes"] else False
+    # print ( DELETE_PREVIOUS_HISTORY )
 
     for NUM_BLOCK in NUM_BLOCK_LIST:
         kwargs["NUM_BLOCK"] = NUM_BLOCK
@@ -85,7 +91,7 @@ if __name__ == "__main__":
 
 
                                 # 0. Simulation dataset 생성 
-                                #COMPUTE_RANDOM = "cpu.q@compute" + str( random.randint (1,14) ).zfill(2)
+                                COMPUTE_RANDOM = "cpu.q@compute" + str( random.randint (1,14) ).zfill(2)
                                 logPath = "/data/project/Alzheimer/YSscript/cle/log/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) + "/" +  str(ii) 
                                 os.system("rm -rf " + logPath)
                                 os.system("mkdir -p " + logPath)
@@ -130,20 +136,19 @@ if __name__ == "__main__":
                                                      "--KMEANS_CLUSTERNO", str(kwargs["KMEANS_CLUSTERNO"]), 
                                                      "--MIN_CLUSTER_SIZE", str(kwargs["MIN_CLUSTER_SIZE"]), 
                                                      "--MODE", str(kwargs["MODE"]),
-                                                     "--VERBOSE", str(kwargs["VERBOSE"])
+                                                     "--VERBOSE", str(kwargs["VERBOSE"]),
+                                                     "--IMAGE_FORMAT", str(kwargs["IMAGE_FORMAT"]), 
+                                                     "--VISUALIZATION", str (kwargs["VISUALIZATION"])
                                                      ])
                                 os.system(command2)
 
-                            #2. 각 iteratio 단위에서 채점하고 benchmark 하기
+                            #2. 각 iteration 단위에서 채점하고 benchmark 하기
                             kwargs["COMBINED_OUTPUT_DIR"] = "/data/project/Alzheimer/CLEMENT/03.combinedoutput/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) 
                             kwargs["SAMPLENAME"] = "SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) 
-                            kwargs["OUTPUT_TTEST"] = kwargs["COMBINED_OUTPUT_DIR"] + "/ttest.txt"
-                            kwargs["OUTPUT_JPG"] = kwargs["COMBINED_OUTPUT_DIR"] +  "/bm.jpg"
 
-                            logPath = "/data/project/Alzheimer/YSscript/cle/log/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) + "/benchmark"
-                            os.system("rm -rf " + logPath)
-                            os.system("mkdir -p " + logPath)
-
+                            logPath = kwargs["COMBINED_OUTPUT_DIR"]
+                            os.system("rm -rf " + logPath + "/bm_" + "SimData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_" + str(SIMDATA) + "_" + str(FP_RATIO) + "_clone_" + str(NUM_CLONE) + "*" )
+                            
                             hold_jj.append ( "bm_SimData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_" + str(SIMDATA) + "_" + str(FP_RATIO) + "_clone_" + str(NUM_CLONE) )
                             command3 = " ".join(["qsub -pe smp 1 -e", logPath, "-o", logPath, 
                                                  "-N bm_" + "SimData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x_" + str(SIMDATA) + "_" + str(FP_RATIO) + "_clone_" + str(NUM_CLONE) ,  
@@ -151,25 +156,26 @@ if __name__ == "__main__":
                                                  #"-q", COMPUTE_RANDOM,
                                                 str(SCRIPT_DIR) + "/1.SimData_pipe2_benchmark.sh",
                                                 "--SCRIPT_DIR", str(SCRIPT_DIR),
+                                                "--LOG_DIR", "/data/project/Alzheimer/YSscript/cle/log/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/clone_" + str(NUM_CLONE) , 
                                                 "--COMBINED_OUTPUT_DIR", str(kwargs["COMBINED_OUTPUT_DIR"]),
                                                 "--SAMPLENAME", str(kwargs["SAMPLENAME"]),
                                                 "--BENCHMARK_START", str(kwargs["BENCHMARK_START"]),
                                                 "--BENCHMARK_END", str(kwargs["BENCHMARK_END"]),
-                                                "--OUTPUT_TTEST", str(kwargs["OUTPUT_TTEST"]),
-                                                "--OUTPUT_JPG", str(kwargs["OUTPUT_JPG"]),
+                                                "--OUTPUT_TTEST", kwargs["COMBINED_OUTPUT_DIR"] + "/ttest.txt",
+                                                "--OUTPUT_JPG", kwargs["COMBINED_OUTPUT_DIR"] + "/bm.jpg",
+                                                "--OUTPUT_RESULT_TABLE", kwargs["COMBINED_OUTPUT_DIR"] + "/bm.tsv",
                                                 "--FP_RATIO", str(kwargs["FP_RATIO"])
                                                 ])
+                            #print (command3)
                             os.system(command3)
-                            n += 1
+                            #n += 1
 
                         #3. Clone 2 ~7  단위에서의 benchmark visualization
                         INPUT_DIR = "/".join(kwargs["COMBINED_OUTPUT_DIR"].split("/")[ : -1])
-                        logPath = "/data/project/Alzheimer/YSscript/cle/log/1.SimData/SimData_" + str(NUM_BLOCK) + "D/n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) + "/BM"
-        
-                        os.system("rm -rf " + logPath)
-                        os.system("mkdir -p " + logPath)
                         
                         CONDITIONNAME = "SimData_" + str(NUM_BLOCK) + "D_n" + str(NUM_MUTATION) + "_" + str(DEPTH_MEAN)  + "x/" + str(SIMDATA) + "/" + str(FP_RATIO) 
+                        logPath = INPUT_DIR
+                        os.system("rm -rf " + logPath + "/BM_SimData_" + str(NUM_BLOCK) + "D_" + CONDITIONNAME.replace("/", "_") + "*" )
 
                         command4 = " ".join(  ["qsub -pe smp 1", "-e", logPath, "-o", logPath, 
                                             "-N", "BM_SimData_" + str(NUM_BLOCK) + "D_" + CONDITIONNAME.replace("/", "_"),
@@ -188,5 +194,5 @@ if __name__ == "__main__":
                                                                     ]  )
                         
                         os.system(command4)
-                        n += 1
+                        # n += 1
     print ("Total job = {}".format( n ))

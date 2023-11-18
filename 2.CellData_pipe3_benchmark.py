@@ -43,6 +43,7 @@ def drawfigure_MS (result, toollist, toollist_concise, ax, ax_row, ax_col, **kwa
     Gr_10 = palettable.scientific.sequential.GrayC_20.mpl_colors
 
     colorlist = [i for i in tabl]
+    colorlist = ["royalblue", "firebrick", "forestgreen", "darkorange", Gr_10[6], Gr_10[5], Gr_10[4]]
     sns.set_style("white")
     #sns.set_palette("tab10")
     sns.set_palette(sns.color_palette(colorlist))
@@ -158,11 +159,10 @@ def drawfigure_Final (final, toollist, toollist_concise, **kwargs):
     output_final = open (kwargs["OUTPUT_FINAL_TABLE"], "w")
     print ("\n")
     for i, tool in enumerate( toollist ):
-        print ("{}\t{}\t{}\t{}\t{}".format( tool, round ( np.mean (final.score_record [i , : ]) , 2) ,  round ( np.std (final.score_record [i , : ]) , 2), round ( np.mean (final.RMSE_record [i , : ]) , 2) ,  round ( np.std (final.RMSE_record [i , : ]) , 2)  ))
-        print ("{}\t{}\t{}\t{}\t{}".format( tool, round ( np.mean (final.score_record [i , : ]) , 2) ,  round ( np.std (final.score_record [i , : ]) , 2), round ( np.mean (final.RMSE_record [i , : ]) , 2) ,  round ( np.std (final.RMSE_record [i , : ]) , 2)  ), file = output_final)
+        print ("{}\t{}\t{}\t{}\t{}\t{}\t{}".format( tool, round ( np.mean (final.score_record [i , : ]) , 2) ,  round ( np.std (final.score_record [i , : ]) , 2), round ( np.mean (final.RMSE_record [i , : ]) , 2) ,  round ( np.std (final.RMSE_record [i , : ]) , 2) , round ( np.mean (final.ARI_record [i , : ]) , 2) ,  round ( np.std (final.ARI_record [i , : ]) , 2)  )  )
+        print ("{}\t{}\t{}\t{}\t{}\t{}\t{}".format( tool, round ( np.mean (final.score_record [i , : ]) , 2) ,  round ( np.std (final.score_record [i , : ]) , 2), round ( np.mean (final.RMSE_record [i , : ]) , 2) ,  round ( np.std (final.RMSE_record [i , : ]) , 2), round ( np.mean (final.ARI_record [i , : ]) , 2) ,  round ( np.std (final.ARI_record [i , : ]) , 2)   ), file = output_final)
     print ("\n")
     output_final.close()
-
 
 
 

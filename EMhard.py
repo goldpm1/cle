@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pandas as pd
 import  Estep, Mstep, Bunch, miscellaneous
 import warnings
 warnings.simplefilter (action = 'ignore', category = FutureWarning)
@@ -8,8 +9,9 @@ warnings.filterwarnings("ignore")
 
 def whether_trial_acc (max_step, step_index, step, trial, **kwargs):
     if step.likelihood_record [max_step] > trial.likelihood_record [ kwargs["TRIAL"]] : 
-        print ("\t\t\t✓ max_step : #{}th step\t\tcheckall_strict = {}\t\tstep.likelihood_record [max_step] = {}".format( max_step , step.checkall_strict_record[max_step], np.round (step.likelihood_record [max_step] , 2) ))    
-        trial.acc ( step.mixture_record [max_step],  step.membership_record [max_step], step.likelihood_record [max_step], step.membership_p_record [max_step], step.membership_p_normalize_record [max_step], 
+        print ("\t\t\t✓ (EMhard.py_early termination) max_step : #{}th step\t\tcheckall_strict = {}\t\tstep.likelihood_record [max_step] = {}".format( max_step , step.checkall_strict_record[max_step], np.round (step.likelihood_record [max_step] , 2) ))    
+        print ("wheter_trial_acc\t\t\t {}".format (step.checkall_strict_record[max_step] ) )
+        trial.acc ( step.mixture_record [max_step],  step.membership_record [max_step], step.posterior_record [max_step], step.likelihood_record [max_step], step.membership_p_record [max_step], step.membership_p_normalize_record [max_step], 
                         step.makeone_index_record[max_step], step.tn_index_record[max_step],   step.fp_index_record[max_step],  step_index, step.fp_member_index_record[max_step], step.includefp_record[max_step], step.fp_involuntary_record[max_step], step.checkall_strict_record[max_step], step.checkall_lenient_record[max_step], max_step, kwargs["TRIAL"] )
     
     return step, trial
@@ -43,7 +45,8 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                                                                 step, trial, **kwargs)
 
                 if kwargs["VERBOSE"] >= 1:
-                    print("\tTrial #{}\t{}".format(trial_index, trial.initial_randomsample_record  [kwargs["TRIAL"]]  ))
+                    print("\tTrial #{}\t{}".format(trial_index, ", ".join(str(np.round(row, 2)) for row in step.mixture )   ) )
+                                                   #trial.initial_randomsample_record  [kwargs["TRIAL"]]  ))
 
                 if step.initial_sampling == False:
                     break
@@ -59,12 +62,14 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                         print ("\t\tStep #{}".format(step_index))
 
 
-                    if ( kwargs ["NUM_CLONE_ITER"] == 4 )  & (kwargs["TRIAL"] in [1, 2] ) :
-                        kwargs["DEBUG"]  = True
-                    else:
-                        kwargs["DEBUG"] = False
+                    # if ( kwargs ["NUM_CLONE_ITER"] == 3 )  & (kwargs["TRIAL"] in [1] ) :
+                    #     kwargs["DEBUG"]  = True
+                    # else:
+                    #     kwargs["DEBUG"] = False
+                    kwargs["DEBUG"] = False
 
                     step = Estep.main(input_containpos, df, np_vaf, np_BQ, step, **kwargs)  
+                    cluster.df.loc [ len(cluster.df.index) ] = [ kwargs["NUM_BLOCK"], kwargs["TRIAL"], kwargs["STEP"], kwargs["STEP_TOTAL"], step.posterior_normalized, step.likelihood, "hard", NUM_CLONE ]   # 맨 끝에 하나씩 추가
                     
                     
                     ################################ Early terminating condition  (NUM_PARENT, MIN_CLUSTER_SIZE) ################################################
@@ -78,7 +83,6 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                             step, trial = whether_trial_acc (max_step, step_index, step, trial, **kwargs) 
                         break
                 
-                    #print ( np.unique(step.membership, return_counts=True), np.min( np.unique(step.membership, return_counts=True)[1][np.arange(len(set(step.membership))) != step.fp_index] ), len (step.membership) ) 
                     if  ( np.min( np.unique(step.membership, return_counts=True)[1][np.arange(len(set(step.membership))) != step.fp_index] ) < kwargs["MIN_CLUSTER_SIZE"]  )  :          #  2nd early terminating condition  (except for FP index (the last index))
                         if step.less_than_min_cluster_size == True:     # If it has previous history 
                             failure_num = failure_num + 1
@@ -108,29 +112,31 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
                     
                     step = Mstep.main(input_containpos, df, np_vaf, np_BQ, step, "Hard", **kwargs)   # M step  (Draw figure + Select makeone )
 
-                    if kwargs["STEP"] >= kwargs["COMPULSORY_NORMALIZATION"]:
-                        if miscellaneous.checkall (step, "strict", **kwargs)[0] == False:
+                    if kwargs["STEP"] >= kwargs["COMPULSORY_NORMALIZATION"]: # Most of the cases
+                        #if miscellaneous.checkall (step, "strict", **kwargs)[0] == False:
+                        kwargs["CHECKALLFROM"] = "EMhard.py"
+                        if miscellaneous.checkallttest (step, "strict", np_vaf, **kwargs)[0] == False:
                             if kwargs["VERBOSE"] >= 2:
                                 print ("\t\t➨ STEP {} : sum of mixture is unqualified to checkall_strict\t{}".format( kwargs["STEP"], step.mixture))
                             step.likelihood = -9999999
 
                     if step.likelihood > -9999990: #  Most of the cases, just accumulate the results
-                        step.acc(step.mixture, step.membership, step.likelihood, step.membership_p, step.membership_p_normalize, step.makeone_index, step.tn_index, step.fp_index, step_index, step.fp_member_index, step.includefp, step.fp_involuntary, step.checkall_strict, step.checkall_lenient, kwargs["STEP"], kwargs["STEP"]) 
-                        # if step.fp_involuntary == True:
-                        #     if kwargs["VERBOSE"] >= 1:
-                        #         print ("\t\t\t▶ makeone_index : {}\tparent_index : {}\tfp_index : {}\tfp_involuntary : {}\ttn_index : {}".format(step.makeone_index , sorted( list ( set( list (range(0, kwargs["NUM_CLONE"] )) ) - set( step.makeone_index ) - set ( [step.fp_index] ) )) ,  step.fp_index, step.fp_involuntary, step.tn_index ) )
-                        # else:  # Most of the cases
+                        step.acc(step.mixture, step.membership, step.posterior, step.likelihood, step.membership_p, step.membership_p_normalize, step.makeone_index, step.tn_index, step.fp_index, step_index, step.fp_member_index, step.includefp, step.fp_involuntary, step.checkall_strict, step.checkall_lenient, kwargs["STEP"], kwargs["STEP"]) 
                         if kwargs["VERBOSE"] >= 1:
                             print ("\t\t\t\t▶ makeone_index : {}\tparent_index : {}\tfp_index : {}".format( step.makeone_index , sorted ( list ( set( list (range(0, kwargs["NUM_CLONE"] )) ) - set( step.makeone_index ) - set ( [step.fp_index] ) )),  step.fp_index, step.checkall_lenient ) )
 
                     
 
                     if miscellaneous.GoStop(step, **kwargs) == "Stop":
-                        max_step, trial.checkall_strict_record[ kwargs["TRIAL"] ] =  step.find_max_likelihood_step (0, kwargs["STEP"])     # Including 0th step,  Whether this trial's best step is prenormalized or not
+                        max_step, trial.checkall_strict_record[ kwargs["TRIAL"] ] =  step.find_max_likelihood_step ( 0, kwargs["STEP"] - 1)     # Including 0th step,  Whether this trial's best step is prenormalized or not
                         if kwargs["VERBOSE"] >= 1:
-                            print ("\t\t✓ max_step : #{}th step\t\tcheckall_strict = {}\t\tstep.likelihood_record [max_step] = {}".format( max_step , trial.checkall_strict_record[ kwargs["TRIAL"] ]  , round (step.likelihood_record [max_step] , 2 )  ))
+                            print ("\t\t✓ (EMhard.py) max_step : #{}th step\t\tcheckall_strict = {}\t\tstep.likelihood_record [max_step] = {}".format( max_step , trial.checkall_strict_record[ kwargs["TRIAL"] ]  , round (step.likelihood_record [max_step] , 2 )  ))
+                            # print ( "step.mixture_record : " , step.mixture_record)
+                            # print (  "step.mixture_record[max_step]: ", step.mixture_record [max_step] )
                         
-                        trial.acc ( step.mixture_record [max_step],  step.membership_record [max_step], step.likelihood_record [max_step], step.membership_p_record [max_step], step.membership_p_normalize_record [max_step], step.makeone_index_record[max_step], step.tn_index_record[max_step],  step.fp_index_record[max_step],  step_index + 1, step.fp_member_index_record[max_step], step.includefp_record[max_step], step.fp_involuntary_record[max_step], step.checkall_strict_record[max_step], step.checkall_lenient_record[max_step], max_step, kwargs["TRIAL"] )
+                        trial.acc ( step.mixture_record [max_step],  step.membership_record [max_step], step.posterior_record [max_step], step.likelihood_record [max_step], step.membership_p_record [max_step], step.membership_p_normalize_record [max_step], step.makeone_index_record[max_step], step.tn_index_record[max_step],  step.fp_index_record[max_step],  step_index + 1, step.fp_member_index_record[max_step], step.includefp_record[max_step], step.fp_involuntary_record[max_step], step.checkall_strict_record[max_step], step.checkall_lenient_record[max_step], max_step, kwargs["TRIAL"] )
+                        #trial.df = pd.concat([trial.df, step.df], ignore_index = True)
+
                         trial_index = trial_index + 1
                         failure_num = 0
                         break
@@ -146,13 +152,14 @@ def main (input_containpos, df, np_vaf, np_BQ, mixture_kmeans, **kwargs):
             i, cluster.checkall_strict_record [ kwargs["NUM_CLONE_ITER"] ] =  trial.find_max_likelihood_trial ( 0, kwargs["TRIAL_NO"])             # Best trial을 찾되, 그것이 prenormalization = True인지 False인지 저장한다
         
             if kwargs["VERBOSE"] >= 1:
-                print ("\n\n\tIn NUM_CLONE = {}, we chose {}th trial, {}th step\n\t(trial.likelihood_record : {}, checkall_strict : {})\n\tFP_index : {}\tlen(fp_member_index) : {}".format(kwargs["NUM_CLONE_ITER"], i, trial.max_step_index_record[i], np.round ( trial.likelihood_record ), cluster.checkall_strict_record[ kwargs["NUM_CLONE_ITER"] ] ,trial.fp_index_record[i],  len (trial.fp_member_index_record[i] ) ) )
+                print ("\n\n\t(EMhard.py) In NUM_CLONE = {}, we chose {}th trial, {}th step\n\t(trial.likelihood_record : {}, checkall_strict : {})\n\tFP_index : {}\tlen(fp_member_index) : {}".format(kwargs["NUM_CLONE_ITER"], i, trial.max_step_index_record [i], np.round ( trial.likelihood_record ), cluster.checkall_strict_record[ kwargs["NUM_CLONE_ITER"] ] ,trial.fp_index_record[i],  len (trial.fp_member_index_record[i] ) ) )
 
             if trial.max_step_index_record [i]  != -1:   # If available in this trial
                 os.system ("cp " + kwargs["CLEMENT_DIR"] + "/trial/clone" + str(kwargs["NUM_CLONE_ITER"]) + "." + str( i ) + "-"  + str(  trial.max_step_index_record [i]  ) + "\(hard\)." + kwargs["IMAGE_FORMAT"] + " " + 
                     kwargs["CLEMENT_DIR"] + "/candidate/clone" + str(kwargs["NUM_CLONE_ITER"]) + ".\(hard\)." + kwargs["IMAGE_FORMAT"]  ) 
             
-            cluster.acc ( trial.mixture_record [i], trial.membership_record [i], trial.likelihood_record [i], trial.membership_p_record [i], trial.membership_p_normalize_record [i], trial.stepindex_record [i], i, trial.max_step_index_record [i], trial.makeone_index_record[i], trial.tn_index_record[i],  trial.fp_index_record[i], trial.includefp_record[i], trial.fp_involuntary_record[i], trial.fp_member_index_record [i], **kwargs )  
+            cluster.acc ( trial.mixture_record [i], trial.membership_record [i], trial.posterior_record [i], trial.likelihood_record [i], trial.membership_p_record [i], trial.membership_p_normalize_record [i], trial.stepindex_record [i], i, trial.max_step_index_record [i], trial.makeone_index_record[i], trial.checkall_strict_record[i],  trial.tn_index_record[i],  trial.fp_index_record[i], trial.includefp_record[i], trial.fp_involuntary_record[i], trial.fp_member_index_record [i], **kwargs )  
+            
 
     return cluster
 

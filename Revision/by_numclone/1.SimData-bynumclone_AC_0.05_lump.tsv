@@ -1,0 +1,25 @@
+NUM_CLONE	tool	EC_mean	EC_std	MS_mean	MS_std
+2	CLEMENT_decision	2.0	0.0	88.95 (110.4-156.1% ↑)	14.51
+2	pyclonevi	5.0	1.35	62.93	11.73
+2	quantumclone	4.58	1.93	57.0	14.3
+2	sciclone	3.58	0.67	80.55	15.45
+3	CLEMENT_decision	3.0	0.0	74.87 (110.8-146.3% ↑)	11.76
+3	pyclonevi	3.5	0.8	67.6	15.56
+3	quantumclone	3.5	1.0	66.77	14.07
+3	sciclone	2.83	0.72	51.18	17.47
+4	CLEMENT_decision	4.0	0.0	74.67 (110.7-120.8% ↑)	21.01
+4	pyclonevi	3.58	1.08	61.82	20.62
+4	quantumclone	3.92	1.62	67.47	20.4
+4	sciclone	3.58	0.9	63.13	19.08
+5	CLEMENT_decision	4.92	0.29	62.7 (137.9-161.0% ↑)	21.35
+5	pyclonevi	3.0	0.95	42.53	19.46
+5	quantumclone	3.17	1.7	45.48	23.37
+5	sciclone	2.92	1.68	38.95	25.61
+6	CLEMENT_decision	6.0	0.0	62.33 (150.4-193.7% ↑)	20.95
+6	pyclonevi	2.5	1.17	32.18	12.11
+6	quantumclone	2.92	1.73	41.43	17.49
+6	sciclone	3.08	1.24	33.3	14.1
+7	CLEMENT_decision	6.83	0.39	63.07 (154.3-194.5% ↑)	22.33
+7	pyclonevi	2.67	1.44	32.42	13.82
+7	quantumclone	3.08	1.31	40.87	14.45
+7	sciclone	3.58	1.24	36.72	13.17

@@ -37,6 +37,7 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
     Gr_10 = palettable.scientific.sequential.GrayC_20.mpl_colors
 
     colorlist = [i for i in tabl]
+    colorlist = ["royalblue", "firebrick", "forestgreen", "darkorange", Gr_10[6], Gr_10[5], Gr_10[4]]
     sns.set_style("white")
     #sns.set_palette("tab10")
     sns.set_palette(sns.color_palette(colorlist))
@@ -47,6 +48,13 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
     #     matplotlib.font_manager.fontManager.addfont(font)
     matplotlib.rcParams["font.family"] = 'arial'
 
+
+    output_result = open (kwargs["OUTPUT_RESULT_TABLE"], "w")
+    print ("\n")
+    for i, tool in enumerate( toollist ):
+        print ("{}\t{}\t{}\t{}\t{}\t{}\t{}".format( tool, round ( np.mean (result.score_record [i , : ]) , 2) ,  round ( np.std (result.score_record [i , : ]) , 2), round ( np.mean (result.NUM_CLONE_record [i , : ]) , 2) ,  round ( np.std (result.NUM_CLONE_record [i , : ]) , 2) , round ( np.mean (result.ARI_record [i , : ]) , 2) ,  round ( np.std (result.ARI_record [i , : ]) , 2)  )  )
+        print ("{}\t{}\t{}\t{}\t{}\t{}\t{}".format( tool, round ( np.mean (result.score_record [i , : ]) , 2) ,  round ( np.std (result.score_record [i , : ]) , 2), round ( np.mean (result.NUM_CLONE_record [i , : ]) , 2) ,  round ( np.std (result.NUM_CLONE_record [i , : ]) , 2), round ( np.mean (result.ARI_record [i , : ]) , 2) ,  round ( np.std (result.ARI_record [i , : ]) , 2)   ), file = output_result)
+    print ("\n")
 
     # Seaborn을 위해 df를 만들기
     df = pd.DataFrame (columns = ["tool", "score",  "ARI", "NUM_CLONE_answer", "runningtime"] )
@@ -70,7 +78,7 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
             
     #             statistics, pvalue = ttest_ind(aa, bb)
     #             print ("\t{} ->  pvalue = {}".format( col,  round(pvalue,5) ) , file = output_file_ttest)
-
+    
     
 
 
@@ -96,7 +104,7 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
         value_count_dict = {}      # {2:8, 3:69, 4:148, 5:112, 6:26, 7:17}
         for i in value_count.index:
             value_count_dict [i] = value_count.loc[i]
-            ax[2].scatter ( x = j, y = i, s = value_count_dict[i] * 80, color = tabl[j])
+            ax[2].scatter ( x = j, y = i, s = value_count_dict[i] * 80, color = colorlist[j])
 
     # 사각형 그리기
     if "clone" in kwargs["SAMPLENAME"]:   # simData
@@ -162,36 +170,40 @@ def drawfigure (result, toollist, toollist_concise, **kwargs):
 
 
 if __name__ == "__main__":    
-    import argparse 
+    import argparse, subprocess, os
 
     parser = argparse.ArgumentParser(description='The below is usage direction.')
     parser.add_argument('--INPUT_DIR', type = str)
+    parser.add_argument('--LOG_DIR', type = str)
     parser.add_argument('--SAMPLENAME', type = str)
     parser.add_argument('--CONDITIONNAME', type = str)
     parser.add_argument('--BENCHMARK_START', type = int)
     parser.add_argument('--BENCHMARK_END', type = int)
     parser.add_argument('--OUTPUT_JPG', type = str)
     parser.add_argument('--OUTPUT_TTEST', type = str)
+    parser.add_argument('--OUTPUT_RESULT_TABLE', type = str, default = "")
 
     kwargs = {}
     args = parser.parse_args()
 
     kwargs["INPUT_DIR"] = args.INPUT_DIR
+    kwargs["LOG_DIR"] = args.LOG_DIR
     kwargs["SAMPLENAME"] = args.SAMPLENAME
     kwargs["CONDITIONNAME"] = args.CONDITIONNAME
     kwargs["BENCHMARK_START"] = int(args.BENCHMARK_START)
     kwargs["BENCHMARK_END"] = int(args.BENCHMARK_END)
     kwargs["OUTPUT_TTEST"] = args.OUTPUT_TTEST
     kwargs["OUTPUT_JPG"] = args.OUTPUT_JPG
+    kwargs["OUTPUT_RESULT_TABLE"] = args.OUTPUT_RESULT_TABLE
 
 
     # if float(args.FP_RATIO) == 0:
     #     kwargs["FP_RATIO"] = int (0)
 
+    print ("LOG_DIR = {}".format ( kwargs["LOG_DIR"] ))
 
     toollist = ["CLEMENT_decision", "pyclonevi", "sciclone", "quantumclone", "simpleK_elbow", "simpleK_silhouette", "simpleK_gap"]
     toollist_concise = ["CLEMENT", "pyclonevi", "sciclone", "qc", "simpleK_elb", "simpleK_sil", "simpleK_gap*"]
-
 
     result = ResultClass(toollist, **kwargs)
 
@@ -199,10 +211,14 @@ if __name__ == "__main__":
         for i, tool in enumerate( toollist ):            
             score, Yindex, ARI, NUM_CLONE_answer, runningtime, f1score = 0, 0, 0, 0, 0, 0
 
-            print (  kwargs["INPUT_DIR"] + "/" + str(j) + "/result/" + tool + ".results.txt"  )
+            #print (  kwargs["INPUT_DIR"] + "/" + str(j) + "/result/" + tool + ".results.txt"  )
 
             if os.path.exists( kwargs["INPUT_DIR"] + "/" + str(j) + "/result/" + tool + ".results.txt" ) == True:
                 inputdf = pd.read_csv ( kwargs["INPUT_DIR"] + "/" + str(j) + "/result/" + tool + ".results.txt", sep = "\t", header = None)
+                
+                subprocess.run(["mkdir", "-p",  kwargs["LOG_DIR"] + "/" + str(j) , kwargs["INPUT_DIR"] + "/" + str(j) + "/log"], shell=False)
+                subprocess.run(["cp", "-rf",  kwargs["LOG_DIR"] + "/" + str(j) , kwargs["INPUT_DIR"] + "/" + str(j) + "/log"], shell=False)
+                
 
                 for k in range (inputdf.shape[0]):
                     if inputdf.iloc[k][0] == "score":

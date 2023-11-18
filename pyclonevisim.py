@@ -1,10 +1,11 @@
-def main (INPUT_PYCLONEVI_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answer, membership_answer, membership_answer_numerical, samplename_dict_input, samplename_dict_input_rev, **kwargs):   
+def main (INPUT_PYCLONEVI_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answer, membership_answer, membership_answer_numerical, **kwargs):   
     import pandas as pd
     import numpy as np
     import scoring
 
-    df = pd.read_csv (INPUT_PYCLONEVI_RESULT, sep = "\t")
+    samplename_dict_input, samplename_dict_input_rev = kwargs["samplename_dict_CharacterToNum"], kwargs["samplename_dict_NumToCharacter"]
 
+    df = pd.read_csv (INPUT_PYCLONEVI_RESULT, sep = "\t")
     df = df.drop_duplicates(['mutation_id'], keep = 'first')  
     
 
@@ -40,11 +41,11 @@ def main (INPUT_PYCLONEVI_RESULT, INPUT_NPVAF, OUTPUT_FILENAME,  mixture_answer,
 
     # 채점하기
     if kwargs["SCORING"] == True:
-        score_df, score = scoring.mixturebased(mixture_answer, mixture_pyclonevi, membership_answer, membership_pyclonevi, samplename_dict_input, samplename_dict_input_rev, "No", -1,  "PyCloneVI", **kwargs)   # FP는 무조건 못 잡을테니 -1로 넘겨준다
-        max_score, sample_dict_rev, sample_dict = scoring.Scoring ( membership_answer, membership_answer_numerical, membership_pyclonevi, -1, []   ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
+        #score_df, score = scoring.mixturebased(mixture_answer, mixture_pyclonevi, membership_answer, membership_pyclonevi, samplename_dict_input, samplename_dict_input_rev, "No", -1,  "PyCloneVI", **kwargs)   # FP는 무조건 못 잡을테니 -1로 넘겨준다
+        max_score, sample_dict_rev, sample_dict, score_df = scoring.Scoring ( membership_answer, membership_answer_numerical, membership_pyclonevi, -1, [] , **kwargs  ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
 
         mixture_pyclonevi = np.round(mixture_pyclonevi, 2)
-        return score_df, score, max_score, membership_pyclonevi, mixture_pyclonevi, sample_dict_rev, sample_dict 
+        return score_df, max_score, max_score, membership_pyclonevi, mixture_pyclonevi, sample_dict_rev, sample_dict 
 
     else:
         return pd.DataFrame(), -1, -1, membership_pyclonevi, mixture_pyclonevi, {}, {}

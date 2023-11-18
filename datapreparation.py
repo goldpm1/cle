@@ -15,7 +15,6 @@ def makedf ( **kwargs ):
         input_containpos.astype ({"pos":"str", "sample":"str", "info":"str", "BQ":"str"})
     #membership_answer = list (input_containpos ["sample"])
 
-
     input_containpos ["cha1"] = "exclusive"  # monoclone이면 exclusive, 둘 이상의 clone이 합쳐진거면 parent
     input_containpos ["cha2"] = "space"       # 축 상에 있으면 axis, 공간 상에 있으면 space
 
@@ -32,8 +31,16 @@ def makedf ( **kwargs ):
     membership = []
     depth_list = []
     
-    # input 형식은 n * 3 으로 구성 :   ID (chr_pos), membmership(정답 set 일 경우),  kwargs["kwargs["NUM_BLOCK"]"](3)만큼의 depth, alt 정보
 
+    j = 0
+    for row in range(kwargs["NUM_MUTATION"]):
+        if str(input_containpos.iloc[row][1]) not in kwargs["samplename_dict_CharacterToNum"].keys():
+            #if str(input_containpos.iloc[row][1]) == "FP":       # FP는 0으로,  나머지는 1 ~ j로 구성
+            kwargs["samplename_dict_CharacterToNum"][str(input_containpos.iloc[row][1])] = j        # {'other': 0, 'V5': 1, 'V3': 2, 'V1': 3}           # 각 sample name을 숫자화시킴
+            j += 1
+
+
+    # input 형식은 n * 3 으로 구성 :   ID (chr_pos), membmership(정답 set 일 경우),  kwargs["kwargs["NUM_BLOCK"]"](3)만큼의 depth, alt 정보
     depth_col = [[]] * int(len(input_containpos.iloc[0][2].split(","))/2)
     depth_row = []
     for row in range(kwargs["NUM_MUTATION"]):
@@ -42,9 +49,6 @@ def makedf ( **kwargs ):
         membership.append( str(input_containpos.iloc[row][1]) )           # "sample"
         if "," in str(input_containpos.iloc[row][1]) :
             input_containpos.loc[row,"cha1"] = "parent"
-
-        if str(input_containpos.iloc[row][1]) not in kwargs["samplename_dict_CharacterToNum"].keys():
-            kwargs["samplename_dict_CharacterToNum"][str(input_containpos.iloc[row][1])] = int (len(kwargs["samplename_dict_CharacterToNum"]))      # {'other': 0, 'V5': 1, 'V3': 2, 'V1': 3}           # 각 sample name을 숫자화시킴
 
         #rmv_bracket = re.sub("[\[\] ]", '', str(input_containpos.iloc[row][2])).split(",")            # [194, 25, 193, 66, 0, 0] 라고 되어 있는데 bracket과 한 칸 공백을 지움
         rmv_bracket=input_containpos.iloc[row][2].split(",")
@@ -131,11 +135,11 @@ def makedf ( **kwargs ):
             mixture_pre[i][j] = round(np.mean(np_vaf[[x  for x in range(len(membership)) if membership[x] == list(kwargs["samplename_dict_CharacterToNum"].keys())[j]   ]] [: , i] * 2), 3)        
     
     for j in range(NUM_CLONE):       # 쪼그만한 애 더한거를
-        if ( np.all (mixture_pre[:, j] < 0.12) )  |  ( np.any (mixture_pre[:, j] == 0) ):
+        if (list(kwargs["samplename_dict_CharacterToNum"].keys()) [j] != "FP") &  ( ( np.all (mixture_pre[:, j] < 0.12) )  |  ( np.any (mixture_pre[:, j] == 0) ) ):
             lowvaf_clone.append ( list(kwargs["samplename_dict_CharacterToNum"].keys()) [j] )
     if len (lowvaf_clone) == 0:
         for j in range(NUM_CLONE):       # 그럼 어쩔 수 없이
-            if ( np.all (mixture_pre[:, j] < 0.05) )  |  ( np.any (mixture_pre[:, j] == 0) ):
+            if (list(kwargs["samplename_dict_CharacterToNum"].keys()) [j] != "FP") &  ( ( np.all (mixture_pre[:, j] < 0.05) )  |  ( np.any (mixture_pre[:, j] == 0) ) ):
                 lowvaf_clone.append ( list(kwargs["samplename_dict_CharacterToNum"].keys()) [j] )
     
     print ("\tlowvaf_cone = {}".format(lowvaf_clone))
@@ -180,7 +184,7 @@ def makedf ( **kwargs ):
         if (kwargs["NUM_BLOCK"] == 2):
             if (kwargs["SAMPLENAME"].count("M1") == 1)  & (kwargs["SAMPLENAME"].count("M2") == 1) :
                 if "M1-6" in kwargs["SAMPLENAME"]:
-                    parent_type_selected = ['S0,V2']
+                    parent_type_selected = ['S0,V1']
                 if "M1-4_M2-4" in kwargs["SAMPLENAME"]:
                     parent_type_selected = ['V1,V4']
         if (kwargs["NUM_BLOCK"] == 3):
@@ -197,11 +201,11 @@ def makedf ( **kwargs ):
         
         if len (parent_type_selected) == 0:  #위에서 전혀 못 뽑는다면 그냥 random으로 1개 뽑아주자
             random.seed(kwargs["RANDOM_SEED"])
-            rr = random.sample ( list (range (0, uu)), 1 )[0]
+            rr = random.sample ( list (range (0, 3)), 1 )[0]
             parent_type_selected = [ parent_type [ rr ] ]
             print ("\t아무 것도 안 뽑혀서 random으로 1개 뽑음 = {}\t(n = {})".format( parent_type_selected, count [rr]))  
 
-        if len (parent_type_selected) == 1:   # 1개 겨우 뽑았는데 MIN_CLUSTER_SIZE보다 작은 경우
+        if len (parent_type_selected) == 1:   # 1개 겨우 뽑았는데 MIN_CLUSTER_SIZE보다 작은 경우, MIN_CLUSTER_SIZE를 조절해주자
             if ( int (df_counts.iloc [ 1, int(kwargs["samplename_dict_CharacterToNum"][ parent_type_selected[0] ]) ]) < kwargs ["MIN_CLUSTER_SIZE"] ): 
                 kwargs["MIN_CLUSTER_SIZE"] =  int( int (df_counts.iloc [ 1, int(kwargs["samplename_dict_CharacterToNum"][ parent_type_selected[0] ] ) ])  * 0.8 )
 
@@ -231,7 +235,7 @@ def makedf ( **kwargs ):
     try:
         p = [i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "FP" in input_containpos.loc[i,"sample"] ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]
         if len (p) / kwargs["RANDOM_PICK"] < kwargs["FP_RATIO"]:      # input 받은 kwargs["FP_RATIO"]보다 내 database에서 적게 보유하고 있으면
-            print ("We have less axis mutations (n = {}) than given FP_RATIO".format( len(p) ))
+            print ("We have less FP mutations (n = {}) than given FP_RATIO".format( len(p) ))
             kwargs["FP_RATIO"] = round( len ([i for i in range (0, kwargs["NUM_MUTATION"]) if ( ( "FP" in input_containpos.loc[i,"sample"] ) & (depth_list[i] > kwargs["DEPTH_CUTOFF"]) ) ]) / kwargs["RANDOM_PICK"], 3)
     except:
         print ("FP가 없음")
@@ -299,7 +303,8 @@ def RANDOM_PICK_fun(**kwargs):
             PARENT_randomsample = PARENT_index
             kwargs["PARENT_RATIO"] = len(PARENT_randomsample) / kwargs["RANDOM_PICK"]
             if (kwargs["FP_RATIO"] + kwargs["AXIS_RATIO"] + kwargs["PARENT_RATIO"]) > 0.8 :  # 너무 높으면 space를 뽑을 수가 없으니 Parent 개수도 좀 줄이자
-                PARENT_randomsample = random.sample ( PARENT_index,  int (kwargs ["MIN_CLUSTER_SIZE"] * 1.5 ) )
+                print (kwargs["FP_RATIO"],  kwargs["AXIS_RATIO"] , len (PARENT_index),  int (kwargs ["MIN_CLUSTER_SIZE"]) )
+                PARENT_randomsample = random.sample ( PARENT_index,  min ( int (kwargs ["MIN_CLUSTER_SIZE"] * 1.5 ), len(PARENT_index) )  )
                 kwargs["PARENT_RATIO"] = len(PARENT_randomsample) / kwargs["RANDOM_PICK"]
 
         try:
@@ -336,6 +341,7 @@ def RANDOM_PICK_fun(**kwargs):
     inputdf  = inputdf.iloc[random_index]
     df = [df[i] for i in random_index]
     np_vaf = np_vaf[random_index]
+    np_BQ = np_BQ[random_index]
     membership_answer = [membership[i] for i in random_index]
     mutation_id = [mutation_id[i] for i in random_index]
 

@@ -166,18 +166,18 @@ def scoring (membership_answer, membership_answer_numerical, membership_answer_n
     import scoring, result
     import numpy as np
 
-    simpleK.elbow_K_score, sample_dict_PtoA, sample_dict_AtoP  = scoring.Scoring ( membership_answer, membership_answer_numerical,
-                                                                                                                                            simpleK.membership_record [simpleK.elbow_K], -1 , [] ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
+    simpleK.elbow_K_score, sample_dict_PtoA, sample_dict_AtoP,  score_df_elbow = scoring.Scoring ( membership_answer, membership_answer_numerical,
+                                                                                                                                            simpleK.membership_record [simpleK.elbow_K], -1 , [], **kwargs ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
     simpleK.elbow_K_ARI = result.ARI ( np.array ( [ membership_answer_numerical [i] for i in membership_answer_numerical_nofp_index  ] ) , 
                                                                 np.array ( [ simpleK.membership_record [simpleK.elbow_K] [i] for i in membership_answer_numerical_nofp_index] ) )
     
-    simpleK.silhouette_K_score, sample_dict_PtoA, sample_dict_AtoP  = scoring.Scoring ( membership_answer, membership_answer_numerical,
-                                                                                                                                            simpleK.membership_record [simpleK.silhouette_K], -1 , [] ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
+    simpleK.silhouette_K_score, sample_dict_PtoA, sample_dict_AtoP, score_df_silhouette  = scoring.Scoring ( membership_answer, membership_answer_numerical,
+                                                                                                                                            simpleK.membership_record [simpleK.silhouette_K], -1 , [], **kwargs ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
     simpleK.silhouette_K_ARI = result.ARI ( np.array ( [ membership_answer_numerical [i] for i in membership_answer_numerical_nofp_index  ] ) , 
                                                                     np.array ( [ simpleK.membership_record [simpleK.silhouette_K][i] for i in membership_answer_numerical_nofp_index] ) )
     
-    simpleK.gap_K_score, sample_dict_PtoA, sample_dict_AtoP  = scoring.Scoring ( membership_answer, membership_answer_numerical,
-                                                                                                                                            simpleK.membership_record [simpleK.gap_K], -1 , [] ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
+    simpleK.gap_K_score, sample_dict_PtoA, sample_dict_AtoP, score_df_gap  = scoring.Scoring ( membership_answer, membership_answer_numerical,
+                                                                                                                                            simpleK.membership_record [simpleK.gap_K], -1 , [] , **kwargs ) # fp를 designate 하지 못하니까 무조건 fp_index는 -1, parent_index는 []
     simpleK.gap_K_ARI = result.ARI ( np.array ( [ membership_answer_numerical [i] for i in membership_answer_numerical_nofp_index  ] ) , 
                                                             np.array ( [ simpleK.membership_record [simpleK.gap_K][i] for i in membership_answer_numerical_nofp_index] ) )
 

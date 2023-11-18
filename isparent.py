@@ -118,12 +118,13 @@ def Appropriate_Phylogeny_Verification (PhyAcc, subset_list, j2, j3, step, **kwa
 
 
 def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
-    import miscellaneous
+    import miscellaneous, Bunch
 
     membership = step.membership
     mixture = step.mixture
     NUM_BLOCK = step.mixture.shape[0]
     NUM_CLONE = step.mixture.shape[1]
+    kwargs["CHECKALLFROM"] = "isparent.py"
 
     global subset_list_acc, subset_mixture_acc, sum_mixture_acc
 
@@ -133,42 +134,58 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
         subset_list_acc, subset_mixture_acc, sum_mixture_acc = comb.comball(  list(set(membership))[:], mixture)   # 모든 덧셈 조합을 구하기
 
     if kwargs["NUM_CLONE_ITER"] == 1:   # 이상하게 NUM_CLONE == 1일 때에는 comb.comball이 작동하지 않는다
-        if miscellaneous.checkall ( np.sum(step.mixture, axis = 1).tolist(), "lenient", **kwargs) [0] == False :
+        if kwargs["MAKEONE_STRICT"] == 3:     # BioData에서는 극단적으로 lenient하게 잡아줘야 하니까
+            check = miscellaneous.checkall ( step, "lenient", np_vaf, **kwargs) [0]
+        else:
+            check = miscellaneous.checkallttest ( step, "lenient", np_vaf, **kwargs) [0]
+
+        if check == False :
             step.makeone_index = []
             p_list = []
-            return p_list, step      # 그 어떤 makeone도 만들지 못해서 그냥 넘긴다
+            return p_list, step, "lenient"      # 그 어떤 makeone도 만들지 못해서 그냥 넘긴다
         else:  # 성공한 경우
             step.makeone_index = [0]
             p_list = [[1, 0]]
-            return p_list, step          # makeone_index , p_list, fp_index
+            return p_list, step, "lenient"          # makeone_index , p_list, fp_index
 
     p_max = float("-inf")
     p_list, j2_list = [], []
     
         
+    step_subset = step
+    condition = "lenient" if ( ( kwargs ["STEP_TOTAL"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1) ) | ( kwargs ["STEP"] <= 3 ) ) else "strict"      # Soft clustering의 첫 번쨰는 lenient 로 봐 주고, 나머지는 strict로 보기 위함. Soft clustering 첫 번째에서는 sum of mixture 가 갑자기 확 뛰는 경우가 생김 
+
     # 여러 조합을 돈다 
     for j2 in range(len(subset_mixture_acc)):        # j2 : 번호, subset_list = [1, 3, 4]
         subset_list, subset_mixture, sum_mixture = subset_list_acc[ j2 ], subset_mixture_acc[ j2 ], sum_mixture_acc[ j2 ]
+        step_subset.makeone_index = subset_list
+
         PhyAcc = PhylogenyObjectAcc()
 
-        condition = "lenient" if ( ( kwargs ["STEP_TOTAL"] <= (kwargs["COMPULSORY_NORMALIZATION"] - 1) ) | ( kwargs ["STEP"] <= 1 ) ) else "strict"      # Soft clustering의 첫 번쨰는 봐 주기 위함. Soft clustering 첫 번째에서는 sum of mixture 가 갑자기 확 뛰는 경우가 생김
-        if miscellaneous.checkall(sum_mixture, condition, **kwargs) [0] == False:   
+        if condition == "lenient":
+            checkallt_pass, sum_mixture, p = miscellaneous.checkall ( step, condition, np_vaf, **kwargs)
+        elif condition == "strict":
+            # 여기서도 BioData에게 특혜를 줘야 하나?
+            checkallt_pass, sum_mixture, p = miscellaneous.checkallttest ( step, condition, np_vaf, **kwargs)
+            
+        if checkallt_pass == False:   
             if kwargs["VERBOSE"] >= 4:
                 print ("\t\t\t\t(isparent.py)  makeone clone의 sum of mixture의 이상으로 기각 ({})".format( np.array(sum_mixture).flatten() ))
             continue
 
-        p = 0
-        for i in range(kwargs["NUM_BLOCK"]):
-            depth = 1000
-            a = int(sum_mixture[i] * 1000 / 2)
-            b = depth - a
+        # Beta binomial을 바탕으로 p를 계산
+        if p == 0:
+            for i in range(kwargs["NUM_BLOCK"]):
+                depth = 1000
+                a = int(sum_mixture[i] * 1000 / 2)
+                b = depth - a
 
-            target_a = 500
-            try:
-                p = p + math.log10(scipy.stats.betabinom.pmf( target_a, depth, a + 1, b+1))
-            except:
-                p = p - 400
-                
+                target_a = 500
+                try:
+                    p = p + math.log10(scipy.stats.betabinom.pmf( target_a, depth, a + 1, b+1))
+                except:
+                    p = p - 400
+                    
         
         if p > -400:
             ISSMALLER_cnt, SMALLER_ind = 0, []
@@ -268,31 +285,41 @@ def makeone(input_containpos, df, np_vaf,  np_BQ, step, **kwargs):
                         else:
                             print ("\t\t\t\t→ parent는 없음, p = {}".format(round (p, 2) ))
 
-    if p_list == []:
+
+    if p_list == []: # 실패한 경우
         step.makeone_index = []
-        return p_list, step     # 그 어떤 makeone도 만들지 못해서 그냥 넘긴다
+        return p_list, step, condition     # 그 어떤 makeone도 만들지 못해서 그냥 넘긴다
 
-    
-    p_list = np.array(p_list).transpose()
-    p_list = p_list[:, p_list[0].argsort()]  # p_list[0]  (확률)을 기준으로  p_list (나머지 row) 를 다 sort 해버리자
-    p_list = np.flip(p_list, 1)
-    
+    else:  # 성공한 경우
+        p_list = np.array(p_list).transpose()
+        p_list = p_list[:, p_list[0].argsort()]  # p_list[0]  (확률)을 기준으로  p_list (나머지 row) 를 다 sort 해버리자
+        p_list = np.flip(p_list, 1)
+        
 
-    if kwargs["VERBOSE"] >= 3:
-        for i in range (0, p_list.shape[1]):
-            j2 = int(p_list[1, i])
-            print ("\t\t\t∇ {}nd place : subset_list_acc [j2] = {}\tsum_mixture_acc [j2] = {}\t{}th cirumstance\tp = {}".format ( i + 1 , subset_list_acc [ j2  ], sum_mixture_acc [ j2  ], int (p_list[2, i]) , round( p_list[0, i], 2)  ))
-
-    best_j2 = int(p_list[1, 0])    # 1 : subset_list의 index  0 : 제일 잘한것 (0등)
-    optimal, optimal_j2 = 0, best_j2
-
-    
-    if ( p_list[2, optimal] == 3):     # optimal : 0 or 1   ← 웬만하면 best인 0을 고르겠지만...
         if kwargs["VERBOSE"] >= 3:
-            print ("\t\t\t3번상황 발생 (그동안 FP clone 없었는데, 나머지들로 makeone 잘 할 경우) → fp_index = {}".format ( step.fp_index) )
-    elif ( p_list[2, optimal] == 4):
-        if kwargs["VERBOSE"] >= 3:
-            print ("\t\t\t4번상황 발생 (그동안 FP clone 있었는데, 나머지들로 makeone 잘 할 경우) → fp_index = {}".format (step.fp_index) )
-    step.fp_involuntary = False
-    step.makeone_index = subset_list_acc[optimal_j2]
-    return p_list, step
+            for i in range (0, p_list.shape[1]):
+                j2 = int(p_list[1, i])
+                print ("\t\t\t∇ {}nd place : subset_list_acc [j2] = {}\tsum_mixture_acc [j2] = {}\t{}th cirumstance\tp = {}".format ( i + 1 , subset_list_acc [ j2  ], sum_mixture_acc [ j2  ], int (p_list[2, i]) , round( p_list[0, i], 2)  ))
+
+        best_j2 = int(p_list[1, 0])    # 1 : subset_list의 index  0 : 제일 잘한것 (0등)
+        optimal, optimal_j2 = 0, best_j2
+
+        
+        if ( p_list[2, optimal] == 3):     # optimal : 0 or 1   ← 웬만하면 best인 0을 고르겠지만...
+            if kwargs["VERBOSE"] >= 3:
+                print ("\t\t\t3번상황 발생 (그동안 FP clone 없었는데, 나머지들로 makeone 잘 할 경우) → fp_index = {}".format ( step.fp_index) )
+        elif ( p_list[2, optimal] == 4):
+            if kwargs["VERBOSE"] >= 3:
+                print ("\t\t\t4번상황 발생 (그동안 FP clone 있었는데, 나머지들로 makeone 잘 할 경우) → fp_index = {}".format (step.fp_index) )
+        step.fp_involuntary = False
+        step.makeone_index = subset_list_acc[optimal_j2]
+        
+        if condition == "lenient":
+            step.checkall_lenient = True
+        elif condition == "strict":
+            step.checkall_strict= True
+        
+        return p_list, step, condition
+    
+
+
